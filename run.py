@@ -24,6 +24,7 @@ def myadvance():
     
 
 def get_stim(stim_type, i):
+    # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
     return stims[stim_type][i]
 
 
@@ -32,16 +33,18 @@ def save_nwb(outfile, stim, v):
 
 
 def plot(args, stim, u, v):
+    t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
+    
     if args.plot_stim:
-        plt.plot(stim)
+        plt.plot(t_axis, stim)
         plt.show()
     
     if args.plot_v:
-        plt.plot(v)
+        plt.plot(t_axis, v[:-1])
         plt.show()
 
     if args.plot_u:
-        plt.plot(u)
+        plt.plot(t_axis, u[:-1])
         plt.show()
 
 
@@ -94,6 +97,10 @@ def main(args):
 
     print("Time to simulate: {}".format(datetime.now() - start))
 
+    # numpy-ify
+    u = np.array(u)
+    v = np.array(v)
+
     # Save to nwb
     if args.outfile:
         save_nwb(args.outfile, stim, v)
@@ -104,16 +111,16 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--outfile', type=str, required=False, default=None
+    parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to')
-    parser.add_argument('--plot-v', type=bool, action='store_true', default=False)
-    parser.add_argument('--plot-u', type=bool, action='store_true', default=False)
-    parser.add_argument('--plot-stim', type=bool, action='store_true', default=False)
-    parser.add_argument('--force', type=bool, action='store_true', default=False
+    parser.add_argument('--plot-v', action='store_true', default=False)
+    parser.add_argument('--plot-u', action='store_true', default=False)
+    parser.add_argument('--plot-stim', action='store_true', default=False)
+    parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
     
-    parser.add_argument('--tstop', type=int, default=1250)
-    parser.add_argument('--dt', type=float, default=.0025)
+    parser.add_argument('--tstop', type=int, default=152)
+    parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--a', type=float, default=0.02)
     parser.add_argument('--b', type=float, default=0.2)

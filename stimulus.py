@@ -4,7 +4,7 @@ This file defines the stimuli we use
 import numpy as np
 
 # Defaults:
-DT = 0.0025 # simulation timestep
+DT = 0.02 # simulation timestep
 PREPULSE = 2
 PULSELEN = 144
 POSTPULSE = 6
