@@ -22,7 +22,7 @@ python run.py --outfile $OUTFILE --create
 
 for stim_type in "${arr[@]}"
 do
-    for i in seq 1 7
+    for i in seq 0 7
     do
         srun --oversubscribe --label -n 10000 python param_sweep.py \
              --outfile $OUTFILE --stim-type $stim_type --stim-idx $i
