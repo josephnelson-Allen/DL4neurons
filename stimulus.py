@@ -87,7 +87,7 @@ sds = [0.002*(i + 1) for i in range(n_stims//2)]
 
 stims = {
     'ramp': [RampGenerator().generate(rampval=val) for val in rampvals],
-    'neg_ramp': [NegRampGenerator().generate(rampval=-val) for val in rampvals],
+    # 'neg_ramp': [NegRampGenerator().generate(rampval=-val) for val in rampvals],
     'step': [StepGenerator().generate(stepval=val) for val in stepvals],
     'noise': [NoiseGenerator().generate(mean=mean, sd=sd)
               for mean, sd in zip(noise_means, sds)],
