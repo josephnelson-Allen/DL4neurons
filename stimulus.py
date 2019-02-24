@@ -97,5 +97,5 @@ def add_stims(nwb):
     for stim_type, stim_list in iter(stims.items()):
         for i, stim in enumerate(stim_list):
             stim_name = '{}_{:02d}'.format(stim_type, i)
-            stim_timeseries = TimeSeries(stim_name, stim, 'nA')
+            stim_timeseries = TimeSeries(stim_name, stim, 'nA', rate=1.0/DT)
             nwb.add_stimulus(stim_timeseries)

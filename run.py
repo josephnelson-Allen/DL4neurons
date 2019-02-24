@@ -1,3 +1,4 @@
+import json
 from argparse import ArgumentParser
 from datetime import datetime
 
@@ -40,12 +41,16 @@ def get_stim(stim_type, i):
     return stims[stim_type][i]
 
 
-def save_nwb(outfile, stim, v):
+def save_nwb(args, v):
     # outfile must exist
-    with NWBHDF5IO(outfile, 'a', comm=comm) as io:
+    with NWBHDF5IO(args.outfile, 'a', comm=comm) as io:
         nwb = io.read()
+        params_dict = {param: getattr(args, param) for param in ['a', 'b', 'c', 'd']}
 
-        e_series_v = TimeSeries(name=None)
+        dset_name = '{}_{:02d}'.format(args.stim_type, args.stim_idx)
+        dset = TimeSeries(name=dset_name, data=v, description=json.dumps(params_dict),
+                          starting_time=0.0, rate=1.0/h.dt)
+        nwb.add_acquisition(dset)
 
         io.write(nwb)
     
@@ -121,7 +126,7 @@ def main(args):
 
     # Save to nwb
     if args.outfile:
-        save_nwb(args.outfile, stim, v)
+        save_nwb(args, v)
 
     # Plot
     plot(args, stim, u, v)
