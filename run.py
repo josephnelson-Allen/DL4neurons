@@ -1,5 +1,7 @@
 from __future__ import print_function
+
 import json
+import itertools
 from argparse import ArgumentParser
 from datetime import datetime
 
@@ -37,25 +39,36 @@ h('proc advance() {nrnpython("myadvance()")}')
 def myadvance():
     h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
-    
 
-def get_params_mpi():
+    
+def get_params_mpi(nsamples=10000):
     """
-    Get the set of parameters for this MPI task
+    Get the list of parameter sets for this MPI task
     """
     assert mpi
 
     ndim = 4
-    nsamples_per_dim = int(n_tasks**(1./ndim))
+    nsamples_per_dim = int(nsamples**(1./ndim))
+
+    print("For {} points in {}-D parameter space, we take {} samples per dimension".format(
+        nsamples, ndim, nsamples_per_dim
+    ))
 
     aa = np.linspace(0, 0.05, nsamples_per_dim)
     bb = np.linspace(0, 2.0, nsamples_per_dim)
-    cc = np.linspace(-80, -50, nsamples_per_dim)
+    cc = np.linspace(-75, -55, nsamples_per_dim)
     dd = np.linspace(0, 20, nsamples_per_dim)
     
     paramsets = list(itertools.product(aa, bb, cc, dd))
 
-    return paramsets[rank]
+    params_per_task = (len(paramsets) // n_tasks) + 1
+    start = params_per_task * rank
+    stop = min(params_per_task * (rank + 1), len(paramsets))
+
+    print("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
+    print("This rank is processing param sets {} through {}".format(start, stop))
+
+    return paramsets[start:stop]
 
 
 def get_stim(stim_type, i):
@@ -209,8 +222,10 @@ if __name__ == '__main__':
     else:
         if args.mpi:
             assert mpi
-            a, b, c, d = get_params_mpi()
+            paramsets = get_params_mpi()
         else:
-            a, b, c, d = args.a, args.b, args.c, args.d
-            
-        main(args, a, b, c, d)
+            paramsets = [(args.a, args.b, args.c, args.d)]
+
+        for a, b, c, d in paramsets:
+            print("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
+            main(args, a, b, c, d)
