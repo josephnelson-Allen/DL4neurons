@@ -43,15 +43,13 @@ class StimulusGenerator(object):
     
 
 class RampGenerator(StimulusGenerator):
-
     def _pulse(self, n_pulse, rampval=0.):
         return np.linspace(start=0, stop=rampval, num=n_pulse)
 
     
 class NegRampGenerator(RampGenerator):
     def _pulse(self, n_pulse, rampval=0.):
-        return np.linspace(start=rampval, stop=0, num=n_pulse
-)
+        return np.linspace(start=rampval, stop=0, num=n_pulse)
 
     
 class StepGenerator(StimulusGenerator):
@@ -59,7 +57,6 @@ class StepGenerator(StimulusGenerator):
         return np.ones(n_pulse) * stepval
 
 class NoiseGenerator(StimulusGenerator):
-
     def _pulse(self, n_pulse, mean=0., sd=1., tau=TAU):
         pulse = np.zeros(n_pulse)
         for i in range(1, n_pulse):

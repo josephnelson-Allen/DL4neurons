@@ -1,8 +1,11 @@
+import itertools
 import sys
 import os
 import subprocess
 
 import numpy as np
+
+from stimulus import stims
 
 
 ##################################
@@ -23,9 +26,9 @@ slurm_env_vars = (
     "SLURM_NTASKS",
 )
 for var in slurm_env_vars:
-    print "%s\t%s" % (var, os.environ.get(var, ""))
+    print("{}\t{}".format(var, os.environ.get(var, "")))
 
-num_tasks = int(os.environ.get("SLURM_ARRAY_TASK_COUNT") or 0)
+num_tasks = int(os.environ.get("SLURM_ARRAY_TASK_COUNT") or 1)
 
 task_i = int(os.environ.get("SLURM_ARRAY_TASK_ID") or 0)
 
@@ -36,21 +39,35 @@ nsamples = 10000
 nsamples_per_dim = int(nsamples**(1./ndim))
 
 aa = np.linspace(-0.05, 0.05, nsamples_per_dim)
-bb = np.linspace(-0.5, 2.0samples_per_dim)
+bb = np.linspace(-0.5, 2.0, nsamples_per_dim)
 cc = np.linspace(-80, -50, nsamples_per_dim)
 dd = np.linspace(-30, 20, nsamples_per_dim)
 
 paramsets = list(itertools.product(aa, bb, cc, dd))
 
-# CHOOSE PARAM
-if task_i < len(paramsets):
-    a, b, c, d = paramsets[task_i]
-else:
-    exit()
+# CHOOSE PARAMS AND RUN
+params_per_task = (len(paramsets) // num_tasks) + 1
+start = params_per_task * task_i
+stop = min(params_per_task * (task_i + 1), len(paramsets))
 
-# RUN
-
-# TODO: Run on all stims
-# TODO: Run a few param sets, depending on num_tasks
 passthru = ' '.join(sys.argv)
-subprocess.call('python --a {a} --b {b} --c {c} --d {d} {addl}'.format(a=a, b=b, c=c, d=d, addl=passthru)
+
+print('{} total param sets'.format(len(paramsets)))
+print('{} param sets per task'.format(params_per_task))
+
+for a, b, c, d in paramsets[start:stop]:
+    if '--print-only' in sys.argv:
+        print('a = {}'.format(a))
+        print('b = {}'.format(b))
+        print('c = {}'.format(c))
+        print('d = {}'.format(d))
+        print('-'*80)
+    else:    
+        # TODO: Run on all stims
+        # TODO: Run a few param sets, depending on num_tasks
+        for stim_type, stim_list in iter(stims.items()):
+            for i in range(len(stim_list)):
+                args = '--a {} --b {} --c {} --d {}'.format(a, b, c, d)
+                args += ' --stim-type {} --stim-idx {}'.format(stim_type, stim_idx)
+                args += ' {}'.format(passthru)
+                subprocess.call('python run.py {}'.format(args)) 
