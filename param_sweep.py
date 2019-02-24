@@ -40,10 +40,10 @@ ndim = 4
 nsamples = 10000
 nsamples_per_dim = int(nsamples**(1./ndim))
 
-aa = np.linspace(-0.05, 0.05, nsamples_per_dim)
-bb = np.linspace(-0.5, 2.0, nsamples_per_dim)
+aa = np.linspace(0, 0.05, nsamples_per_dim)
+bb = np.linspace(0, 2.0, nsamples_per_dim)
 cc = np.linspace(-80, -50, nsamples_per_dim)
-dd = np.linspace(-30, 20, nsamples_per_dim)
+dd = np.linspace(0, 20, nsamples_per_dim)
 
 paramsets = list(itertools.product(aa, bb, cc, dd))
 
