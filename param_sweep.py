@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import itertools
 import sys
 import os
@@ -63,9 +65,9 @@ for a, b, c, d in paramsets[start:stop]:
         print('d = {}'.format(d))
         print('-'*80)
     else:    
-        for stim_type, stim_list in iter(stims.items()):
+        for stim_type, stim_list in stims.items():
             for i in range(len(stim_list)):
                 args = '--a {} --b {} --c {} --d {}'.format(a, b, c, d)
                 args += ' --stim-type {} --stim-idx {}'.format(stim_type, i)
                 args += ' {}'.format(passthru)
-                subprocess.call('srun -n 1 python3 run.py {}'.format(args), shell=True)
+                subprocess.call('srun -n 1 python run.py {}'.format(args), shell=True)

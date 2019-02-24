@@ -15,6 +15,6 @@ cd /global/cscratch1/sd/vbaratha/izhi
 mkdir runs/${SLURM_JOB_ID}
 OUTFILE=runs/${SLURM_JOB_ID}/data.nwb
 
-python3 run.py --outfile $OUTFILE --create
+python run.py --outfile $OUTFILE --create
 
-srun --label -n 128 python3 param_sweep.py --outfile $OUTFILE
+srun --label -n 128 python param_sweep.py --outfile $OUTFILE
