@@ -2,7 +2,7 @@
 #SBATCH -q debug
 #SBATCH -N 10
 #SBATCH -t 00:30:00
-#SBATCH -J cortical-column
+#SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 #SBATCH --mail-user vbaratham@berkeley.edu
