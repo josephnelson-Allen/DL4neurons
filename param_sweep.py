@@ -50,7 +50,7 @@ params_per_task = (len(paramsets) // num_tasks) + 1
 start = params_per_task * task_i
 stop = min(params_per_task * (task_i + 1), len(paramsets))
 
-passthru = ' '.join(sys.argv)
+passthru = ' '.join(sys.argv[1:])
 
 print('{} total param sets'.format(len(paramsets)))
 print('{} param sets per task'.format(params_per_task))
@@ -68,4 +68,4 @@ for a, b, c, d in paramsets[start:stop]:
                 args = '--a {} --b {} --c {} --d {}'.format(a, b, c, d)
                 args += ' --stim-type {} --stim-idx {}'.format(stim_type, i)
                 args += ' {}'.format(passthru)
-                subprocess.call('python run.py {}'.format(args), shell=True)
+                subprocess.call('srun -n 1 python run.py {}'.format(args), shell=True)
