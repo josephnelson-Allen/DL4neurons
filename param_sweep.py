@@ -63,8 +63,6 @@ for a, b, c, d in paramsets[start:stop]:
         print('d = {}'.format(d))
         print('-'*80)
     else:    
-        # TODO: Run on all stims
-        # TODO: Run a few param sets, depending on num_tasks
         for stim_type, stim_list in iter(stims.items()):
             for i in range(len(stim_list)):
                 args = '--a {} --b {} --c {} --d {}'.format(a, b, c, d)
