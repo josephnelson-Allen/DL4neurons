@@ -44,6 +44,7 @@ def get_stim(stim_type, i):
 
 def save_nwb(args, v):
     # outfile must exist
+    print("Saving nwb...")
     with NWBHDF5IO(args.outfile, 'a', comm=comm) as io:
         nwb = io.read()
         params_dict = {param: getattr(args, param) for param in ['a', 'b', 'c', 'd']}
@@ -54,6 +55,7 @@ def save_nwb(args, v):
         nwb.add_acquisition(dset)
 
         io.write(nwb)
+    print("done.")
     
 
 def plot(args, stim, u, v):
