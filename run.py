@@ -16,10 +16,12 @@ try:
     mpi = True
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
+    n_tasks = comm.Get_size()
 except:
     mpi = False
     comm = None
     rank = 0
+    n_tasks = 1
 
 """
 Requires izhi2003a.mod from:
@@ -36,6 +38,25 @@ def myadvance():
     h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
     
+
+def get_params_mpi():
+    """
+    Get the set of parameters for this MPI task
+    """
+    assert mpi
+
+    ndim = 4
+    nsamples_per_dim = int(n_tasks**(1./ndim))
+
+    aa = np.linspace(0, 0.05, nsamples_per_dim)
+    bb = np.linspace(0, 2.0, nsamples_per_dim)
+    cc = np.linspace(-80, -50, nsamples_per_dim)
+    dd = np.linspace(0, 20, nsamples_per_dim)
+    
+    paramsets = list(itertools.product(aa, bb, cc, dd))
+
+    return paramsets[rank]
+
 
 def get_stim(stim_type, i):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
@@ -74,7 +95,7 @@ def plot(args, stim, u, v):
         plt.show()
 
 
-def main(args):
+def main(args, a, b, c, d):
 
     if not any([args.plot_stim, args.plot_u, args.plot_v, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
@@ -94,10 +115,10 @@ def main(args):
     # Define the cell
     dummy = h.Section()
     cell = h.Izhi2003a(0.5,sec=dummy)
-    cell.a = args.a
-    cell.b = args.b
-    cell.c = args.c
-    cell.d = args.d
+    cell.a = a
+    cell.b = b
+    cell.c = c
+    cell.d = d
 
     # Define the stimulus
     stim = get_stim(args.stim_type, args.stim_idx)
@@ -149,6 +170,9 @@ if __name__ == '__main__':
     
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
+
+    parser.add_argument('--mpi', action='store_true', default=False
+                        help="get values of a,b,c,d from parameters.py using MPI")
     
     parser.add_argument('--tstop', type=int, default=152)
     parser.add_argument('--dt', type=float, default=.02)
@@ -183,4 +207,10 @@ if __name__ == '__main__':
             io.write(nwb)
         print("Done.")
     else:
-        main(args)
+        if args.mpi:
+            assert mpi
+            a, b, c, d = get_params_mpi()
+        else:
+            a, b, c, d = args.a, args.b, args.c, args.d
+            
+        main(args, a, b, c, d)

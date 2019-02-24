@@ -88,6 +88,8 @@ stims = {
     'step': [StepGenerator().generate(stepval=val) for val in stepvals],
     'noise': [NoiseGenerator().generate(mean=mean, sd=sd)
               for mean, sd in zip(noise_means, sds)],
+    'sin': [],
+    'chirp': [],
 }
 
 def add_stims(nwb):

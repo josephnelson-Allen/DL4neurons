@@ -15,6 +15,18 @@ cd /global/cscratch1/sd/vbaratha/izhi
 mkdir runs/${SLURM_JOB_ID}
 OUTFILE=runs/${SLURM_JOB_ID}/data.nwb
 
+declare -a arr=("ramp" "step" "noise")
+
+## Create the output file
 python run.py --outfile $OUTFILE --create
 
-srun --label -n 128 python param_sweep.py --outfile $OUTFILE
+for stim_type in "${arr[@]}"
+do
+    for i in seq 1 7
+    do
+        srun --oversubscribe --label -n 10000 python param_sweep.py \
+             --outfile $OUTFILE --stim-type $stim_type --stim-idx $i
+    done
+done
+
+
