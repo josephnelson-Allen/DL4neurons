@@ -70,4 +70,4 @@ for a, b, c, d in paramsets[start:stop]:
                 args = '--a {} --b {} --c {} --d {}'.format(a, b, c, d)
                 args += ' --stim-type {} --stim-idx {}'.format(stim_type, i)
                 args += ' {}'.format(passthru)
-                subprocess.call('python run.py {}'.format(args)) 
+                subprocess.call('python run.py {}'.format(args), shell=True)
