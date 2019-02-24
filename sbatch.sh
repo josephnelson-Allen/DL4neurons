@@ -5,6 +5,7 @@
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
+#SBATCH --oversubscribe
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
 #SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%j.out"
