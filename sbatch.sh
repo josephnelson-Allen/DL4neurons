@@ -7,8 +7,8 @@
 #SBATCH -C haswell
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/%j/stdout.txt"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/%j/stderr.txt"
+#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/%j.out
+#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/%j.err
 
 mkdir runs/${SLURM_JOB_ID}
 OUTFILE=runs/${SLURM_JOB_ID}/data.nwb
