@@ -4,8 +4,20 @@ from datetime import datetime
 from neuron import h, gui
 import numpy as np
 import matplotlib.pyplot as plt
+#import h5py
+from pynwb import NWBFile, NWBHDF5IO, TimeSeries
 
-from stimulus import stims
+from stimulus import stims, add_stims
+
+try:
+    from mpi4py import MPI
+    mpi = True
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+except:
+    mpi = False
+    comm = None
+    rank = 0
 
 """
 Requires izhi2003a.mod from:
@@ -15,7 +27,7 @@ Run this script from the same directory as the compiled izhi2003a.mod
 
 NB: on OSX, run using `pythonw` (first, `conda install python.app`) for plotting to work
 """
-
+    
 # redefine NEURON's advance() (runs one timestep) to update the current
 h('proc advance() {nrnpython("myadvance()")}')
 def myadvance():
@@ -29,8 +41,14 @@ def get_stim(stim_type, i):
 
 
 def save_nwb(outfile, stim, v):
-    pass
+    # outfile must exist
+    with NWBHDF5IO(outfile, 'a', comm=comm) as io:
+        nwb = io.read()
 
+        e_series_v = TimeSeries(name=None)
+
+        io.write(nwb)
+    
 
 def plot(args, stim, u, v):
     t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
@@ -111,11 +129,16 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+
     parser.add_argument('--outfile', type=str, required=False, default=None,
-                        help='nwb file to save to')
+                        help='nwb file to save to. Must exist.')
+    parser.add_argument('--create', action='store_true', default=False,
+                        help="create the file, store all stimuli, and then exit")
+    
     parser.add_argument('--plot-v', action='store_true', default=False)
     parser.add_argument('--plot-u', action='store_true', default=False)
     parser.add_argument('--plot-stim', action='store_true', default=False)
+    
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
     
@@ -132,4 +155,24 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(args)
+    if args.create:
+        print("Creating and writing nwb file {}...".format(args.outfile))
+        nwb = NWBFile(
+            session_description='izhikevich simulation',
+            identifier='izhi',
+            session_start_time=datetime.now(),
+            file_create_date=datetime.now(),
+            experimenter='Vyassa Baratham',
+            experiment_description='izhikevich simulations for DL',
+            session_id='izhi',
+            institution='LBL/UCB',
+            lab='NSE Lab',
+            pharmacology='',
+            notes='',
+        )
+        add_stims(nwb)
+        with NWBHDF5IO(args.outfile, 'w') as io:
+            io.write(nwb)
+        print("Done.")
+    else:
+        main(args)

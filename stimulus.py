@@ -2,6 +2,7 @@
 This file defines the stimuli we use
 """
 import numpy as np
+from pynwb import TimeSeries
 
 # Defaults:
 DT = 0.02 # simulation timestep
@@ -91,3 +92,10 @@ stims = {
     'noise': [NoiseGenerator().generate(mean=mean, sd=sd)
               for mean, sd in zip(noise_means, sds)],
 }
+
+def add_stims(nwb):
+    for stim_type, stim_list in iter(stims.items()):
+        for i, stim in enumerate(stim_list):
+            stim_name = '{}_{:02d}'.format(stim_type, i)
+            stim_timeseries = TimeSeries(stim_name, stim, 'nA')
+            nwb.add_stimulus(stim_timeseries)
