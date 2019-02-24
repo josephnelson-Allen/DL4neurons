@@ -68,6 +68,6 @@ for a, b, c, d in paramsets[start:stop]:
         for stim_type, stim_list in iter(stims.items()):
             for i in range(len(stim_list)):
                 args = '--a {} --b {} --c {} --d {}'.format(a, b, c, d)
-                args += ' --stim-type {} --stim-idx {}'.format(stim_type, stim_idx)
+                args += ' --stim-type {} --stim-idx {}'.format(stim_type, i)
                 args += ' {}'.format(passthru)
                 subprocess.call('python run.py {}'.format(args)) 
