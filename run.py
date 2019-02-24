@@ -171,7 +171,7 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    parser.add_argument('--mpi', action='store_true', default=False
+    parser.add_argument('--mpi', action='store_true', default=False,
                         help="get values of a,b,c,d from parameters.py using MPI")
     
     parser.add_argument('--tstop', type=int, default=152)
