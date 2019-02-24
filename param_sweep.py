@@ -28,9 +28,9 @@ slurm_env_vars = (
 for var in slurm_env_vars:
     print("{}\t{}".format(var, os.environ.get(var, "")))
 
-num_tasks = int(os.environ.get("SLURM_ARRAY_TASK_COUNT") or 1)
+num_tasks = int(os.environ.get("SLURM_NTASKS") or 1)
 
-task_i = int(os.environ.get("SLURM_ARRAY_TASK_ID") or 0)
+task_i = int(os.environ.get("SLURM_PROCID") or 0)
 
 # CREATE LIST OF PARAM SETS
 
