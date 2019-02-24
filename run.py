@@ -76,19 +76,24 @@ def get_stim(stim_type, i):
     return stims[stim_type][i]
 
 
-def save_nwb(args, v):
+def save_nwb(args, v, a, b, c, d):
     # outfile must exist
     print("Saving nwb...")
+    
     with NWBHDF5IO(args.outfile, 'a', comm=comm) as io:
         nwb = io.read()
-        params_dict = {param: getattr(args, param) for param in ['a', 'b', 'c', 'd']}
+        params_dict = {'a': a, 'b': b, 'c': c, 'd': d}
 
-        dset_name = '{}_{:02d}'.format(args.stim_type, args.stim_idx)
+        # TODO: Need unique name across param vals
+        stim_str = '{}_{:02d}'.format(args.stim_type, args.stim_idx)
+        param_str = '{a}_{b}_{c}_{d}'.format(**params_dict)
+        dset_name = '{}__{}'.format(stim_str, param_str)
         dset = TimeSeries(name=dset_name, data=v, description=json.dumps(params_dict),
                           starting_time=0.0, rate=1.0/h.dt)
         nwb.add_acquisition(dset)
 
         io.write(nwb)
+        
     print("done.")
     
 
@@ -163,7 +168,7 @@ def main(args, a, b, c, d):
 
     # Save to nwb
     if args.outfile:
-        save_nwb(args, v)
+        save_nwb(args, v, a, b, c, d)
 
     # Plot
     plot(args, stim, u, v)
