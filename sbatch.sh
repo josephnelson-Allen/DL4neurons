@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -q debug
-#SBATCH -N 10
+#SBATCH -N 2
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -10,8 +10,9 @@
 #SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/%j/stdout.txt"
 #SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/%j/stderr.txt"
 
+mkdir runs/${SLURM_JOB_ID}
 OUTFILE=runs/${SLURM_JOB_ID}/data.nwb
 
 python run.py --outfile $OUTFILE --create
 
-srun --label -n 640 python param_sweep.py --outfile $OUTFILE
+srun --label -n 128 python param_sweep.py --outfile $OUTFILE
