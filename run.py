@@ -86,7 +86,8 @@ def save_nwb(args, v, a, b, c, d):
 
         # TODO: Need unique name across param vals
         stim_str = '{}_{:02d}'.format(args.stim_type, args.stim_idx)
-        param_str = '{a}_{b}_{c}_{d}'.format(**params_dict)
+        # param_str = '{a}_{b}_{c}_{d}'.format(**params_dict)
+        param_str = hash((a, b, c, d))
         dset_name = '{}__{}'.format(stim_str, param_str)
         dset = TimeSeries(name=dset_name, data=v, description=json.dumps(params_dict),
                           starting_time=0.0, rate=1.0/h.dt)
