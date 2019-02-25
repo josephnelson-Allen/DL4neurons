@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -q debug
-#SBATCH -N 2
+#SBATCH -N 1
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -16,16 +16,21 @@ mkdir runs/${SLURM_JOB_ID}
 OUTFILE=runs/${SLURM_JOB_ID}/izhi_sim_data.nwb
 
 ## Create the output file
-python run.py --outfile $OUTFILE --create
+srun -n 1 python run.py --outfile $OUTFILE --create
 
 declare -a arr=("ramp" "step" "noise")
 
-for stim_type in "${arr[@]}"
-do
-    for i in seq 0 7
-    do
-        srun --label -n 128 python param_sweep.py \
-             --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
-    done
-done
+# for stim_type in "${arr[@]}"
+# do
+#     for i in seq 0 7
+#     do
+#         srun --label -n 128 python param_sweep.py \
+#              --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
+#     done
+# done
+
+stim_type='step'
+i=7
+srun --label -n 64 python param_sweep.py \
+     --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
 
