@@ -28,7 +28,7 @@ class StimulusGenerator(object):
         n_post = int(self.postpulse / self.dt)
         n_tot = n_pre + n_pulse + n_post
 
-        stim = np.zeros(n_tot)
+        stim = np.zeros(n_tot, dtype=np.float64)
         stim[n_pre:n_pre+n_pulse] = self._pulse(n_pulse, **stim_args)
 
         return stim
@@ -44,21 +44,21 @@ class StimulusGenerator(object):
 
 class RampGenerator(StimulusGenerator):
     def _pulse(self, n_pulse, rampval=0.):
-        return np.linspace(start=0, stop=rampval, num=n_pulse)
+        return np.linspace(start=0, stop=rampval, num=n_pulse, dtype=np.float64)
 
     
 class NegRampGenerator(RampGenerator):
     def _pulse(self, n_pulse, rampval=0.):
-        return np.linspace(start=rampval, stop=0, num=n_pulse)
+        return np.linspace(start=rampval, stop=0, num=n_pulse, dtype=np.float64)
 
     
 class StepGenerator(StimulusGenerator):
     def _pulse(self, n_pulse, stepval):
-        return np.ones(n_pulse) * stepval
+        return np.ones(n_pulse, dtype=np.float64) * stepval
 
 class NoiseGenerator(StimulusGenerator):
     def _pulse(self, n_pulse, mean=0., sd=1., tau=TAU):
-        pulse = np.zeros(n_pulse)
+        pulse = np.zeros(n_pulse, dtype=np.float64)
         for i in range(1, n_pulse):
             diff = ((mean - pulse[i-1])*self.dt/tau
                     + sd*np.sqrt(2*self.dt/tau)*np.random.normal(0, 1))

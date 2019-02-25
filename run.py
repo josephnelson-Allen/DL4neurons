@@ -8,8 +8,8 @@ from datetime import datetime
 from neuron import h, gui
 import numpy as np
 import matplotlib.pyplot as plt
-#import h5py
-from pynwb import NWBFile, NWBHDF5IO, TimeSeries
+import h5py
+# from pynwb import NWBFile, NWBHDF5IO, TimeSeries
 
 from stimulus import stims, add_stims
 
@@ -40,13 +40,11 @@ def myadvance():
     h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
 
-    
-def get_params_mpi(nsamples=10000):
+NSAMPLES = 10000
+def get_paramsets(nsamples=NSAMPLES):
     """
-    Get the list of parameter sets for this MPI task
+    Return the full list of parameter values for each run
     """
-    assert mpi
-
     ndim = 4
     nsamples_per_dim = int(nsamples**(1./ndim))
 
@@ -59,14 +57,27 @@ def get_params_mpi(nsamples=10000):
     cc = np.linspace(-75, -55, nsamples_per_dim)
     dd = np.linspace(0, 20, nsamples_per_dim)
     
-    paramsets = list(itertools.product(aa, bb, cc, dd))
+    return list(itertools.product(aa, bb, cc, dd))
 
-    params_per_task = (len(paramsets) // n_tasks) + 1
+
+def get_mpi_idx(nsamples=NSAMPLES):
+    params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
-    stop = min(params_per_task * (rank + 1), len(paramsets))
-
+    stop = min(params_per_task * (rank + 1), nsamples)
     print("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
     print("This rank is processing param sets {} through {}".format(start, stop))
+
+    return start, stop
+
+
+def get_params_mpi(nsamples=NSAMPLES):
+    """
+    Get the list of parameter sets for this MPI task
+    """
+    assert mpi
+
+    paramsets = get_paramsets()
+    start, stop = get_mpi_idx()
 
     return paramsets[start:stop]
 
@@ -76,6 +87,50 @@ def get_stim(stim_type, i):
     return stims[stim_type][i]
 
 
+def create_h5(args, nsamples=NSAMPLES):
+    """
+    Run in serial mode
+    """
+    # TODO: tstop, rate, and other parameters
+    print("Creating h5 file and writing param values")
+
+    with h5py.File(args.outfile, 'w') as f:
+        # write params
+        shape_param = (nsamples,)
+        f.create_dataset('a', shape=shape_param, dtype=np.float64)
+        f.create_dataset('b', shape=shape_param, dtype=np.float64)
+        f.create_dataset('c', shape=shape_param, dtype=np.float64)
+        f.create_dataset('d', shape=shape_param, dtype=np.float64)
+        for i, (a, b, c, d) in enumerate(get_paramsets()):
+            f['a'][i] = a
+            f['b'][i] = b
+            f['c'][i] = c
+            f['d'][i] = d
+
+        # create stim and voltage datasets
+        ntimepts = int(h.tstop/h.dt)
+        shape_dset = (ntimepts, nsamples)
+        for stim_type, stim_list in stims.items():
+            for i, stim in enumerate(stim_list):
+                dset = '{}_{:02d}'.format(stim_type, i)
+                v_name = '{}_v'.format(dset)
+                stim_name = '{}_stim'.format(dset)
+                f.create_dataset(v_name, shape=shape_dset, dtype=np.float64)
+                f.create_dataset(stim_name, data=stim)
+        
+    print("Done.")
+
+    
+def save_h5(args, v, i):
+    dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
+    if comm:
+        kwargs = {'driver': 'mpio', 'comm': comm}
+    else:
+        kwargs = {}
+    with h5py.File(args.outfile, 'a', **kwargs) as f:
+        f[dset_name][:, i] = v
+        
+
 def save_nwb(args, v, a, b, c, d):
     # outfile must exist
     print("Saving nwb...")
@@ -84,9 +139,7 @@ def save_nwb(args, v, a, b, c, d):
         nwb = io.read()
         params_dict = {'a': a, 'b': b, 'c': c, 'd': d}
 
-        # TODO: Need unique name across param vals
         stim_str = '{}_{:02d}'.format(args.stim_type, args.stim_idx)
-        # param_str = '{a}_{b}_{c}_{d}'.format(**params_dict)
         param_str = hash((a, b, c, d))
         dset_name = '{}__{}'.format(stim_str, param_str)
         dset = TimeSeries(name=dset_name, data=v, description=json.dumps(params_dict),
@@ -114,13 +167,13 @@ def plot(args, stim, u, v):
         plt.show()
 
 
-def main(args, a, b, c, d):
+def main(args, i, a, b, c, d):
 
     if not any([args.plot_stim, args.plot_u, args.plot_v, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
     
-    start = datetime.now()
+    _start = datetime.now()
 
     # Simulation parameters
     h.tstop = args.tstop
@@ -161,15 +214,16 @@ def main(args, a, b, c, d):
 
     h.run()
 
-    print("Time to simulate: {}".format(datetime.now() - start))
+    print("Time to simulate: {}".format(datetime.now() - _start))
 
     # numpy-ify
     u = np.array(u)
     v = np.array(v)
 
-    # Save to nwb
+    # Save to disk
     if args.outfile:
-        save_nwb(args, v, a, b, c, d)
+        # save_nwb(args, v, a, b, c, d)
+        save_h5(args, v, i)
 
     # Plot
     plot(args, stim, u, v)
@@ -207,31 +261,33 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.create:
-        print("Creating and writing nwb file {}...".format(args.outfile))
-        nwb = NWBFile(
-            session_description='izhikevich simulation',
-            identifier='izhi',
-            session_start_time=datetime.now(),
-            file_create_date=datetime.now(),
-            experimenter='Vyassa Baratham',
-            experiment_description='izhikevich simulations for DL',
-            session_id='izhi',
-            institution='LBL/UCB',
-            lab='NSE Lab',
-            pharmacology='',
-            notes='',
-        )
-        add_stims(nwb)
-        with NWBHDF5IO(args.outfile, 'w') as io:
-            io.write(nwb)
-        print("Done.")
+        create_h5(args)
+        # print("Creating and writing nwb file {}...".format(args.outfile))
+        # nwb = NWBFile(
+        #     session_description='izhikevich simulation',
+        #     identifier='izhi',
+        #     session_start_time=datetime.now(),
+        #     file_create_date=datetime.now(),
+        #     experimenter='Vyassa Baratham',
+        #     experiment_description='izhikevich simulations for DL',
+        #     session_id='izhi',
+        #     institution='LBL/UCB',
+        #     lab='NSE Lab',
+        #     pharmacology='',
+        #     notes='',
+        # )
+        # add_stims(nwb)
+        # with NWBHDF5IO(args.outfile, 'w') as io:
+        #     io.write(nwb)
+        # print("Done.")
     else:
         if args.mpi:
             assert mpi
-            paramsets = get_params_mpi()
+            paramsets, start, stop = get_params_mpi()
         else:
             paramsets = [(args.a, args.b, args.c, args.d)]
+            start, stop = 0, 1
 
-        for a, b, c, d in paramsets:
+        for i, (a, b, c, d) in zip(range(start, stop), paramsets):
             print("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
-            main(args, a, b, c, d)
+            main(args, i, a, b, c, d)
