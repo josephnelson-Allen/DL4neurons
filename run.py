@@ -74,12 +74,10 @@ def get_params_mpi(nsamples=NSAMPLES):
     """
     Get the list of parameter sets for this MPI task
     """
-    assert mpi
-
     paramsets = get_paramsets()
     start, stop = get_mpi_idx()
 
-    return paramsets[start:stop]
+    return paramsets[start:stop], start, stop
 
 
 def get_stim(stim_type, i):
@@ -244,8 +242,8 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    parser.add_argument('--mpi', action='store_true', default=False,
-                        help="get values of a,b,c,d from parameters.py using MPI")
+    parser.add_argument('--param-sweep', action='store_true', default=False,
+                        help="run over all values of a,b,c,d")
     
     parser.add_argument('--tstop', type=int, default=152)
     parser.add_argument('--dt', type=float, default=.02)
@@ -281,8 +279,7 @@ if __name__ == '__main__':
         #     io.write(nwb)
         # print("Done.")
     else:
-        if args.mpi:
-            assert mpi
+        if args.param_sweep:
             paramsets, start, stop = get_params_mpi()
         else:
             paramsets = [(args.a, args.b, args.c, args.d)]

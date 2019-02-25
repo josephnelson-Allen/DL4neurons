@@ -25,7 +25,7 @@ do
     for i in seq 0 7
     do
         srun --label -n 128 python param_sweep.py \
-             --outfile $OUTFILE --stim-type $stim_type --stim-idx $i
+             --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --mpi
     done
 done
 
