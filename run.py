@@ -123,7 +123,7 @@ def create_h5(args, nsamples=NSAMPLES):
     log.info("Done.")
 
     
-def save_h5(args, v, i):
+def save_h5(args, buf, start, stop):
     log.info("saving into h5")
     dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
     if comm and n_tasks > 1:
@@ -132,10 +132,31 @@ def save_h5(args, v, i):
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.info("opened h5")
-        f[dset_name][:, i] = v[:-1]
+        f[dset_name][:, start:stop] = buf
         log.info("saved h5")
     log.info("closed h5")
         
+
+def create_nwb(args):
+    log.info("Creating and writing nwb file {}...".format(args.outfile))
+    nwb = NWBFile(
+        session_description='izhikevich simulation',
+        identifier='izhi',
+        session_start_time=datetime.now(),
+        file_create_date=datetime.now(),
+        experimenter='Vyassa Baratham',
+        experiment_description='izhikevich simulations for DL',
+        session_id='izhi',
+        institution='LBL/UCB',
+        lab='NSE Lab',
+        pharmacology='',
+        notes='',
+    )
+    add_stims(nwb)
+    with NWBHDF5IO(args.outfile, 'w') as io:
+        io.write(nwb)
+    log.info("Done.")
+
 
 def save_nwb(args, v, a, b, c, d):
     # outfile must exist
@@ -173,12 +194,7 @@ def plot(args, stim, u, v):
         plt.show()
 
 
-def main(args, i, a, b, c, d):
-
-    if not any([args.plot_stim, args.plot_u, args.plot_v, args.outfile, args.force]):
-        raise ValueError("You didn't choose to plot or save anything. "
-                         + "Pass --force to continue anyways")
-    
+def simulate(args, a, b, c, d):
     _start = datetime.now()
 
     # Simulation parameters
@@ -226,13 +242,35 @@ def main(args, i, a, b, c, d):
     u = np.array(u)
     v = np.array(v)
 
+    # Plot
+    plot(args, stim, u, v)
+
+    return u, v
+
+def main(args):
+
+    if not any([args.plot_stim, args.plot_u, args.plot_v, args.outfile, args.force]):
+        raise ValueError("You didn't choose to plot or save anything. "
+                         + "Pass --force to continue anyways")
+
+    if args.param_sweep:
+        paramsets, start, stop = get_params_mpi()
+    else:
+        paramsets = [(args.a, args.b, args.c, args.d)]
+        start, stop = 0, 1
+        ntimepts = int(args.tstop/args.dt)
+        buf = np.zeros(shape=(ntimepts, stop-start), dtype=np.float64)
+
+    # for i, (a, b, c, d) in zip(range(start, stop), paramsets):
+    for i, (a, b, c, d) in enumerate(paramsets):
+        log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
+        u, v = simulate(args, a, b, c, d)
+        buf[:, i] = v[:-1]
+            
     # Save to disk
     if args.outfile:
         # save_nwb(args, v, a, b, c, d)
-        save_h5(args, v, i)
-
-    # Plot
-    plot(args, stim, u, v)
+        save_h5(args, buf, start, stop)
 
 
 if __name__ == '__main__':
@@ -268,31 +306,6 @@ if __name__ == '__main__':
 
     if args.create:
         create_h5(args)
-        # log.info("Creating and writing nwb file {}...".format(args.outfile))
-        # nwb = NWBFile(
-        #     session_description='izhikevich simulation',
-        #     identifier='izhi',
-        #     session_start_time=datetime.now(),
-        #     file_create_date=datetime.now(),
-        #     experimenter='Vyassa Baratham',
-        #     experiment_description='izhikevich simulations for DL',
-        #     session_id='izhi',
-        #     institution='LBL/UCB',
-        #     lab='NSE Lab',
-        #     pharmacology='',
-        #     notes='',
-        # )
-        # add_stims(nwb)
-        # with NWBHDF5IO(args.outfile, 'w') as io:
-        #     io.write(nwb)
-        # log.info("Done.")
+        # create_nwb(args)
     else:
-        if args.param_sweep:
-            paramsets, start, stop = get_params_mpi()
-        else:
-            paramsets = [(args.a, args.b, args.c, args.d)]
-            start, stop = 0, 1
-
-        for i, (a, b, c, d) in zip(range(start, stop), paramsets):
-            log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
-            main(args, i, a, b, c, d)
+        main(args)
