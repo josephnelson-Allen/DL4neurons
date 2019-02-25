@@ -107,7 +107,7 @@ def create_h5(args, nsamples=NSAMPLES):
             f['d'][i] = d
 
         # create stim and voltage datasets
-        ntimepts = int(h.tstop/h.dt)
+        ntimepts = int(args.tstop/args.dt)
         shape_dset = (ntimepts, nsamples)
         for stim_type, stim_list in stims.items():
             for i, stim in enumerate(stim_list):
