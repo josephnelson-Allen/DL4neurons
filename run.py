@@ -109,10 +109,6 @@ def create_h5(args, nsamples=NSAMPLES):
         # create stim and voltage datasets
         ntimepts = int(args.tstop/args.dt)
         shape_dset = (ntimepts, nsamples)
-        print("ntimepts = {}".format(ntimepts))
-        print("args.tstop = {}".format(args.tstop))
-        print("args.dt = {}".format(args.dt))
-        print("shape_dset = {}".format(shape_dset))
         for stim_type, stim_list in stims.items():
             for i, stim in enumerate(stim_list):
                 dset = '{}_{:02d}'.format(stim_type, i)
@@ -120,7 +116,7 @@ def create_h5(args, nsamples=NSAMPLES):
                 stim_name = '{}_stim'.format(dset)
                 f.create_dataset(v_name, shape=shape_dset, dtype=np.float64)
                 f.create_dataset(stim_name, data=stim)
-        
+
     print("Done.")
 
     
@@ -131,7 +127,7 @@ def save_h5(args, v, i):
     else:
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
-        f[dset_name][:, i] = v
+        f[dset_name][:, i] = v[:-1]
         
 
 def save_nwb(args, v, a, b, c, d):
