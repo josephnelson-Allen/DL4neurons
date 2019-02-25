@@ -5,7 +5,6 @@ import itertools
 from argparse import ArgumentParser
 from datetime import datetime
 
-from neuron import h, gui
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -24,6 +23,8 @@ except:
     comm = None
     rank = 0
     n_tasks = 1
+    
+from neuron import h, gui
 
 """
 Requires izhi2003a.mod from:
