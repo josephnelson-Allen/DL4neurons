@@ -31,6 +31,6 @@ declare -a arr=("ramp" "step" "noise")
 
 stim_type='step'
 i=7
-srun --label -n 64 python param_sweep.py \
+srun --label -n 64 python run.py \
      --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
 
