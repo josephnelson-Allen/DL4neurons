@@ -1,7 +1,17 @@
 from __future__ import print_function
 
+"""
+Requires izhi2003a.mod from:
+https://senselab.med.yale.edu/ModelDB/showmodel.cshtml?model=39948
+
+Run this script from the same directory as the compiled izhi2003a.mod
+
+NB: on OSX, run using `pythonw` (first, `conda install python.app`) for plotting to work
+"""
+
 import json
 import itertools
+import logging as log
 from argparse import ArgumentParser
 from datetime import datetime
 
@@ -26,14 +36,7 @@ except:
     
 from neuron import h, gui
 
-"""
-Requires izhi2003a.mod from:
-https://senselab.med.yale.edu/ModelDB/showmodel.cshtml?model=39948
-
-Run this script from the same directory as the compiled izhi2003a.mod
-
-NB: on OSX, run using `pythonw` (first, `conda install python.app`) for plotting to work
-"""
+log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
     
 # redefine NEURON's advance() (runs one timestep) to update the current
 h('proc advance() {nrnpython("myadvance()")}')
@@ -49,7 +52,7 @@ def get_paramsets(nsamples=NSAMPLES):
     ndim = 4
     nsamples_per_dim = int(nsamples**(1./ndim))
 
-    print("For {} points in {}-D parameter space, we take {} samples per dimension".format(
+    log.info("For {} points in {}-D parameter space, we take {} samples per dimension".format(
         nsamples, ndim, nsamples_per_dim
     ))
 
@@ -65,8 +68,8 @@ def get_mpi_idx(nsamples=NSAMPLES):
     params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
     stop = min(params_per_task * (rank + 1), nsamples)
-    print("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
-    print("This rank is processing param sets {} through {}".format(start, stop))
+    log.info("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
+    log.info("This rank is processing param sets {} through {}".format(start, stop))
 
     return start, stop
 
@@ -91,7 +94,7 @@ def create_h5(args, nsamples=NSAMPLES):
     Run in serial mode
     """
     # TODO: tstop, rate, and other parameters
-    print("Creating h5 file and writing param values")
+    log.info("Creating h5 file and writing param values")
 
     with h5py.File(args.outfile, 'w') as f:
         # write params
@@ -117,26 +120,26 @@ def create_h5(args, nsamples=NSAMPLES):
                 f.create_dataset(v_name, shape=shape_dset, dtype=np.float64)
                 f.create_dataset(stim_name, data=stim)
 
-    print("Done.")
+    log.info("Done.")
 
     
 def save_h5(args, v, i):
-    print("saving into h5")
+    log.info("saving into h5")
     dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
-    if comm:
+    if comm and n_tasks > 1:
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
-        print("opened h5")
+        log.info("opened h5")
         f[dset_name][:, i] = v[:-1]
-        print("saved h5")
-    print("closed h5")
+        log.info("saved h5")
+    log.info("closed h5")
         
 
 def save_nwb(args, v, a, b, c, d):
     # outfile must exist
-    print("Saving nwb...")
+    log.info("Saving nwb...")
     
     with NWBHDF5IO(args.outfile, 'a', comm=comm) as io:
         nwb = io.read()
@@ -151,7 +154,7 @@ def save_nwb(args, v, a, b, c, d):
 
         io.write(nwb)
         
-    print("done.")
+    log.info("done.")
     
 
 def plot(args, stim, u, v):
@@ -212,12 +215,12 @@ def main(args, i, a, b, c, d):
     v.record(cell._ref_V)
 
     # Run
-    print("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
-    print("({} total timesteps)".format(ntimepts))
+    log.info("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
+    log.info("({} total timesteps)".format(ntimepts))
 
     h.run()
 
-    print("Time to simulate: {}".format(datetime.now() - _start))
+    log.info("Time to simulate: {}".format(datetime.now() - _start))
 
     # numpy-ify
     u = np.array(u)
@@ -265,7 +268,7 @@ if __name__ == '__main__':
 
     if args.create:
         create_h5(args)
-        # print("Creating and writing nwb file {}...".format(args.outfile))
+        # log.info("Creating and writing nwb file {}...".format(args.outfile))
         # nwb = NWBFile(
         #     session_description='izhikevich simulation',
         #     identifier='izhi',
@@ -282,7 +285,7 @@ if __name__ == '__main__':
         # add_stims(nwb)
         # with NWBHDF5IO(args.outfile, 'w') as io:
         #     io.write(nwb)
-        # print("Done.")
+        # log.info("Done.")
     else:
         if args.param_sweep:
             paramsets, start, stop = get_params_mpi()
@@ -291,5 +294,5 @@ if __name__ == '__main__':
             start, stop = 0, 1
 
         for i, (a, b, c, d) in zip(range(start, stop), paramsets):
-            print("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
+            log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
             main(args, i, a, b, c, d)
