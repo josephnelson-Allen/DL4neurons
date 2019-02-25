@@ -12,8 +12,9 @@
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
-mkdir runs/${SLURM_JOB_ID}
-OUTFILE=runs/${SLURM_JOB_ID}/izhi_sim_data.nwb
+RUNDIR=runs/${SLURM_JOB_ID}
+mkdir $RUNDIR
+OUTFILE=$RUNDIR/izhi_sim_data.nwb
 
 ## Create the output file
 srun -n 1 python run.py --outfile $OUTFILE --create

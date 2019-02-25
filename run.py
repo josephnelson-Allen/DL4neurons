@@ -121,13 +121,17 @@ def create_h5(args, nsamples=NSAMPLES):
 
     
 def save_h5(args, v, i):
+    print("saving into h5")
     dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
     if comm:
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
+        print("opened h5")
         f[dset_name][:, i] = v[:-1]
+        print("saved h5")
+    print("closed h5")
         
 
 def save_nwb(args, v, a, b, c, d):
