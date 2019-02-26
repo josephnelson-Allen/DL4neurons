@@ -28,7 +28,7 @@ do
         echo "STIM" $stim_type $i
         echo "OUTFILE" $OUTFILE
 
-        args=--outfile $OUTFILE --stim-type $stim_type --stim-idx $i
+        args="--outfile $OUTFILE --stim-type $stim_type --stim-idx $i"
         
         ## Create the output file
         srun -n 1 python run.py $args --create
