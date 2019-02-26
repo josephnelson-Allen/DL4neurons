@@ -27,13 +27,14 @@ do
         ## Report the stim type/idx
         echo "STIM" $stim_type $i
         echo "OUTFILE" $OUTFILE
+
+        args=--outfile $OUTFILE --stim-type $stim_type --stim-idx $i
         
         ## Create the output file
-        srun -n 1 python run.py --outfile $OUTFILE --create --stim-type $stim_type --stim-idx $i
+        srun -n 1 python run.py $args --create
 
         ## Run the simulation
-        srun --label -n 64 python run.py \
-             --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
+        srun --label -n 64 python run.py $args --param-sweep
     done
 done
 
