@@ -23,8 +23,9 @@ declare -a arr=("ramp" "step" "noise")
 
 for stim_type in "${arr[@]}"
 do
-    for i in seq 0 7
+    for i in `seq 0 7`
     do
+        echo "STIM" $stim_type $i
         srun --label -n 64 python param_sweep.py \
              --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
     done
