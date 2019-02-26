@@ -258,8 +258,8 @@ def main(args):
     else:
         paramsets = [(args.a, args.b, args.c, args.d)]
         start, stop = 0, 1
-        ntimepts = int(args.tstop/args.dt)
         
+    ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(ntimepts, stop-start), dtype=np.float64)
 
     # for i, (a, b, c, d) in zip(range(start, stop), paramsets):
