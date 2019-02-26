@@ -14,18 +14,24 @@ cd /global/cscratch1/sd/vbaratha/izhi
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
-OUTFILE=$RUNDIR/izhi_sim_data.nwb
 
-## Create the output file
-srun -n 1 python run.py --outfile $OUTFILE --create
 
 declare -a arr=("ramp" "step" "noise")
 
 for stim_type in "${arr[@]}"
 do
-    for i in `seq 0 7`
+    for i in {00, 07}
     do
+        OUTFILE=$RUNDIR/izhi_${stim_type}_${i}.h5
+        
+        ## Report the stim type/idx
         echo "STIM" $stim_type $i
+        echo "OUTFILE" $OUTFILE
+        
+        ## Create the output file
+        srun -n 1 python run.py --outfile $OUTFILE --create --stim-type $stim_type --stim-idx $i
+
+        ## Run the simulation
         srun --label -n 64 python param_sweep.py \
              --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
     done
