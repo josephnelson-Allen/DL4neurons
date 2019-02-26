@@ -20,7 +20,7 @@ declare -a arr=("ramp" "step" "noise")
 
 for stim_type in "${arr[@]}"
 do
-    for i in {00, 07}
+    for i in {00..07}
     do
         OUTFILE=$RUNDIR/izhi_${stim_type}_${i}.h5
         
