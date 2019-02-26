@@ -25,7 +25,7 @@ for stim_type in "${arr[@]}"
 do
     for i in seq 0 7
     do
-        srun --label -n 128 python param_sweep.py \
+        srun --label -n 64 python param_sweep.py \
              --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
     done
 done
