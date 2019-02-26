@@ -100,6 +100,7 @@ def create_h5(args, nsamples=NSAMPLES):
         ndim = 4
         f.create_dataset('phys_par', shape=(ndim, nsamples))
         for i, (a, b, c, d) in enumerate(get_paramsets()):
+            # TODO: Write 'norm_par', the normalized parameters
             f['phys_par'][:, i] = np.array([a, b, c, d], dtype=np.float64)
 
         # create stim and voltage datasets

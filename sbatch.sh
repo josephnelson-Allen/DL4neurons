@@ -32,7 +32,7 @@ do
         srun -n 1 python run.py --outfile $OUTFILE --create --stim-type $stim_type --stim-idx $i
 
         ## Run the simulation
-        srun --label -n 64 python param_sweep.py \
+        srun --label -n 64 python run.py \
              --outfile $OUTFILE --stim-type $stim_type --stim-idx $i --param-sweep
     done
 done
