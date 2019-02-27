@@ -98,18 +98,25 @@ def create_h5(args, nsamples=NSAMPLES):
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = 4
-        f.create_dataset('phys_par', shape=(ndim, nsamples))
+        f.create_dataset('phys_par', shape=(nsamples, ndim))
         for i, (a, b, c, d) in enumerate(get_paramsets()):
             # TODO: Write 'norm_par', the normalized parameters
-            f['phys_par'][:, i] = np.array([a, b, c, d], dtype=np.float64)
+            f['phys_par'][i, :] = np.array([a, b, c, d], dtype=np.float64)
+        par = f['phys_par']
+        mins = np.min(par, axis=0) # minimum value of each param
+        mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as par
+        ranges = np.ptp(par, axis=0) # range of values for each parmaeter
+        ranges = np.tile(ranges, (nsamples, 1))
+        minmax = 4
+        norm_par = minmax * ( (par - mins)/ranges ) - minmax
+        f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
 
         # create stim and voltage datasets
         ntimepts = int(args.tstop/args.dt)
         shape_dset = (nsamples, ntimepts)
-        for stim_type, stim_list in stims.items():
-            for i, stim in enumerate(stim_list):
-                f.create_dataset('voltages', shape=shape_dset, dtype=np.float64)
-                f.create_dataset('stim', data=stim)
+        stim = stims[args.stim_type][args.stim_idx]
+        f.create_dataset('voltages', shape=shape_dset, dtype=np.float64)
+        f.create_dataset('stim', data=stim)
 
     log.info("Done.")
 
