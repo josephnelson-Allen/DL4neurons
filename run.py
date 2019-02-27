@@ -36,7 +36,7 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
+log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
     
 # redefine NEURON's advance() (runs one timestep) to update the current
 h('proc advance() {nrnpython("myadvance()")}')
@@ -108,7 +108,7 @@ def create_h5(args, nsamples=NSAMPLES):
         ranges = np.ptp(par, axis=0) # range of values for each parmaeter
         ranges = np.tile(ranges, (nsamples, 1))
         minmax = 4
-        norm_par = minmax * ( (par - mins)/ranges ) - minmax
+        norm_par = 2*minmax * ( (par - mins)/ranges ) - minmax
         f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
 
         # create stim and voltage datasets
