@@ -100,7 +100,6 @@ def create_h5(args, nsamples=NSAMPLES):
         ndim = 4
         f.create_dataset('phys_par', shape=(nsamples, ndim))
         for i, (a, b, c, d) in enumerate(get_paramsets()):
-            # TODO: Write 'norm_par', the normalized parameters
             f['phys_par'][i, :] = np.array([a, b, c, d], dtype=np.float64)
         par = f['phys_par']
         mins = np.min(par, axis=0) # minimum value of each param
@@ -113,10 +112,8 @@ def create_h5(args, nsamples=NSAMPLES):
 
         # create stim and voltage datasets
         ntimepts = int(args.tstop/args.dt)
-        shape_dset = (nsamples, ntimepts)
-        stim = stims[args.stim_type][args.stim_idx]
-        f.create_dataset('voltages', shape=shape_dset, dtype=np.float64)
-        f.create_dataset('stim', data=stim)
+        f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
+        f.create_dataset('stim', data=stims[args.stim_type][args.stim_idx])
 
     log.info("Done.")
 
