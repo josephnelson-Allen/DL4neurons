@@ -16,9 +16,7 @@ RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
 
 
-declare -a arr=("ramp" "step" "noise")
-
-for stim_type in "${arr[@]}"
+for stim_type in "ramp" "step" "noise"
 do
     for i in {00..07}
     do
