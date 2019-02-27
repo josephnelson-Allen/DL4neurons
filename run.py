@@ -36,7 +36,7 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
+log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
     
 # redefine NEURON's advance() (runs one timestep) to update the current
 h('proc advance() {nrnpython("myadvance()")}')
@@ -95,44 +95,42 @@ def create_h5(args, nsamples=NSAMPLES):
     """
     # TODO: tstop, rate, and other parameters
     log.info("Creating h5 file and writing param values")
-
     with h5py.File(args.outfile, 'w') as f:
         # write params
-        shape_param = (nsamples,)
-        f.create_dataset('a', shape=shape_param, dtype=np.float64)
-        f.create_dataset('b', shape=shape_param, dtype=np.float64)
-        f.create_dataset('c', shape=shape_param, dtype=np.float64)
-        f.create_dataset('d', shape=shape_param, dtype=np.float64)
+        ndim = 4
+        f.create_dataset('phys_par', shape=(nsamples, ndim))
         for i, (a, b, c, d) in enumerate(get_paramsets()):
-            f['a'][i] = a
-            f['b'][i] = b
-            f['c'][i] = c
-            f['d'][i] = d
+            # TODO: Write 'norm_par', the normalized parameters
+            f['phys_par'][i, :] = np.array([a, b, c, d], dtype=np.float64)
+        par = f['phys_par']
+        mins = np.min(par, axis=0) # minimum value of each param
+        mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as par
+        ranges = np.ptp(par, axis=0) # range of values for each parmaeter
+        ranges = np.tile(ranges, (nsamples, 1))
+        minmax = 4
+        norm_par = 2*minmax * ( (par - mins)/ranges ) - minmax
+        f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
 
         # create stim and voltage datasets
         ntimepts = int(args.tstop/args.dt)
-        shape_dset = (ntimepts, nsamples)
-        for stim_type, stim_list in stims.items():
-            for i, stim in enumerate(stim_list):
-                dset = '{}_{:02d}'.format(stim_type, i)
-                v_name = '{}_v'.format(dset)
-                stim_name = '{}_stim'.format(dset)
-                f.create_dataset(v_name, shape=shape_dset, dtype=np.float64)
-                f.create_dataset(stim_name, data=stim)
+        shape_dset = (nsamples, ntimepts)
+        stim = stims[args.stim_type][args.stim_idx]
+        f.create_dataset('voltages', shape=shape_dset, dtype=np.float64)
+        f.create_dataset('stim', data=stim)
 
     log.info("Done.")
 
     
 def save_h5(args, buf, start, stop):
     log.info("saving into h5")
-    dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
+    # dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
     if comm and n_tasks > 1:
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.info("opened h5")
-        f[dset_name][:, start:stop] = buf
+        f['voltages'][start:stop, :] = buf
         log.info("saved h5")
     log.info("closed h5")
         
@@ -260,13 +258,13 @@ def main(args):
         start, stop = 0, 1
         
     ntimepts = int(args.tstop/args.dt)
-    buf = np.zeros(shape=(ntimepts, stop-start), dtype=np.float64)
+    buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
     # for i, (a, b, c, d) in zip(range(start, stop), paramsets):
     for i, (a, b, c, d) in enumerate(paramsets):
         log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
         u, v = simulate(args, a, b, c, d)
-        buf[:, i] = v[:-1]
+        buf[i, :] = v[:-1]
             
     # Save to disk
     if args.outfile:
