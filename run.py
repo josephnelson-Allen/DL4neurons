@@ -56,10 +56,10 @@ def get_paramsets(nsamples=NSAMPLES):
         nsamples, ndim, nsamples_per_dim
     ))
 
-    aa = np.linspace(0, 0.05, nsamples_per_dim)
-    bb = np.linspace(0, 2.0, nsamples_per_dim)
-    cc = np.linspace(-75, -55, nsamples_per_dim)
-    dd = np.linspace(0, 20, nsamples_per_dim)
+    aa = np.linspace(0.01, 0.1, nsamples_per_dim) # linearly spaced?
+    bb = np.linspace(0.1, 0.4, nsamples_per_dim)
+    cc = np.linspace(-80, -50, nsamples_per_dim)
+    dd = np.linspace(0.5, 10, nsamples_per_dim)
     
     return list(itertools.product(aa, bb, cc, dd))
 

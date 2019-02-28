@@ -77,10 +77,10 @@ class ChirpGenerator(StimulusGenerator):
 
 n_stims = 8
 
-rampvals = [0.3 + 0.1*i for i in range(n_stims)]
-stepvals = [0.2 + 0.007*i for i in range(n_stims)]
-noise_means = [0.26 + 0.015*i for i in range(n_stims//2)]
-sds = [0.002*(i + 1) for i in range(n_stims//2)]
+rampvals = [4.0 + 1.0*i for i in range(n_stims)]
+stepvals = [4.0 + 0.5*i for i in range(n_stims)]
+noise_means = [4.0 + 0.5*i for i in range(n_stims)]
+sds = [0.2*(i + 1) for i in range(n_stims)]
 
 stims = {
     'ramp': [RampGenerator().generate(rampval=val) for val in rampvals],
