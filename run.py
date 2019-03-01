@@ -123,16 +123,18 @@ def create_h5(args, nsamples=NSAMPLES):
         f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
 
         # create stim and voltage datasets
+        stim = get_stim(args)
         ntimepts = int(args.tstop/args.dt)
+        qa = np.ones(len(stim), dtype=np.float64)
         f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
-        f.create_dataset('stim', data=stims[args.stim_type][args.stim_idx])
+        f.create_dataset('stim', data=stim)
+        f.create_dataset('qa', data=qa)
 
     log.info("Done.")
 
     
 def save_h5(args, buf, start, stop):
     log.info("saving into h5")
-    # dset_name = '{}_{:02d}_v'.format(args.stim_type, args.stim_idx)
     if comm and n_tasks > 1:
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
