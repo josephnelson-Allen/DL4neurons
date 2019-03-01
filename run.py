@@ -47,6 +47,11 @@ def myadvance():
         h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
 
+range_a = (0.01, 0.1)
+range_b = (0.1, 0.4)
+range_c = (-80, -50)
+range_d = (0.5, 10)
+
 NSAMPLES = 10000
 def get_paramsets(nsamples=NSAMPLES):
     """
@@ -67,6 +72,22 @@ def get_paramsets(nsamples=NSAMPLES):
     return list(itertools.product(aa, bb, cc, dd))
 
 
+def _rangeify(data, _range):
+    return data * (_range[1] - _range[0]) + _range[0]
+
+
+def get_random_params(n=1):
+    ndim = 4
+    
+    rand = np.random.rand(n, ndim)
+    rand[:, 0] = _rangeify(rand[:, 0], range_a)
+    rand[:, 1] = _rangeify(rand[:, 1], range_b)
+    rand[:, 2] = _rangeify(rand[:, 2], range_c)
+    rand[:, 3] = _rangeify(rand[:, 3], range_d)
+
+    return rand
+
+
 def get_mpi_idx(nsamples=NSAMPLES):
     params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
@@ -81,8 +102,8 @@ def get_params_mpi(nsamples=NSAMPLES):
     """
     Get the list of parameter sets for this MPI task
     """
-    paramsets = get_paramsets()
-    start, stop = get_mpi_idx()
+    paramsets = get_paramsets(nsamples=nsamples)
+    start, stop = get_mpi_idx(nsamples=nsamples)
 
     return paramsets[start:stop], start, stop
 
@@ -116,16 +137,17 @@ def create_h5(args, nsamples=NSAMPLES):
         # write params
         ndim = 4
         f.create_dataset('phys_par', shape=(nsamples, ndim))
-        for i, (a, b, c, d) in enumerate(get_paramsets()):
-            f['phys_par'][i, :] = np.array([a, b, c, d], dtype=np.float64)
-        par = f['phys_par']
-        mins = np.min(par, axis=0) # minimum value of each param
-        mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as par
-        ranges = np.ptp(par, axis=0) # range of values for each parmaeter
-        ranges = np.tile(ranges, (nsamples, 1))
-        minmax = 4
-        norm_par = 2*minmax * ( (par - mins)/ranges ) - minmax
-        f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
+        f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
+        # for i, (a, b, c, d) in enumerate(get_paramsets()):
+        #     f['phys_par'][i, :] = np.array([a, b, c, d], dtype=np.float64)
+        # par = f['phys_par']
+        # mins = np.min(par, axis=0) # minimum value of each param
+        # mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as par
+        # ranges = np.ptp(par, axis=0) # range of values for each parmaeter
+        # ranges = np.tile(ranges, (nsamples, 1))
+        # minmax = 4
+        # norm_par = 2*minmax * ( (par - mins)/ranges ) - minmax
+        # f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
 
         # create stim and voltage datasets
         stim = get_stim(args)
@@ -137,8 +159,20 @@ def create_h5(args, nsamples=NSAMPLES):
 
     log.info("Done.")
 
+
+def _normalize(data, minmax=4):
+    nsamples = data.shape[0]
+    # mins = np.min(data, axis=0) # minimum value of each param
+    mins = np.array([tup[0] for tup in [range_a, range_b , range_c, range_d]])
+    mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
+    # ranges = np.ptp(data, axis=0) # range of values for each parameter
+    ranges = np.array([tup[1]-tup[0] for tup in [range_a, range_b, range_c, range_d]])
+    ranges = np.tile(ranges, (nsamples, 1))
+
+    return 2*minmax * ( (data - mins)/ranges ) - minmax
+
     
-def save_h5(args, buf, start, stop):
+def save_h5(args, buf, params, start, stop):
     log.info("saving into h5")
     if comm and n_tasks > 1:
         kwargs = {'driver': 'mpio', 'comm': comm}
@@ -146,6 +180,8 @@ def save_h5(args, buf, start, stop):
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.info("opened h5")
+        f['phys_par'][start:stop, :] = params
+        f['norm_par'][start:stop, :] = _normalize(params)
         f['voltages'][start:stop, :] = buf
         log.info("saved h5")
     log.info("closed h5")
@@ -196,7 +232,7 @@ def plot(args, stim, u, v):
     t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
 
     if args.plot_stim:
-        plt.plot(t_axis, stim)
+        plt.plot(t_axis, stim[:len(v)-1])
         plt.show()
     
     if args.plot_v:
@@ -267,14 +303,13 @@ def main(args):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
-    if args.param_sweep:
-        paramsets, start, stop = get_params_mpi()
+    if args.num > 1:
+        start, stop = get_mpi_idx(args.num)
+        paramsets = get_random_params(n=stop-start)
     else:
-        paramsets = [(args.a, args.b, args.c, args.d)]
-        start, stop = 0, 1
+        paramsets = np.atleast_2d(np.array([args.a, args.b, args.c, args.d]))
+        start, stop = 0, (args.num or 1)
 
-    args.tstop += 2 * args.silence
-        
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
@@ -283,11 +318,11 @@ def main(args):
         log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
         u, v = simulate(args, a, b, c, d)
         buf[i, :] = v[:-1]
-            
+
     # Save to disk
     if args.outfile:
         # save_nwb(args, v, a, b, c, d)
-        save_h5(args, buf, start, stop)
+        save_h5(args, buf, paramsets, start, stop)
 
 
 if __name__ == '__main__':
@@ -305,8 +340,10 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    parser.add_argument('--param-sweep', action='store_true', default=False,
-                        help="run over all values of a,b,c,d")
+    # parser.add_argument('--param-sweep', action='store_true', default=False,
+    #                     help="run over all values of a,b,c,d")
+    parser.add_argument('--num', type=int, default=None, required=False,
+                        help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
     
     parser.add_argument('--tstop', type=int, default=152)
     parser.add_argument('--dt', type=float, default=.02)
@@ -325,8 +362,10 @@ if __name__ == '__main__':
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
     args = parser.parse_args()
 
+    args.tstop += 2 * args.silence
+        
     if args.create:
-        create_h5(args)
+        create_h5(args, nsamples=(args.num or NSAMPLES))
         # create_nwb(args)
     else:
         main(args)

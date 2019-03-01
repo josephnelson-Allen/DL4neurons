@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q regular
+#SBATCH -q debug
 #SBATCH -N 1
-#SBATCH -t 01:00:00
+#SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
@@ -14,23 +14,25 @@ cd /global/cscratch1/sd/vbaratha/izhi
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
+DSET_NAME=izhi_v2
+NSAMPLES=1000
 
 
 for stim in $(ls stims)
 do
-    OUTFILE=$RUNDIR/izhi_${stim}.h5
+    OUTFILE=$RUNDIR/${DSET_NAME}_${stim}.h5
     
     ## Report the stim name
     echo "STIM" $stim
     echo "OUTFILE" $OUTFILE
 
-    args="--outfile $OUTFILE --stim-file stims/$stim"
+    args="--outfile $OUTFILE --stim-file stims/$stim --num $NSAMPLES"
 
     ## Create the output file
     srun -n 1 python run.py $args --create
 
     ## Run the simulation
-    srun --label -n 64 python run.py $args --param-sweep
+    srun --label -n 64 python run.py $args
 done
 
 
