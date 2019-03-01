@@ -16,25 +16,43 @@ RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
 
 
-for stim_type in "ramp" "step" "noise"
+for stim in $(ls stims)
 do
-    for i in {00..07}
-    do
-        OUTFILE=$RUNDIR/izhi_${stim_type}_${i}.h5
-        
-        ## Report the stim type/idx
-        echo "STIM" $stim_type $i
-        echo "OUTFILE" $OUTFILE
+    OUTFILE=$RUNDIR/izhi_${stim}.h5
+    
+    ## Report the stim type/idx
+    echo "STIM" $stim
+    echo "OUTFILE" $OUTFILE
 
-        args="--outfile $OUTFILE --stim-type $stim_type --stim-idx $i"
-        
-        ## Create the output file
-        srun -n 1 python run.py $args --create
+    args="--outfile $OUTFILE --stim-file $stim"
 
-        ## Run the simulation
-        srun --label -n 64 python run.py $args --param-sweep
-    done
+    ## Create the output file
+    srun -n 1 python run.py $args --create
+
+    ## Run the simulation
+    srun --label -n 64 python run.py $args --param-sweep
 done
+
+
+# for stim_type in "ramp" "step" "noise"
+# do
+#     for i in {00..07}
+#     do
+#         OUTFILE=$RUNDIR/izhi_${stim_type}_${i}.h5
+        
+#         ## Report the stim type/idx
+#         echo "STIM" $stim_type $i
+#         echo "OUTFILE" $OUTFILE
+
+#         args="--outfile $OUTFILE --stim-type $stim_type --stim-idx $i"
+        
+#         ## Create the output file
+#         srun -n 1 python run.py $args --create
+
+#         ## Run the simulation
+#         srun --label -n 64 python run.py $args --param-sweep
+#     done
+# done
 
 # stim_type='step'
 # i=7

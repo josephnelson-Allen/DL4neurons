@@ -9,6 +9,7 @@ Run this script from the same directory as the compiled izhi2003a.mod
 NB: on OSX, run using `pythonw` (first, `conda install python.app`) for plotting to work
 """
 
+import os
 import json
 import itertools
 import logging as log
@@ -84,9 +85,20 @@ def get_params_mpi(nsamples=NSAMPLES):
     return paramsets[start:stop], start, stop
 
 
-def get_stim(stim_type, i):
+multiplier = {
+    'Ramp_0p5.csv': 30.0,
+    'Step_0p2.csv': 30.0,
+    'chirp_05.csv': 10.0,
+    'chirp_damp.csv': 15.0,
+    'he_1i_1.csv': 20.0,
+}
+def get_stim(args):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
-    return stims[stim_type][i]
+    if args.stim_file:
+        stim_fn = os.path.basename(args.stim_file)
+        return np.genfromtxt(args.stim_file) * multiplier[stim_fn]
+    else:
+        return stims[args.stim_type][args.stim_idx]
 
 
 def create_h5(args, nsamples=NSAMPLES):
@@ -210,7 +222,7 @@ def simulate(args, a, b, c, d):
     cell.d = d
 
     # Define the stimulus
-    stim = get_stim(args.stim_type, args.stim_idx)
+    stim = get_stim(args)
 
     # Make the stimulus and cell objects accessible from hoc
     h('objref stim')
@@ -297,7 +309,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--stim-type', type=str, default='ramp')
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
-
+    parser.add_argument('--stim-file', type=str, required=False, default=None,
+                        help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
     args = parser.parse_args()
 
     if args.create:
