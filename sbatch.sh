@@ -20,11 +20,11 @@ for stim in $(ls stims)
 do
     OUTFILE=$RUNDIR/izhi_${stim}.h5
     
-    ## Report the stim type/idx
+    ## Report the stim name
     echo "STIM" $stim
     echo "OUTFILE" $OUTFILE
 
-    args="--outfile $OUTFILE --stim-file $stim"
+    args="--outfile $OUTFILE --stim-file stims/$stim"
 
     ## Create the output file
     srun -n 1 python run.py $args --create
