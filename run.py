@@ -194,7 +194,6 @@ def save_nwb(args, v, a, b, c, d):
 
 def plot(args, stim, u, v):
     t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
-    import ipdb; ipdb.set_trace()
 
     if args.plot_stim:
         plt.plot(t_axis, stim)
@@ -274,7 +273,7 @@ def main(args):
         paramsets = [(args.a, args.b, args.c, args.d)]
         start, stop = 0, 1
 
-    args.tstop += 2 * (args.silence / args.dt)
+    args.tstop += 2 * args.silence
         
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
@@ -312,7 +311,7 @@ if __name__ == '__main__':
     parser.add_argument('--tstop', type=int, default=152)
     parser.add_argument('--dt', type=float, default=.02)
 
-    parser.add_argument('--silence', type=int, default=500,
+    parser.add_argument('--silence', type=int, default=200,
                         help="amount of pre/post-stim silence (ms)")
 
     parser.add_argument('--a', type=float, default=0.02)
