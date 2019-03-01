@@ -42,7 +42,9 @@ log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
 # redefine NEURON's advance() (runs one timestep) to update the current
 h('proc advance() {nrnpython("myadvance()")}')
 def myadvance():
-    h.cell.Iin = h.stim[int(h.t/h.dt)]
+    idx = int(h.t/h.dt)
+    if idx < len(h.stim):
+        h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
 
 NSAMPLES = 10000
@@ -96,10 +98,13 @@ def get_stim(args):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
     if args.stim_file:
         stim_fn = os.path.basename(args.stim_file)
-        return np.genfromtxt(args.stim_file) * multiplier[stim_fn]
+        stim = np.genfromtxt(args.stim_file) * multiplier[stim_fn]
     else:
-        return stims[args.stim_type][args.stim_idx]
+        stim = stims[args.stim_type][args.stim_idx]
 
+    silence = np.zeros(int(args.silence/args.dt)+1)
+
+    return np.concatenate([silence, stim, silence])
 
 def create_h5(args, nsamples=NSAMPLES):
     """
@@ -189,7 +194,8 @@ def save_nwb(args, v, a, b, c, d):
 
 def plot(args, stim, u, v):
     t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
-    
+    import ipdb; ipdb.set_trace()
+
     if args.plot_stim:
         plt.plot(t_axis, stim)
         plt.show()
@@ -267,6 +273,8 @@ def main(args):
     else:
         paramsets = [(args.a, args.b, args.c, args.d)]
         start, stop = 0, 1
+
+    args.tstop += 2 * (args.silence / args.dt)
         
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
@@ -301,8 +309,11 @@ if __name__ == '__main__':
     parser.add_argument('--param-sweep', action='store_true', default=False,
                         help="run over all values of a,b,c,d")
     
-    parser.add_argument('--tstop', type=int, default=152)
-    parser.add_argument('--dt', type=float, default=.02)
+    parser.add_argument('--tstop', type=int, default=760)
+    parser.add_argument('--dt', type=float, default=.1)
+
+    parser.add_argument('--silence', type=int, default=500,
+                        help="amount of pre/post-stim silence (ms)")
 
     parser.add_argument('--a', type=float, default=0.02)
     parser.add_argument('--b', type=float, default=0.2)
