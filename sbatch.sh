@@ -32,7 +32,7 @@ do
     srun -n 1 python run.py $args --create
 
     ## Run the simulation
-    srun --label -n 64 python run.py $args
+    srun --label -n 10 python run.py $args
 done
 
 

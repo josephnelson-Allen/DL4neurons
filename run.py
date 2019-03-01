@@ -132,7 +132,7 @@ def create_h5(args, nsamples=NSAMPLES):
     Run in serial mode
     """
     # TODO: tstop, rate, and other parameters
-    log.info("Creating h5 file and writing param values")
+    log.info("Creating h5 file")
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = 4
