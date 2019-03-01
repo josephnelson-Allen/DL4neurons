@@ -175,8 +175,10 @@ def _normalize(data, minmax=4):
 def save_h5(args, buf, params, start, stop):
     log.info("saving into h5")
     if comm and n_tasks > 1:
+        log.info("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
+        log.info("using serial")
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.info("opened h5")
