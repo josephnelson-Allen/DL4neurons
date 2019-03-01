@@ -309,8 +309,8 @@ if __name__ == '__main__':
     parser.add_argument('--param-sweep', action='store_true', default=False,
                         help="run over all values of a,b,c,d")
     
-    parser.add_argument('--tstop', type=int, default=760)
-    parser.add_argument('--dt', type=float, default=.1)
+    parser.add_argument('--tstop', type=int, default=152)
+    parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--silence', type=int, default=500,
                         help="amount of pre/post-stim silence (ms)")
