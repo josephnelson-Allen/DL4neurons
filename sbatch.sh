@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q regular
-#SBATCH -N 1
-#SBATCH -t 02:00:00
+#SBATCH -q debug
+#SBATCH -N 4
+#SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
@@ -33,7 +33,7 @@ do
     srun -n 1 python run.py $args --create
 
     ## Run the simulation
-    srun --label -n 64 python run.py $args
+    srun --label -n 256 python run.py $args
 done
 
 
