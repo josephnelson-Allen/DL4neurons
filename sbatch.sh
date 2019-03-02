@@ -20,10 +20,11 @@ NSAMPLES=1000
 
 for stim in $(ls stims)
 do
-    OUTFILE=$RUNDIR/${DSET_NAME}_${stim}.h5
+    stimname=`echo $stim | sed s/.csv//`
+    OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
     
     ## Report the stim name
-    echo "STIM" $stim
+    echo "STIM FILE" $stim
     echo "OUTFILE" $OUTFILE
 
     args="--outfile $OUTFILE --stim-file stims/$stim --num $NSAMPLES"
