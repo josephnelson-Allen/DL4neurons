@@ -27,13 +27,13 @@ do
     echo "STIM FILE" $stim
     echo "OUTFILE" $OUTFILE
 
-    args="--outfile $OUTFILE --stim-file stims/$stim --num $NSAMPLES"
+    args="--outfile $OUTFILE --stim-file stims/$stim --param-file params/izhi_v3.csv"
 
     ## Create the output file
     srun -n 1 python run.py $args --create
 
     ## Run the simulation
-    srun --label -n 10 python run.py $args
+    srun --label -n 64 python run.py $args
 done
 
 
