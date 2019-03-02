@@ -119,7 +119,7 @@ def get_stim(args):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
     if args.stim_file:
         stim_fn = os.path.basename(args.stim_file)
-        stim = np.genfromtxt(args.stim_file) * multiplier[stim_fn]
+        stim = np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier[stim_fn]
     else:
         stim = stims[args.stim_type][args.stim_idx]
 
@@ -298,7 +298,11 @@ def main(args):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
-    if args.num and args.num > 1:
+    if args.param_file:
+        all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
+        start, stop = get_mpi_idx(len(all_paramsets))
+        paramsets = all_paramsets[start:stop, :]
+    elif args.num and args.num > 1:
         start, stop = get_mpi_idx(args.num)
         paramsets = get_random_params(n=stop-start)
     else:
@@ -353,21 +357,20 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    # parser.add_argument('--param-sweep', action='store_true', default=False,
-    #                     help="run over all values of a,b,c,d")
-    parser.add_argument('--num', type=int, default=None, required=False,
-                        help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
-    
     parser.add_argument('--tstop', type=int, default=152)
     parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--silence', type=int, default=200,
                         help="amount of pre/post-stim silence (ms)")
 
+    # CHOOSE PARAMETERS
     parser.add_argument('--a', type=float, default=0.02)
     parser.add_argument('--b', type=float, default=0.2)
     parser.add_argument('--c', type=float, default=-65.)
     parser.add_argument('--d', type=float, default=2.)
+    parser.add_argument('--num', type=int, default=None, required=False,
+                        help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
+    parser.add_argument('--param-file', type=str, required=False, default=None)
 
     parser.add_argument('--stim-type', type=str, default='ramp')
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
@@ -380,6 +383,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     args.tstop += 2 * args.silence
+
+    # TO CREATE PARAM FILE:
+    # np.savetxt("params/izhi_v3.csv", get_random_params(n=10000))
+    # exit()
+    # END
         
     if args.create:
         create_h5(args, nsamples=(args.num or NSAMPLES))

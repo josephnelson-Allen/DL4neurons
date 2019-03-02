@@ -14,8 +14,8 @@ cd /global/cscratch1/sd/vbaratha/izhi
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
-DSET_NAME=izhi_v2
-NSAMPLES=1000
+DSET_NAME=izhi_v3
+NSAMPLES=10000
 
 
 for stim in $(ls stims)
