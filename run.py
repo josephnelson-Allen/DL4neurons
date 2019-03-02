@@ -305,7 +305,7 @@ def main(args):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
-    if args.num > 1:
+    if args.num and args.num > 1:
         start, stop = get_mpi_idx(args.num)
         paramsets = get_random_params(n=stop-start)
     else:
