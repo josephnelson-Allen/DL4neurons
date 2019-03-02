@@ -138,24 +138,12 @@ def create_h5(args, nsamples=NSAMPLES):
         ndim = 4
         f.create_dataset('phys_par', shape=(nsamples, ndim))
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
-        # for i, (a, b, c, d) in enumerate(get_paramsets()):
-        #     f['phys_par'][i, :] = np.array([a, b, c, d], dtype=np.float64)
-        # par = f['phys_par']
-        # mins = np.min(par, axis=0) # minimum value of each param
-        # mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as par
-        # ranges = np.ptp(par, axis=0) # range of values for each parmaeter
-        # ranges = np.tile(ranges, (nsamples, 1))
-        # minmax = 4
-        # norm_par = 2*minmax * ( (par - mins)/ranges ) - minmax
-        # f.create_dataset('norm_par', data=norm_par, dtype=np.float64)
 
         # create stim and voltage datasets
         stim = get_stim(args)
         ntimepts = int(args.tstop/args.dt)
-        qa = np.ones(len(stim), dtype=np.float64)
         f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
         f.create_dataset('stim', data=stim)
-        f.create_dataset('qa', data=qa)
 
     log.info("Done.")
 
@@ -246,6 +234,11 @@ def plot(args, stim, u, v):
         plt.show()
 
 
+def silence_spikes(v, args):
+    npts = int(args.silence/args.dt)
+    return max(v[:npts]) > 0
+
+
 def simulate(args, a, b, c, d):
     _start = datetime.now()
 
@@ -312,14 +305,32 @@ def main(args):
         paramsets = np.atleast_2d(np.array([args.a, args.b, args.c, args.d]))
         start, stop = 0, (args.num or 1)
 
+    bad_params = []
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
     # for i, (a, b, c, d) in zip(range(start, stop), paramsets):
     for i, (a, b, c, d) in enumerate(paramsets):
+        print(i)
         log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
         u, v = simulate(args, a, b, c, d)
         buf[i, :] = v[:-1]
+        
+        if args.silence_spikes and silence_spikes(v, args):
+            print("BAD")
+            bad_params.append(np.array([a, b, c, d]))
+
+    if args.silence_spikes:
+        bad_params = np.vstack(bad_params)
+        aa = bad_params[:, 0]
+        bb = bad_params[:, 1]
+        cc = bad_params[:, 2]
+        dd = bad_params[:, 3]
+        plt.hist(aa, bins=20); plt.savefig("bad_params/aa.png"); plt.clf()
+        plt.hist(bb, bins=20); plt.savefig("bad_params/bb.png"); plt.clf()
+        plt.hist(cc, bins=20); plt.savefig("bad_params/cc.png"); plt.clf()
+        plt.hist(dd, bins=20); plt.savefig("bad_params/dd.png"); plt.clf()
+        plt.scatter(aa, bb); plt.savefig("bad_params/aa_bb.png"); plt.clf()
 
     # Save to disk
     if args.outfile:
@@ -362,6 +373,10 @@ if __name__ == '__main__':
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
     parser.add_argument('--stim-file', type=str, required=False, default=None,
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
+
+    parser.add_argument('--silence-spikes', action='store_true', default=False,
+                        help="run analysis to find param values that produce spontaneous firing")
+    
     args = parser.parse_args()
 
     args.tstop += 2 * args.silence
