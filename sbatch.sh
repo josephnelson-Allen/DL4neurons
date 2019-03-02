@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -q debug
-#SBATCH -N 4
+#SBATCH -N 2
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -33,7 +33,7 @@ do
     srun -n 1 python run.py $args --create
 
     ## Run the simulation
-    srun --label -n 256 python run.py $args
+    srun --label -n 128 python run.py $args
 done
 
 
