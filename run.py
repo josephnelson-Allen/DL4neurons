@@ -316,7 +316,7 @@ def main(args):
     # for i, (a, b, c, d) in zip(range(start, stop), paramsets):
     for i, (a, b, c, d) in enumerate(paramsets):
         if i % 10 == 0:
-            log.info(i)
+            log.info(str(i))
         log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
         u, v = simulate(args, a, b, c, d)
         buf[i, :] = v[:-1]
