@@ -148,7 +148,7 @@ def create_h5(args, nsamples=NSAMPLES):
     log.info("Done.")
 
 
-def _normalize(data, minmax=4):
+def _normalize(data, minmax=1):
     nsamples = data.shape[0]
     # mins = np.min(data, axis=0) # minimum value of each param
     mins = np.array([tup[0] for tup in [range_a, range_b , range_c, range_d]])
