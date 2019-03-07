@@ -113,6 +113,7 @@ multiplier = {
     'Step_0p2.csv': 30.0,
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
+    'chirp_damp_8k.csv': 15.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
@@ -361,7 +362,7 @@ if __name__ == '__main__':
     parser.add_argument('--tstop', type=int, default=152)
     parser.add_argument('--dt', type=float, default=.02)
 
-    parser.add_argument('--silence', type=int, default=200,
+    parser.add_argument('--silence', type=int, default=0,
                         help="amount of pre/post-stim silence (ms)")
 
     # CHOOSE PARAMETERS
