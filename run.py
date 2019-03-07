@@ -172,10 +172,21 @@ def save_h5(args, buf, params, start, stop):
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.info("opened h5")
         f['phys_par'][start:stop, :] = params
+        mins, maxes = np.min(params, axis=0), np.max(params, axis=0)
         f['norm_par'][start:stop, :] = _normalize(params)
         f['voltages'][start:stop, :] = buf
         log.info("saved h5")
     log.info("closed h5")
+
+def phys_par_range_h5(args):
+    log.info("Computing and writing phys_par_range record")
+    with h5py.File(args.outfile, 'a') as f:
+        if 'phys_par_range' in f:
+            del f['phys_par_range']
+        mins, maxes = np.min(f['phys_par'], axis=0), np.max(f['phys_par'], axis=0)
+        phys_par_range = np.stack([mins, maxes]).T
+        f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float64)
+    log.info("Done.")
         
 
 def create_nwb(args):
@@ -351,6 +362,8 @@ if __name__ == '__main__':
                         help='nwb file to save to. Must exist.')
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit")
+    parser.add_argument('--phys-par-range', action='store_true', default=False,
+                        help="compute and store the phys_par_range record on completed outfile")
     
     parser.add_argument('--plot-v', action='store_true', default=False)
     parser.add_argument('--plot-u', action='store_true', default=False)
@@ -394,5 +407,7 @@ if __name__ == '__main__':
     if args.create:
         create_h5(args, nsamples=(args.num or NSAMPLES))
         # create_nwb(args)
+    elif args.phys_par_range:
+        phys_par_range_h5(args)
     else:
         main(args)

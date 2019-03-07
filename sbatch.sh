@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q regular
+#SBATCH -q debug
 #SBATCH -N 1
-#SBATCH -t 01:00:00
+#SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
@@ -26,6 +26,7 @@ args="--outfile $OUTFILE --stim-file ${stimfile} --param-file params/${DSET_NAME
 
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 
+srun --label -n 64 python run.py $args --phys-par-range
 
 
 # for stim in $(ls stims)
@@ -44,6 +45,9 @@ srun --label -n 64 python run.py $args
 
 #     ## Run the simulation
 #     srun --label -n 128 python run.py $args
+
+#     ## Compute phys-par-range
+#     srun --label -n 128 python run.py $args --phys-par-range
 # done
 
 
