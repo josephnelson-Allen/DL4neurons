@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q debug
-#SBATCH -N 2
-#SBATCH -t 00:30:00
+#SBATCH -q regular
+#SBATCH -N 1
+#SBATCH -t 01:00:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
@@ -14,27 +14,37 @@ cd /global/cscratch1/sd/vbaratha/izhi
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
-DSET_NAME=izhi_v3
+DSET_NAME=izhi_v4
 NSAMPLES=10000
 
+stimfile=stims/chirp_damp_8k.csv
+stimname=chirp_damp_8k
+OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
+echo "STIM FILE" $stimfile
+echo "OUTFILE" $OUTFILE
+args="--outfile $OUTFILE --stim-file ${stimfile} --param-file params/${DSET_NAME}.csv"
 
-for stim in $(ls stims)
-do
-    stimname=`echo $stim | sed s/.csv//`
-    OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
+srun -n 1 python run.py $args --create
+srun --label -n 64 python run.py $args 
+
+
+# for stim in $(ls stims)
+# do
+#     stimname=`echo $stim | sed s/.csv//`
+#     OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
     
-    ## Report the stim name
-    echo "STIM FILE" $stim
-    echo "OUTFILE" $OUTFILE
+#     ## Report the stim name
+#     echo "STIM FILE" $stim
+#     echo "OUTFILE" $OUTFILE
 
-    args="--outfile $OUTFILE --stim-file stims/$stim --param-file params/izhi_v3.csv"
+#     args="--outfile $OUTFILE --stim-file stims/$stim --param-file params/izhi_v3.csv"
 
-    ## Create the output file
-    srun -n 1 python run.py $args --create
+#     ## Create the output file
+#     srun -n 1 python run.py $args --create
 
-    ## Run the simulation
-    srun --label -n 128 python run.py $args
-done
+#     ## Run the simulation
+#     srun --label -n 128 python run.py $args
+# done
 
 
 # for stim_type in "ramp" "step" "noise"
