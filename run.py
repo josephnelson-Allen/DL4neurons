@@ -363,7 +363,7 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    parser.add_argument('--tstop', type=int, default=152)
+    parser.add_argument('--tstop', type=int, default=160)
     parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--silence', type=int, default=0,
