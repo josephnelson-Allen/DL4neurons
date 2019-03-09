@@ -38,6 +38,14 @@ except:
 from neuron import h, gui
 
 log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
+
+IZHI_NPARAMS = 4
+HH_NPARAMS = 5
+def ndim(args):
+    if args.model == 'izhi':
+        return IZHI_NPARAMS
+    elif args.model == 'hh':
+        return HH_NPARAMS
     
 # redefine NEURON's advance() (runs one timestep) to update the current
 h('proc advance() {nrnpython("myadvance()")}')
@@ -53,31 +61,23 @@ range_c = (-80, -50)
 range_d = (0.5, 10)
 
 NSAMPLES = 10000
-def get_paramsets(nsamples=NSAMPLES):
-    """
-    Return the full list of parameter values for each run
-    """
-    ndim = 4
-    nsamples_per_dim = int(nsamples**(1./ndim))
-
-    log.info("For {} points in {}-D parameter space, we take {} samples per dimension".format(
-        nsamples, ndim, nsamples_per_dim
-    ))
-
-    aa = np.linspace(0.01, 0.1, nsamples_per_dim) # linearly spaced?
-    bb = np.linspace(0.1, 0.4, nsamples_per_dim)
-    cc = np.linspace(-80, -50, nsamples_per_dim)
-    dd = np.linspace(0.5, 10, nsamples_per_dim)
-    
-    return list(itertools.product(aa, bb, cc, dd))
 
 
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
 
-def get_random_params(n=1):
-    ndim = 4
+def get_random_params(args, n=1):
+    if args.model == 'izhi':
+        return get_random_params_izhi(n=n)
+    elif args.model == 'hh':
+        return get_random_params_hh(n=n)
+    else:
+        raise ValueError("choose either 'izhi' or 'hh'")
+
+    
+def get_random_params_izhi(n=1):
+    ndim = IZHI_NPARAMS
     
     rand = np.random.rand(n, ndim)
     rand[:, 0] = _rangeify(rand[:, 0], range_a)
@@ -86,6 +86,12 @@ def get_random_params(n=1):
     rand[:, 3] = _rangeify(rand[:, 3], range_d)
 
     return rand
+
+
+def get_random_params_hh(n=1):
+    ndim = HH_NPARAMS
+
+    # TODO: finish
 
 
 def get_mpi_idx(nsamples=NSAMPLES):
@@ -245,7 +251,7 @@ def silence_spikes(v, args):
     return max(v[:npts]) > 0
 
 
-def simulate(args, a, b, c, d):
+def simulate(args, params):
     _start = datetime.now()
 
     # Simulation parameters
@@ -258,13 +264,21 @@ def simulate(args, a, b, c, d):
         raise ValueError("Invalid choice of dt")
 
     # Define the cell
-    dummy = h.Section()
-    cell = h.Izhi2003a(0.5,sec=dummy)
-    cell.a = a
-    cell.b = b
-    cell.c = c
-    cell.d = d
-
+    # This doesn't work when done in a separate function, for some reason
+    # I think 'dummy' needs to stay in scope?
+    if args.model == 'izhi':
+        a, b, c, d = params
+        dummy = h.Section()
+        cell = h.Izhi2003a(0.5,sec=dummy)
+        cell.a = a
+        cell.b = b
+        cell.c = c
+        cell.d = d
+    elif args.model == 'hh':
+        pass # TODO
+    else:
+        raise ValueError("choose 'izhi' or 'hh'")
+    
     # Define the stimulus
     stim = get_stim(args)
 
@@ -310,39 +324,22 @@ def main(args):
         paramsets = all_paramsets[start:stop, :]
     elif args.num and args.num > 1:
         start, stop = get_mpi_idx(args.num)
-        paramsets = get_random_params(n=stop-start)
+        paramsets = get_random_params(args, n=stop-start)
     else:
-        paramsets = np.atleast_2d(np.array([args.a, args.b, args.c, args.d]))
+        paramsets = np.atleast_2d(np.array(args.params))
         start, stop = 0, (args.num or 1)
 
     bad_params = []
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
-    # for i, (a, b, c, d) in zip(range(start, stop), paramsets):
-    for i, (a, b, c, d) in enumerate(paramsets):
-        if i % 10 == 0:
+    for i, params in enumerate(paramsets):
+        if i % 100 == 0:
             log.info(str(i))
-        log.info("About to run a={}, b={}, c={}, d={}".format(a, b, c, d))
-        u, v = simulate(args, a, b, c, d)
+        log.info("About to run with params = {}".format(params))
+        u, v = simulate(args, params)
         buf[i, :] = v[:-1]
         
-        if args.silence_spikes and silence_spikes(v, args):
-            print("BAD")
-            bad_params.append(np.array([a, b, c, d]))
-
-    if args.silence_spikes:
-        bad_params = np.vstack(bad_params)
-        aa = bad_params[:, 0]
-        bb = bad_params[:, 1]
-        cc = bad_params[:, 2]
-        dd = bad_params[:, 3]
-        plt.hist(aa, bins=20); plt.savefig("bad_params/aa.png"); plt.clf()
-        plt.hist(bb, bins=20); plt.savefig("bad_params/bb.png"); plt.clf()
-        plt.hist(cc, bins=20); plt.savefig("bad_params/cc.png"); plt.clf()
-        plt.hist(dd, bins=20); plt.savefig("bad_params/dd.png"); plt.clf()
-        plt.scatter(aa, bb); plt.savefig("bad_params/aa_bb.png"); plt.clf()
-
     # Save to disk
     if args.outfile:
         # save_nwb(args, v, a, b, c, d)
@@ -351,6 +348,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+
+    parser.add_argument('--model', choices=['izhi', 'hh'], default='izhi')
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to. Must exist.')
@@ -371,21 +370,20 @@ if __name__ == '__main__':
                         help="amount of pre/post-stim silence (ms)")
 
     # CHOOSE PARAMETERS
-    parser.add_argument('--a', type=float, default=0.02)
-    parser.add_argument('--b', type=float, default=0.2)
-    parser.add_argument('--c', type=float, default=-65.)
-    parser.add_argument('--d', type=float, default=2.)
+    # parser.add_argument('--a', type=float, default=0.02)
+    # parser.add_argument('--b', type=float, default=0.2)
+    # parser.add_argument('--c', type=float, default=-65.)
+    # parser.add_argument('--d', type=float, default=2.)
+    parser.add_argument('--params', type=float, nargs='+', default=None)
     parser.add_argument('--num', type=int, default=None, required=False,
                         help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
     parser.add_argument('--param-file', type=str, required=False, default=None)
 
+    # CHOOSE STIMULUS
     parser.add_argument('--stim-type', type=str, default='ramp')
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
     parser.add_argument('--stim-file', type=str, required=False, default=None,
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
-
-    parser.add_argument('--silence-spikes', action='store_true', default=False,
-                        help="run analysis to find param values that produce spontaneous firing")
     
     args = parser.parse_args()
 
