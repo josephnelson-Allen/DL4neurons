@@ -26,7 +26,6 @@ args="--outfile $OUTFILE --stim-file ${stimfile} --param-file params/${DSET_NAME
 
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 
-srun --label -n 1 python run.py $args --phys-par-range
 
 
 # for stim in $(ls stims)
@@ -46,8 +45,6 @@ srun --label -n 1 python run.py $args --phys-par-range
 #     ## Run the simulation
 #     srun --label -n 128 python run.py $args
 
-#     ## Compute phys-par-range
-#     srun --label -n 128 python run.py $args --phys-par-range
 # done
 
 
