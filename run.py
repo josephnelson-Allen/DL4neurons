@@ -1,10 +1,7 @@
 from __future__ import print_function
 
 """
-Requires izhi2003a.mod from:
-https://senselab.med.yale.edu/ModelDB/showmodel.cshtml?model=39948
-
-Run this script from the same directory as the compiled izhi2003a.mod
+Run this script from the same directory as the compiled izhi2003a.mod and ca.mod
 
 NB: on OSX, run using `pythonw` (first, `conda install python.app`) for plotting to work
 """
@@ -55,9 +52,17 @@ range_d = (0.5, 10)
 
 range_gnabar = (0.08, 0.2)
 range_gkbar = (0.02, 0.05)
-range_gcabar = (0.5, 0.15)
+range_gcabar = (0.05, 0.15)
 range_gl = (0.0015, 0.0045)
 range_cm = (0.7, 1.3)
+
+# Tight ranges, for debugging
+range_gnabar = (0.10, 0.14)
+range_gkbar = (0.03, 0.04)
+# range_gcabar = (0.09, 0.11)
+# range_gl = (0.002, 0.004)
+# range_cm = (0.9, 1.1)
+
 
 RANGES = {
     'izhi': (range_a, range_b, range_c, range_d),
@@ -66,12 +71,6 @@ RANGES = {
 
 NSAMPLES = 10000
 
-
-def ndim(args):
-    if args.model == 'izhi':
-        return NPARAMS['izhi']
-    elif args.model == 'hh':
-        return NPARAMS['hh']
     
 def myadvance():
     idx = int(h.t/h.dt)
@@ -84,39 +83,14 @@ def _rangeify(data, _range):
 
 
 def get_random_params(args, n=1):
-    if args.model == 'izhi':
-        return get_random_params_izhi(n=n)
-    elif args.model == 'hh':
-        return get_random_params_hh(n=n)
-    else:
-        raise ValueError("choose either 'izhi' or 'hh'")
-
-    
-def get_random_params_izhi(n=1):
-    ndim = NPARAMS['izhi']
-    
+    ranges = RANGES[args.model]
+    ndim = len(ranges)
     rand = np.random.rand(n, ndim)
-    rand[:, 0] = _rangeify(rand[:, 0], range_a)
-    rand[:, 1] = _rangeify(rand[:, 1], range_b)
-    rand[:, 2] = _rangeify(rand[:, 2], range_c)
-    rand[:, 3] = _rangeify(rand[:, 3], range_d)
-
+    for i, _range in enumerate(ranges):
+        rand[:, i] = _rangeify(rand[:, 0], _range)
     return rand
 
-
-def get_random_params_hh(n=1):
-    ndim = NPARAMS['hh']
-
-    rand = np.random.rand(n, ndim)
-    rand[:, 0] = _rangeify(rand[:, 0], range_gnabar)
-    rand[:, 1] = _rangeify(rand[:, 1], range_gkbar)
-    rand[:, 2] = _rangeify(rand[:, 2], range_gcabar)
-    rand[:, 3] = _rangeify(rand[:, 3], range_gl)
-    rand[:, 4] = _rangeify(rand[:, 4], range_cm)
-
-    return rand
-
-
+        
 def get_mpi_idx(nsamples=NSAMPLES):
     params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
@@ -153,9 +127,15 @@ def get_stim(args):
     else:
         stim = stims[args.stim_type][args.stim_idx]
 
-    silence = np.zeros(int(args.silence/args.dt))
+    # silence = np.zeros(int(args.silence/args.dt))
+    # return np.concatenate([silence, stim, silence])
 
-    return np.concatenate([silence, stim, silence])
+    # return stim
+
+    # DEBUG
+    hyp = np.ones(1000) * -1 * multiplier[stim_fn]
+    return np.concatenate([hyp, stim])
+    # END DEBUG
 
 
 def attach_stim(args):
@@ -191,7 +171,7 @@ def create_h5(args, nsamples=NSAMPLES):
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
         # write param range
-        phys_par_range = np.stack([range_a, range_b, range_c, range_d])
+        phys_par_range = np.stack(RANGES[args.model])
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float64)
 
         # create stim and voltage datasets
@@ -288,9 +268,9 @@ def plot(args, stim, v):
     #     plt.show()
 
 
-def silence_spikes(v, args):
-    npts = int(args.silence/args.dt)
-    return max(v[:npts]) > 0
+# def silence_spikes(v, args):
+#     npts = int(args.silence/args.dt)
+#     return max(v[:npts]) > 0
 
 
 def simulate(args, params):
@@ -395,7 +375,7 @@ def main(args):
         paramsets = [ DEFAULT_PARAMS[args.model] ]
         start, stop = 0, 1
 
-    bad_params = []
+    # bad_params = []
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
@@ -418,7 +398,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', choices=['izhi', 'hh'], default='izhi')
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
-                        help='nwb file to save to. Must exist.')
+                        help='nwb file to save to. Must exist unless --create is passed')
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit")
     parser.add_argument('--create-params', action='store_true', default=False,
@@ -434,8 +414,8 @@ if __name__ == '__main__':
     parser.add_argument('--tstop', type=int, default=160)
     parser.add_argument('--dt', type=float, default=.02)
 
-    parser.add_argument('--silence', type=int, default=0,
-                        help="amount of pre/post-stim silence (ms)")
+    # parser.add_argument('--silence', type=int, default=0,
+    #                     help="amount of pre/post-stim silence (ms)")
 
     # CHOOSE PARAMETERS
     parser.add_argument('--params', type=float, nargs='+', default=None)
@@ -451,7 +431,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
-    args.tstop += 2 * args.silence
+    # args.tstop += 2 * args.silence
 
     if args.create:
         create_h5(args, nsamples=(args.num or NSAMPLES))
