@@ -153,7 +153,7 @@ def get_stim(args):
     else:
         stim = stims[args.stim_type][args.stim_idx]
 
-    silence = np.zeros(int(args.silence/args.dt)+1)
+    silence = np.zeros(int(args.silence/args.dt))
 
     return np.concatenate([silence, stim, silence])
 
