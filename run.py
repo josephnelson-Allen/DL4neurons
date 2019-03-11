@@ -394,7 +394,6 @@ def main(args):
         log.info("Cell parameters not specified, running with default parameters")
         paramsets = [ DEFAULT_PARAMS[args.model] ]
         start, stop = 0, 1
-    print(paramsets)
 
     bad_params = []
     ntimepts = int(args.tstop/args.dt)
