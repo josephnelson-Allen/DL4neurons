@@ -47,17 +47,6 @@ NPARAMS = {
     'izhi': 4,
     'hh': 5,
 }
-def ndim(args):
-    if args.model == 'izhi':
-        return NPARAMS['izhi']
-    elif args.model == 'hh':
-        return NPARAMS['hh']
-    
-def myadvance():
-    idx = int(h.t/h.dt)
-    if idx < len(h.stim):
-        h.cell.Iin = h.stim[int(h.t/h.dt)]
-    h.fadvance()
 
 range_a = (0.01, 0.1)
 range_b = (0.1, 0.4)
@@ -70,8 +59,25 @@ range_gcabar = (0.5, 0.15)
 range_gl = (0.0015, 0.0045)
 range_cm = (0.7, 1.3)
 
+RANGES = {
+    'izhi': (range_a, range_b, range_c, range_d),
+    'hh': (range_gnabar, range_gkbar, range_gcabar, range_gl, range_cm),
+}
+
 NSAMPLES = 10000
 
+
+def ndim(args):
+    if args.model == 'izhi':
+        return NPARAMS['izhi']
+    elif args.model == 'hh':
+        return NPARAMS['hh']
+    
+def myadvance():
+    idx = int(h.t/h.dt)
+    if idx < len(h.stim):
+        h.cell.Iin = h.stim[int(h.t/h.dt)]
+    h.fadvance()
 
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
@@ -180,7 +186,7 @@ def create_h5(args, nsamples=NSAMPLES):
     log.info("Creating h5 file")
     with h5py.File(args.outfile, 'w') as f:
         # write params
-        ndim = 4
+        ndim = NPARAMS[args.model]
         f.create_dataset('phys_par', shape=(nsamples, ndim))
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
@@ -197,13 +203,11 @@ def create_h5(args, nsamples=NSAMPLES):
     log.info("Done.")
 
 
-def _normalize(data, minmax=1):
+def _normalize(args, data, minmax=1):
     nsamples = data.shape[0]
-    # mins = np.min(data, axis=0) # minimum value of each param
-    mins = np.array([tup[0] for tup in [range_a, range_b , range_c, range_d]])
+    mins = np.array([tup[0] for tup in RANGES[args.model]])
     mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
-    # ranges = np.ptp(data, axis=0) # range of values for each parameter
-    ranges = np.array([tup[1]-tup[0] for tup in [range_a, range_b, range_c, range_d]])
+    ranges = np.array([tup[1]-tup[0] for tup in RANGES[args.model]])
     ranges = np.tile(ranges, (nsamples, 1))
 
     return 2*minmax * ( (data - mins)/ranges ) - minmax
@@ -221,7 +225,7 @@ def save_h5(args, buf, params, start, stop):
         log.info("opened h5")
         f['phys_par'][start:stop, :] = params
         mins, maxes = np.min(params, axis=0), np.max(params, axis=0)
-        f['norm_par'][start:stop, :] = _normalize(params)
+        f['norm_par'][start:stop, :] = _normalize(args, params)
         f['voltages'][start:stop, :] = buf
         log.info("saved h5")
     log.info("closed h5")
