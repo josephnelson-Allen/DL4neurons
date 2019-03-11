@@ -12,9 +12,12 @@
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
+MODELNAME=hh
+VERSION=1
+
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
-DSET_NAME=izhi_v4
+DSET_NAME=${MODELNAME}_v$VERSION
 NSAMPLES=10000
 
 stimfile=stims/chirp_damp_8k.csv
@@ -22,7 +25,8 @@ stimname=chirp_damp_8k
 OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
-args="--outfile $OUTFILE --stim-file ${stimfile} --param-file params/${DSET_NAME}.csv"
+args="--outfile $OUTFILE --stim-file ${stimfile} --param-file params/${DSET_NAME}.csv \
+      --model $MODELNAME "
 
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 

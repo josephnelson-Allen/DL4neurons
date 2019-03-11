@@ -2,7 +2,7 @@
 This file defines the stimuli we use
 """
 import numpy as np
-from pynwb import TimeSeries
+# from pynwb import TimeSeries
 
 # Defaults:
 DT = 0.02 # simulation timestep

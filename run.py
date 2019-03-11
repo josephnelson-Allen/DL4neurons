@@ -39,16 +39,20 @@ from neuron import h, gui
 
 log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
 
-IZHI_NPARAMS = 4
-HH_NPARAMS = 5
+DEFAULT_PARAMS = {
+    'izhi': (0.02, 0.2, -65., 2.),
+    'hh': (.12, .036, 0.1, .0003, 1.0),
+}
+NPARAMS = {
+    'izhi': 4,
+    'hh': 5,
+}
 def ndim(args):
     if args.model == 'izhi':
-        return IZHI_NPARAMS
+        return NPARAMS['izhi']
     elif args.model == 'hh':
-        return HH_NPARAMS
+        return NPARAMS['hh']
     
-# redefine NEURON's advance() (runs one timestep) to update the current
-h('proc advance() {nrnpython("myadvance()")}')
 def myadvance():
     idx = int(h.t/h.dt)
     if idx < len(h.stim):
@@ -59,6 +63,12 @@ range_a = (0.01, 0.1)
 range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 10)
+
+range_gnabar = (0.08, 0.2)
+range_gkbar = (0.02, 0.05)
+range_gcabar = (0.5, 0.15)
+range_gl = (0.0015, 0.0045)
+range_cm = (0.7, 1.3)
 
 NSAMPLES = 10000
 
@@ -77,7 +87,7 @@ def get_random_params(args, n=1):
 
     
 def get_random_params_izhi(n=1):
-    ndim = IZHI_NPARAMS
+    ndim = NPARAMS['izhi']
     
     rand = np.random.rand(n, ndim)
     rand[:, 0] = _rangeify(rand[:, 0], range_a)
@@ -89,9 +99,16 @@ def get_random_params_izhi(n=1):
 
 
 def get_random_params_hh(n=1):
-    ndim = HH_NPARAMS
+    ndim = NPARAMS['hh']
 
-    # TODO: finish
+    rand = np.random.rand(n, ndim)
+    rand[:, 0] = _rangeify(rand[:, 0], range_gnabar)
+    rand[:, 1] = _rangeify(rand[:, 1], range_gkbar)
+    rand[:, 2] = _rangeify(rand[:, 2], range_gcabar)
+    rand[:, 3] = _rangeify(rand[:, 3], range_gl)
+    rand[:, 4] = _rangeify(rand[:, 4], range_cm)
+
+    return rand
 
 
 def get_mpi_idx(nsamples=NSAMPLES):
@@ -133,6 +150,27 @@ def get_stim(args):
     silence = np.zeros(int(args.silence/args.dt)+1)
 
     return np.concatenate([silence, stim, silence])
+
+
+def attach_stim(args):
+    if args.model == 'izhi':
+        # redefine NEURON's advance() (runs one timestep) to update the current
+        h('proc advance() {nrnpython("myadvance()")}')
+    elif args.model == 'hh':
+        # Use an IClamp object
+        h('objref clamp')
+        clamp = h.IClamp(0.5)
+        clamp.delay = 0
+        clamp.dur = 100
+        h.clamp = clamp
+
+        h('objref stimvals')
+        stimvals = h.Vector().from_python(h.stim)
+        h.stimvals = stimvals
+        stimvals.play("clamp.amp = $1", h.dt)
+    else:
+        raise ValueError("choose 'izhi' or 'hh'")
+
 
 def create_h5(args, nsamples=NSAMPLES):
     """
@@ -230,7 +268,7 @@ def save_nwb(args, v, a, b, c, d):
     log.info("done.")
     
 
-def plot(args, stim, u, v):
+def plot(args, stim, v):
     t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
 
     if args.plot_stim:
@@ -241,9 +279,9 @@ def plot(args, stim, u, v):
         plt.plot(t_axis, v[:-1])
         plt.show()
 
-    if args.plot_u:
-        plt.plot(t_axis, u[:-1])
-        plt.show()
+    # if args.plot_u:
+    #     plt.plot(t_axis, u[:-1])
+    #     plt.show()
 
 
 def silence_spikes(v, args):
@@ -266,19 +304,36 @@ def simulate(args, params):
     # Define the cell
     # This doesn't work when done in a separate function, for some reason
     # I think 'dummy' needs to stay in scope?
+    v = h.Vector(ntimepts)
     if args.model == 'izhi':
-        a, b, c, d = params
         dummy = h.Section()
         cell = h.Izhi2003a(0.5,sec=dummy)
+        
+        a, b, c, d = params
         cell.a = a
         cell.b = b
         cell.c = c
         cell.d = d
+        
+        v.record(cell._ref_V)
     elif args.model == 'hh':
-        pass # TODO
+        cell = h.Section()
+        cell.insert('hh')
+        cell.insert('ca')
+        hh = cell(0.5).hh
+        ca = cell(0.5).ca
+
+        gnabar, gkbar, gcabar, gl, cm = params
+        hh.gnabar = gnabar
+        hh.gkbar = gkbar
+        hh.gl = gl
+        ca.gbar = gcabar
+        cell.cm = cm
+
+        v.record(cell(0.5)._ref_v)
     else:
         raise ValueError("choose 'izhi' or 'hh'")
-    
+
     # Define the stimulus
     stim = get_stim(args)
 
@@ -287,13 +342,16 @@ def simulate(args, params):
     h.stim = stim
     h('objref cell')
     h.cell = cell
+
+    # attach the stim to the cell
+    attach_stim(args)
     
     # Set up recordings of u and v
-    u = h.Vector(ntimepts)
-    u.record(cell._ref_u)
+    # u = h.Vector(ntimepts)
+    # u.record(cell._ref_u)
 
-    v = h.Vector(ntimepts)
-    v.record(cell._ref_V)
+    # v = h.Vector(ntimepts)
+    # v.record(cell._ref_V)
 
     # Run
     log.info("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
@@ -304,13 +362,13 @@ def simulate(args, params):
     log.info("Time to simulate: {}".format(datetime.now() - _start))
 
     # numpy-ify
-    u = np.array(u)
+    # u = np.array(u)
     v = np.array(v)
 
     # Plot
-    plot(args, stim, u, v)
+    plot(args, stim, v)
 
-    return u, v
+    return v
 
 def main(args):
 
@@ -322,12 +380,17 @@ def main(args):
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
         start, stop = get_mpi_idx(len(all_paramsets))
         paramsets = all_paramsets[start:stop, :]
-    elif args.num and args.num > 1:
+    elif args.num:
         start, stop = get_mpi_idx(args.num)
         paramsets = get_random_params(args, n=stop-start)
-    else:
+    elif args.params not in (None, [None]):
         paramsets = np.atleast_2d(np.array(args.params))
-        start, stop = 0, (args.num or 1)
+        start, stop = 0, 1
+    else:
+        log.info("Cell parameters not specified, running with default parameters")
+        paramsets = [ DEFAULT_PARAMS[args.model] ]
+        start, stop = 0, 1
+    print(paramsets)
 
     bad_params = []
     ntimepts = int(args.tstop/args.dt)
@@ -337,7 +400,7 @@ def main(args):
         if i % 100 == 0:
             log.info(str(i))
         log.info("About to run with params = {}".format(params))
-        u, v = simulate(args, params)
+        v = simulate(args, params)
         buf[i, :] = v[:-1]
         
     # Save to disk
@@ -355,6 +418,8 @@ if __name__ == '__main__':
                         help='nwb file to save to. Must exist.')
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit")
+    parser.add_argument('--create-params', action='store_true', default=False,
+                        help="create the params file (--param-file) and exit")
 
     parser.add_argument('--plot-v', action='store_true', default=False)
     parser.add_argument('--plot-u', action='store_true', default=False)
@@ -370,10 +435,6 @@ if __name__ == '__main__':
                         help="amount of pre/post-stim silence (ms)")
 
     # CHOOSE PARAMETERS
-    # parser.add_argument('--a', type=float, default=0.02)
-    # parser.add_argument('--b', type=float, default=0.2)
-    # parser.add_argument('--c', type=float, default=-65.)
-    # parser.add_argument('--d', type=float, default=2.)
     parser.add_argument('--params', type=float, nargs='+', default=None)
     parser.add_argument('--num', type=int, default=None, required=False,
                         help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
@@ -389,13 +450,10 @@ if __name__ == '__main__':
 
     args.tstop += 2 * args.silence
 
-    # TO CREATE PARAM FILE:
-    # np.savetxt("params/izhi_v3.csv", get_random_params(n=10000))
-    # exit()
-    # END
-        
     if args.create:
         create_h5(args, nsamples=(args.num or NSAMPLES))
         # create_nwb(args)
+    elif args.create_params:
+        np.savetxt("params/hh_v1.csv", get_random_params(args, n=10000))
     else:
         main(args)
