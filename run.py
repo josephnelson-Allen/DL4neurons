@@ -48,7 +48,7 @@ range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 10)
 
-range_gnabar = (0.10, 0.14)
+range_gnabar = (0.06, 0.10)
 range_gkbar = (0.03, 0.04)
 range_gcabar = (0.05, 0.15)
 range_gl = (0.0002, 0.0004)
@@ -86,12 +86,29 @@ def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
 
+def clean_params(args):
+    """
+    convert to float, use defaults where requested
+    """
+    if args.params:
+        defaults = DEFAULT_PARAMS[args.model]
+        return [float(x) if x != 'def' else default
+                for (x, default) in zip(args.params, defaults)]
+
+    else:
+        return args.params
+
 def get_random_params(args, n=1):
     ranges = RANGES[args.model]
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
-    for i, _range in enumerate(ranges):
-        rand[:, i] = _rangeify(rand[:, i], _range)
+    params = clean_params(args)
+    for i, (_range, param) in enumerate(zip(ranges, params)):
+        # Default params swapped in by clean_params()
+        rand_params = _rangeify(rand[:, i], _range)
+        fixed_params = np.array([param] * n)
+        phys_params = rand_params if param == float('inf') else fixed_params
+        rand[:, i] = phys_params
     return rand
 
         
@@ -361,8 +378,6 @@ def main(args):
             return
         paramsets = all_paramsets[start:stop, :]
     elif args.num:
-        if args.params:
-            pass # TODO: FINISH
         start, stop = get_mpi_idx(args, args.num)
         paramsets = get_random_params(args, n=stop-start)
     elif args.params not in (None, [None]):
@@ -416,14 +431,16 @@ if __name__ == '__main__':
     #                     help="amount of pre/post-stim silence (ms)")
 
     # CHOOSE PARAMETERS
-    parser.add_argument('--params', type=float, nargs='+', default=None,
-                        help='specify param values space-separated, eg "1 2 3 4". ' + \
-                        'If used with --num, fixes the value of some params. To indicate ' + \
-                        'that a param should not be held fixed, set it to "inf", ' + \
-                        'eg to fix all params except the second one, "1 inf 3 4"'
-    )
     parser.add_argument('--num', type=int, default=None, required=False,
-                        help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
+                        help="number of param values to choose. Will choose randomly. " + \
+                        "See --params. When multithreaded, this is the total number over all ranks")
+    parser.add_argument('--params', type=str, nargs='+', default=None,
+                        help='When used with --num, fixes the value of some params. To indicate ' + \
+                        'that a param should not be held fixed, set it to "inf". ' + \
+                        'to use the default value, use "def"' + \
+                        'eg to use the default 1st param, random 2nd param, ' + \
+                        'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
+    )
     parser.add_argument('--param-file', '--params-file', type=str, required=False, default=None)
 
     # CHOOSE STIMULUS
@@ -437,6 +454,9 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', default=False)
     
     args = parser.parse_args()
+
+    if args.params and not args.num:
+        args.num = 1
 
     log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG if args.debug else log.INFO)
 
