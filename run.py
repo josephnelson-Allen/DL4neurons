@@ -51,7 +51,7 @@ range_d = (0.5, 10)
 range_gnabar = (0.10, 0.14)
 range_gkbar = (0.03, 0.04)
 range_gcabar = (0.05, 0.15)
-range_gl = (0.002, 0.004)
+range_gl = (0.0002, 0.0004)
 range_cm = (0.7,1.3)
 
 # Tight ranges, for debugging
@@ -64,7 +64,7 @@ range_cm = (0.7,1.3)
 # range_gnabar = (0.3, 0.4)
 # range_gkbar = (0.15, 0.16)
 # range_gcabar = (0.05, 0.06)
-# range_gl = (0.002, 0.004)
+# range_gl = (0.0002, 0.0004)
 # range_cm = (0.7,1.3)
 
 
@@ -123,20 +123,21 @@ multiplier = {
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
     'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 15.0,
+    'chirp_damp_10k.csv': 10.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
     if args.stim_file:
         stim_fn = os.path.basename(args.stim_file)
-        stim = np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier[stim_fn]
+        stim = (np.genfromtxt(args.stim_file, dtype=np.float64) + args.stim_dc_offset) * multiplier[stim_fn]
     else:
         stim = stims[args.stim_type][args.stim_idx]
 
     # silence = np.zeros(int(args.silence/args.dt))
     # return np.concatenate([silence, stim, silence])
 
+    
     return stim
 
 
@@ -263,7 +264,7 @@ def save_nwb(args, v, a, b, c, d):
 def simulate(args, params):
     _start = datetime.now()
 
-    h.celsius = 37
+    h.celsius = args.celsius
 
     # Simulation parameters
     h.tstop = args.tstop
@@ -360,6 +361,8 @@ def main(args):
             return
         paramsets = all_paramsets[start:stop, :]
     elif args.num:
+        if args.params:
+            pass # TODO: FINISH
         start, stop = get_mpi_idx(args, args.num)
         paramsets = get_random_params(args, n=stop-start)
     elif args.params not in (None, [None]):
@@ -392,6 +395,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--model', choices=['izhi', 'hh_point_5param'], default='hh_point_5param')
     parser.add_argument('--hh-model', choices=['hh', 'hh_custom'], default='hh_custom')
+    parser.add_argument('--celsius', type=float, default=33)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to. Must exist unless --create is passed')
@@ -412,7 +416,12 @@ if __name__ == '__main__':
     #                     help="amount of pre/post-stim silence (ms)")
 
     # CHOOSE PARAMETERS
-    parser.add_argument('--params', type=float, nargs='+', default=None)
+    parser.add_argument('--params', type=float, nargs='+', default=None,
+                        help='specify param values space-separated, eg "1 2 3 4". ' + \
+                        'If used with --num, fixes the value of some params. To indicate ' + \
+                        'that a param should not be held fixed, set it to "inf", ' + \
+                        'eg to fix all params except the second one, "1 inf 3 4"'
+    )
     parser.add_argument('--num', type=int, default=None, required=False,
                         help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
     parser.add_argument('--param-file', '--params-file', type=str, required=False, default=None)
@@ -422,6 +431,7 @@ if __name__ == '__main__':
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
     parser.add_argument('--stim-file', type=str, required=False, default='stims/chirp_damp_10k.csv',
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
+    parser.add_argument('--stim-dc-offset', type=float, default=0.0)
 
     parser.add_argument('--print-every', type=int, default=None)
     parser.add_argument('--debug', action='store_true', default=False)
