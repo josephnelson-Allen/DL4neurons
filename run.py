@@ -255,22 +255,6 @@ def save_nwb(args, v, a, b, c, d):
     log.info("done.")
     
 
-def plot(args, stim, v):
-    t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
-
-    if args.plot_stim:
-        plt.plot(t_axis, stim[:len(v)-1])
-        plt.show()
-    
-    if args.plot_v:
-        plt.plot(t_axis, v[:-1])
-        plt.show()
-
-    # if args.plot_u:
-    #     plt.plot(t_axis, u[:-1])
-    #     plt.show()
-
-
 # def silence_spikes(v, args):
 #     npts = int(args.silence/args.dt)
 #     return max(v[:npts]) > 0
@@ -279,7 +263,7 @@ def plot(args, stim, v):
 def simulate(args, params):
     _start = datetime.now()
 
-    h.celsius = 33
+    # h.celsius = 33
 
     # Simulation parameters
     h.tstop = args.tstop
@@ -355,13 +339,17 @@ def simulate(args, params):
     v = np.array(v)
 
     # Plot
-    plot(args, stim, v)
-
+    if args.plot:
+        t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
+        plt.plot(t_axis, v[:-1])
+        plt.plot(t_axis, stim[:len(v)-1])
+        plt.show()
+        
     return v
 
 def main(args):
 
-    if not any([args.plot_stim, args.plot_u, args.plot_v, args.outfile, args.force]):
+    if not any([args.plot, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
@@ -409,9 +397,7 @@ if __name__ == '__main__':
     parser.add_argument('--create-params', action='store_true', default=False,
                         help="create the params file (--param-file) and exit. Must use with --num")
 
-    parser.add_argument('--plot-v', action='store_true', default=False)
-    parser.add_argument('--plot-u', action='store_true', default=False)
-    parser.add_argument('--plot-stim', action='store_true', default=False)
+    parser.add_argument('--plot', action='store_true', default=False)
     
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
