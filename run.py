@@ -100,7 +100,7 @@ def get_mpi_idx(args, nsamples=NSAMPLES):
     start = params_per_task * rank
     stop = min(params_per_task * (rank + 1), nsamples)
     if args.num:
-        stop = min(stop, args.min)
+        stop = min(stop, args.num)
     log.info("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
     log.info("This rank is processing param sets {} through {}".format(start, stop))
 
@@ -123,7 +123,7 @@ multiplier = {
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
     'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 30.0,
+    'chirp_damp_10k.csv': 15.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
