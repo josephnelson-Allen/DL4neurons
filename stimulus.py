@@ -40,6 +40,18 @@ class StimulusGenerator(object):
         mode = 'ab' if append else 'wb' # 'b' for binary mode
         with open(filename, mode) as f:
             np.savetxt(f, stim, delimiter=delimiter)
+
+
+class StimGeneratorFromFile(StimulusGenerator):
+    # TODO: Not tested
+    def __init__(self, filename, *args, **kwargs):
+        self.pulse = np.genfromtxt(dtype=np.float64)
+        if 'pulselen' in kwargs:
+            assert pulselen == len(self.stim), "If specifying pulselen, it must agree with the length of the file"
+        super(StimGeneratorFromFile, self).__init__(*args, **kwargs)
+
+    def _pulse(self, n_pulse, **stim_args):
+        return self.pulse
     
 
 class RampGenerator(StimulusGenerator):
@@ -73,6 +85,7 @@ class SinGenerator(StimulusGenerator):
 
 class ChirpGenerator(StimulusGenerator):
     pass # TODO
+
 
 
 n_stims = 8
