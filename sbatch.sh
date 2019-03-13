@@ -12,16 +12,17 @@
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
-MODELNAME=hh
-VERSION=1
+MODELNAME=hh_point
+NPARAMS=5
+VERSION=2
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
-DSET_NAME=${MODELNAME}_v$VERSION
+DSET_NAME=${MODELNAME}_${NPARAMS}v$VERSION
 NSAMPLES=10000
 
-stimfile=stims/chirp_damp_8k.csv
-stimname=chirp_damp_8k
+stimfile=stims/chirp_damp_10k.csv
+stimname=chirp_damp_10k
 OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
