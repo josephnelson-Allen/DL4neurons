@@ -13,7 +13,7 @@
 cd /global/cscratch1/sd/vbaratha/izhi
 
 MODELNAME=hh_point_5param
-VERSION=2
+VERSION=3
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
