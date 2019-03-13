@@ -34,7 +34,7 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
+log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
@@ -367,7 +367,6 @@ def main(args):
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
-        import ipdb; ipdb.set_trace()
         start, stop = get_mpi_idx(len(all_paramsets))
         paramsets = all_paramsets[start:stop, :]
     elif args.num:
