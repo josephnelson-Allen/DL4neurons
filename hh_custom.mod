@@ -26,7 +26,6 @@ NEURON {
         SUFFIX hh_custom
         USEION na READ ena WRITE ina
         USEION k READ ek WRITE ik
-        USEION ca READ eca WRITE ica
         NONSPECIFIC_CURRENT il
         RANGE gnabar, gkbar, gl, el, gna, gk
         GLOBAL minf, hinf, ninf, mtau, htau, ntau
@@ -36,7 +35,6 @@ NEURON {
 PARAMETER {
         gnabar = .12 (S/cm2)	<0,1e9>
         gkbar = .036 (S/cm2)	<0,1e9>
-        gcabar = .036 (S/cm2)	<0,1e9> : TODO: value
         gl = .0003 (S/cm2)	<0,1e9>
         el = -54.3 (mV)
 }
@@ -50,14 +48,11 @@ ASSIGNED {
         celsius (degC)
         ena (mV)
         ek (mV)
-        eca (mV)
 
 	gna (S/cm2)
 	gk (S/cm2)
-        gca (S/cm2)
         ina (mA/cm2)
         ik (mA/cm2)
-        ica (mA/cm2)
         il (mA/cm2)
         minf hinf ninf
 	mtau (ms) htau (ms) ntau (ms)
@@ -99,7 +94,7 @@ PROCEDURE rates(v(mV)) {  :Computes rate and other constants at current v.
         TABLE minf, mtau, hinf, htau, ninf, ntau DEPEND celsius FROM -100 TO 100 WITH 200
 
 UNITSOFF
-        q10 = 3^((celsius - 23)/10)
+        q10 = 3^((celsius - 33)/10)
                 :"m" sodium activation system
         alpha = .1 * vtrap(-(v+40),10)
         beta =  4 * exp(-(v+65)/18)
