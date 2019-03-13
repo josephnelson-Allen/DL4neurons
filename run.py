@@ -82,6 +82,7 @@ def myadvance():
         h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
 
+    
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
@@ -94,10 +95,10 @@ def clean_params(args):
         defaults = DEFAULT_PARAMS[args.model]
         return [float(x if x != 'rand' else 'inf') if x != 'def' else default
                 for (x, default) in zip(args.params, defaults)]
-
     else:
         return args.params
 
+    
 def get_random_params(args, n=1):
     ranges = RANGES[args.model]
     ndim = len(ranges)
@@ -153,7 +154,6 @@ def get_stim(args):
 
     # silence = np.zeros(int(args.silence/args.dt))
     # return np.concatenate([silence, stim, silence])
-
     
     return stim
 
@@ -199,7 +199,6 @@ def create_h5(args, nsamples=NSAMPLES):
         ntimepts = int(args.tstop/args.dt)
         f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
         f.create_dataset('stim', data=stim)
-
     log.info("Done.")
 
 
@@ -256,7 +255,6 @@ def create_nwb(args):
 def save_nwb(args, v, a, b, c, d):
     # outfile must exist
     log.info("Saving nwb...")
-    
     with NWBHDF5IO(args.outfile, 'a', comm=comm) as io:
         nwb = io.read()
         params_dict = {'a': a, 'b': b, 'c': c, 'd': d}
@@ -267,9 +265,7 @@ def save_nwb(args, v, a, b, c, d):
         dset = TimeSeries(name=dset_name, data=v, description=json.dumps(params_dict),
                           starting_time=0.0, rate=1.0/h.dt)
         nwb.add_acquisition(dset)
-
         io.write(nwb)
-        
     log.info("done.")
     
 
