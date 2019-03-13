@@ -12,6 +12,8 @@
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
+nrnivmodl *.mod
+
 MODELNAME=hh_point_5param
 VERSION=3
 

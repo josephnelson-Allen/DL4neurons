@@ -48,10 +48,10 @@ range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 10)
 
-range_gnabar = (0.04, 0.2)
-range_gkbar = (0.01, 0.06)
-range_gcabar = (0.02, 0.18)
-range_gl = (0.001, 0.005)
+range_gnabar = (0.10, 0.14)
+range_gkbar = (0.03, 0.04)
+range_gcabar = (0.05, 0.15)
+range_gl = (0.002, 0.004)
 range_cm = (0.7,1.3)
 
 # Tight ranges, for debugging
@@ -61,11 +61,11 @@ range_cm = (0.7,1.3)
 # range_gl = (0.002, 0.004)
 # range_cm = (0.9, 1.1)
 
-range_gnabar = (0.10, 0.14)
-range_gkbar = (0.03, 0.04)
-range_gcabar = (0.05, 0.15)
-range_gl = (0.002, 0.004)
-range_cm = (0.7,1.3)
+# range_gnabar = (0.3, 0.4)
+# range_gkbar = (0.15, 0.16)
+# range_gcabar = (0.05, 0.06)
+# range_gl = (0.002, 0.004)
+# range_cm = (0.7,1.3)
 
 
 RANGES = {
@@ -95,10 +95,12 @@ def get_random_params(args, n=1):
     return rand
 
         
-def get_mpi_idx(nsamples=NSAMPLES):
+def get_mpi_idx(args, nsamples=NSAMPLES):
     params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
     stop = min(params_per_task * (rank + 1), nsamples)
+    if args.num:
+        stop = min(stop, args.min)
     log.info("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
     log.info("This rank is processing param sets {} through {}".format(start, stop))
 
@@ -261,7 +263,7 @@ def save_nwb(args, v, a, b, c, d):
 def simulate(args, params):
     _start = datetime.now()
 
-    # h.celsius = 33
+    h.celsius = 37
 
     # Simulation parameters
     h.tstop = args.tstop
@@ -289,9 +291,9 @@ def simulate(args, params):
         v.record(cell._ref_V)
     elif args.model == 'hh_point_5param':
         cell = h.Section()
-        cell.insert('hh')
+        cell.insert(args.hh_model)
         cell.insert('ca')
-        hh = cell(0.5).hh
+        hh = getattr(cell(0.5), args.hh_model)
         ca = cell(0.5).ca
 
         gnabar, gkbar, gcabar, gl, cm = params
@@ -353,10 +355,12 @@ def main(args):
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
-        start, stop = get_mpi_idx(len(all_paramsets))
+        start, stop = get_mpi_idx(args, len(all_paramsets))
+        if args.num and start > args.num:
+            return
         paramsets = all_paramsets[start:stop, :]
     elif args.num:
-        start, stop = get_mpi_idx(args.num)
+        start, stop = get_mpi_idx(args, args.num)
         paramsets = get_random_params(args, n=stop-start)
     elif args.params not in (None, [None]):
         paramsets = np.atleast_2d(np.array(args.params))
@@ -387,6 +391,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
 
     parser.add_argument('--model', choices=['izhi', 'hh_point_5param'], default='hh_point_5param')
+    parser.add_argument('--hh-model', choices=['hh', 'hh_custom'], default='hh_custom')
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to. Must exist unless --create is passed')
