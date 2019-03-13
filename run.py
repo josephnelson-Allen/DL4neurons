@@ -92,7 +92,7 @@ def clean_params(args):
     """
     if args.params:
         defaults = DEFAULT_PARAMS[args.model]
-        return [float(x) if x != 'def' else default
+        return [float(x if x != 'rand' else 'inf') if x != 'def' else default
                 for (x, default) in zip(args.params, defaults)]
 
     else:
@@ -436,7 +436,7 @@ if __name__ == '__main__':
                         "See --params. When multithreaded, this is the total number over all ranks")
     parser.add_argument('--params', type=str, nargs='+', default=None,
                         help='When used with --num, fixes the value of some params. To indicate ' + \
-                        'that a param should not be held fixed, set it to "inf". ' + \
+                        'that a param should not be held fixed, set it to "rand". ' + \
                         'to use the default value, use "def"' + \
                         'eg to use the default 1st param, random 2nd param, ' + \
                         'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
