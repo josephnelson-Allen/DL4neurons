@@ -27,7 +27,7 @@ OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 args="--outfile $OUTFILE --stim-file ${stimfile} --param-file ${paramfile} \
-      --model $MODELNAME "
+      --model $MODELNAME --print-every 10"
 
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 

@@ -34,7 +34,7 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
+log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
@@ -57,11 +57,17 @@ range_gl = (0.001, 0.005)
 range_cm = (0.7,1.3)
 
 # Tight ranges, for debugging
-# range_gnabar = (0.10, 0.14)
-# range_gkbar = (0.03, 0.04)
+# range_gnabar = (0.119, 0.121)
+# range_gkbar = (0.035, 0.037)
 # range_gcabar = (0.09, 0.11)
 # range_gl = (0.002, 0.004)
 # range_cm = (0.9, 1.1)
+
+range_gnabar = (0.04, 0.2)
+range_gkbar = (0.01, 0.06)
+range_gcabar = (0.02, 0.18)
+range_gl = (0.001, 0.005)
+range_cm = (0.7,1.3)
 
 
 RANGES = {
@@ -199,6 +205,7 @@ def save_h5(args, buf, params, start, stop):
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.debug("opened h5")
+        log.debug(str(params))
         f['phys_par'][start:stop, :] = params
         mins, maxes = np.min(params, axis=0), np.max(params, axis=0)
         f['norm_par'][start:stop, :] = _normalize(args, params)
@@ -271,6 +278,8 @@ def plot(args, stim, v):
 
 def simulate(args, params):
     _start = datetime.now()
+
+    h.celsius = 33
 
     # Simulation parameters
     h.tstop = args.tstop
@@ -358,6 +367,7 @@ def main(args):
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
+        import ipdb; ipdb.set_trace()
         start, stop = get_mpi_idx(len(all_paramsets))
         paramsets = all_paramsets[start:stop, :]
     elif args.num:
