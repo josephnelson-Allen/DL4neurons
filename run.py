@@ -34,8 +34,6 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
-
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
     'hh_point_5param': (.12, .036, 0.1, .0003, 1.0),
@@ -63,10 +61,10 @@ range_cm = (0.7,1.3)
 # range_gl = (0.002, 0.004)
 # range_cm = (0.9, 1.1)
 
-range_gnabar = (0.04, 0.2)
-range_gkbar = (0.01, 0.06)
-range_gcabar = (0.02, 0.18)
-range_gl = (0.001, 0.005)
+range_gnabar = (0.10, 0.14)
+range_gkbar = (0.03, 0.04)
+range_gcabar = (0.05, 0.15)
+range_gl = (0.002, 0.004)
 range_cm = (0.7,1.3)
 
 
@@ -123,7 +121,7 @@ multiplier = {
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
     'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 15.0,
+    'chirp_damp_10k.csv': 30.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
@@ -421,8 +419,11 @@ if __name__ == '__main__':
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
 
     parser.add_argument('--print-every', type=int, default=None)
+    parser.add_argument('--debug', action='store_true', default=False)
     
     args = parser.parse_args()
+
+    log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG if args.debug else log.INFO)
 
     # args.tstop += 2 * args.silence
 
