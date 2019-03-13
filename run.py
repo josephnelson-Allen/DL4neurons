@@ -106,10 +106,10 @@ def get_random_params(args, n=1):
     params = clean_params(args)
     for i, (_range, param) in enumerate(zip(ranges, params)):
         # Default params swapped in by clean_params()
-        rand_params = _rangeify(rand[:, i], _range)
-        fixed_params = np.array([param] * n)
-        phys_params = rand_params if param == float('inf') else fixed_params
-        rand[:, i] = phys_params
+        if param == float('inf'):
+            rand[:, i] = _rangeify(rand[:, i], _range)
+        else:
+            rand[:, i] = np.array([param] * n)
     return rand
 
         
