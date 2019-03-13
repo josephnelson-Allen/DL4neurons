@@ -38,11 +38,11 @@ log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point': (.12, .036, 0.1, .0003, 1.0),
+    'hh_point_5param': (.12, .036, 0.1, .0003, 1.0),
 }
 NPARAMS = {
     'izhi': 4,
-    'hh_point': 5,
+    'hh_point_5param': 5,
 }
 
 range_a = (0.01, 0.1)
@@ -66,7 +66,7 @@ range_cm = (0.7,1.3)
 
 RANGES = {
     'izhi': (range_a, range_b, range_c, range_d),
-    'hh_point': (range_gnabar, range_gkbar, range_gcabar, range_gl, range_cm),
+    'hh_point_5param': (range_gnabar, range_gkbar, range_gcabar, range_gl, range_cm),
 }
 
 NSAMPLES = 10000
@@ -138,7 +138,7 @@ def attach_stim(args):
     if args.model == 'izhi':
         # redefine NEURON's advance() (runs one timestep) to update the current
         h('proc advance() {nrnpython("myadvance()")}')
-    elif args.model == 'hh_point':
+    elif args.model == 'hh_point_5param':
         # Use an IClamp object
         h('objref clamp')
         clamp = h.IClamp(0.5)
@@ -151,7 +151,7 @@ def attach_stim(args):
         h.stimvals = stimvals
         stimvals.play("clamp.amp = $1", h.dt)
     else:
-        raise ValueError("choose 'izhi' or 'hh_point'")
+        raise ValueError("choose 'izhi' or 'hh_point_5param'")
 
 
 def create_h5(args, nsamples=NSAMPLES):
@@ -296,7 +296,7 @@ def simulate(args, params):
         cell.d = d
         
         v.record(cell._ref_V)
-    elif args.model == 'hh_point':
+    elif args.model == 'hh_point_5param':
         cell = h.Section()
         cell.insert('hh')
         cell.insert('ca')
@@ -312,7 +312,7 @@ def simulate(args, params):
 
         v.record(cell(0.5)._ref_v)
     else:
-        raise ValueError("choose 'izhi' or 'hh_point'")
+        raise ValueError("choose 'izhi' or 'hh_point_5param'")
 
     # Define the stimulus
     stim = get_stim(args)
@@ -391,7 +391,7 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
 
-    parser.add_argument('--model', choices=['izhi', 'hh_point'], default='hh_point')
+    parser.add_argument('--model', choices=['izhi', 'hh_point_5param'], default='hh_point_5param')
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to. Must exist unless --create is passed')
