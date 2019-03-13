@@ -34,7 +34,7 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
+log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
@@ -192,19 +192,19 @@ def _normalize(args, data, minmax=1):
 def save_h5(args, buf, params, start, stop):
     log.info("saving into h5")
     if comm and n_tasks > 1:
-        log.info("using parallel")
+        log.debug("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
-        log.info("using serial")
+        log.debug("using serial")
         kwargs = {}
     with h5py.File(args.outfile, 'a', **kwargs) as f:
-        log.info("opened h5")
+        log.debug("opened h5")
         f['phys_par'][start:stop, :] = params
         mins, maxes = np.min(params, axis=0), np.max(params, axis=0)
         f['norm_par'][start:stop, :] = _normalize(args, params)
         f['voltages'][start:stop, :] = buf
-        log.info("saved h5")
-    log.info("closed h5")
+        log.debug("saved h5")
+    log.debug("closed h5")
 
 
 def create_nwb(args):
@@ -334,12 +334,12 @@ def simulate(args, params):
     # v.record(cell._ref_V)
 
     # Run
-    log.info("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
-    log.info("({} total timesteps)".format(ntimepts))
+    log.debug("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
+    log.debug("({} total timesteps)".format(ntimepts))
 
     h.run()
 
-    log.info("Time to simulate: {}".format(datetime.now() - _start))
+    log.debug("Time to simulate: {}".format(datetime.now() - _start))
 
     # numpy-ify
     # u = np.array(u)
@@ -376,9 +376,9 @@ def main(args):
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
     for i, params in enumerate(paramsets):
-        if i % 100 == 0:
-            log.info(str(i))
-        log.info("About to run with params = {}".format(params))
+        if args.print_every and i % args.print_every == 0:
+            log.info("Processed {} samples".format(i))
+        log.debug("About to run with params = {}".format(params))
         v = simulate(args, params)
         buf[i, :] = v[:-1]
         
@@ -417,13 +417,15 @@ if __name__ == '__main__':
     parser.add_argument('--params', type=float, nargs='+', default=None)
     parser.add_argument('--num', type=int, default=None, required=False,
                         help="number of param values to choose. Will choose randomly. This is the total number over all ranks")
-    parser.add_argument('--param-file', type=str, required=False, default=None)
+    parser.add_argument('--param-file', '--params-file', type=str, required=False, default=None)
 
     # CHOOSE STIMULUS
     parser.add_argument('--stim-type', type=str, default=None)
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
     parser.add_argument('--stim-file', type=str, required=False, default='stims/chirp_damp_10k.csv',
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
+
+    parser.add_argument('--print-every', type=int, default=None)
     
     args = parser.parse_args()
 
