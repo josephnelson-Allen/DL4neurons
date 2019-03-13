@@ -34,7 +34,7 @@ except:
     
 from neuron import h, gui
 
-log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
+log.basicConfig(format='%(asctime)s %(message)s', level=log.INFO)
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
