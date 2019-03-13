@@ -36,7 +36,7 @@ from neuron import h, gui
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (.12, .036, 0.1, .0003, 1.0),
+    'hh_point_5param': (.12, .025, 20.0, .001, 1.0),
 }
 NPARAMS = {
     'izhi': 4,
@@ -46,20 +46,20 @@ NPARAMS = {
 range_a = (0.01, 0.1)
 range_b = (0.1, 0.4)
 range_c = (-80, -50)
-range_d = (0.5, 10)
+range_d = (0.5, 5)
 
-range_gnabar = (0.06, 0.10)
-range_gkbar = (0.03, 0.04)
-range_gcabar = (0.05, 0.15)
-range_gl = (0.0002, 0.0004)
-range_cm = (0.7,1.3)
+# range_gnabar = (0.06, 0.10)
+# range_gkbar = (0.01, 0.04)
+# range_gcabar = (15.0, 50.0)
+# range_gl = (0.0002, 0.002)
+# range_cm = (0.5, 3.0)
 
 # Tight ranges, for debugging
-# range_gnabar = (0.119, 0.121)
-# range_gkbar = (0.035, 0.037)
-# range_gcabar = (0.09, 0.11)
-# range_gl = (0.002, 0.004)
-# range_cm = (0.9, 1.1)
+range_gnabar = (0.1, 0.15)
+range_gkbar = (0.015, 0.035)
+range_gcabar = (14, 26)
+range_gl = (0.0005, 0.0015)
+range_cm = (0.7, 1.3)
 
 # range_gnabar = (0.3, 0.4)
 # range_gkbar = (0.15, 0.16)
@@ -91,12 +91,12 @@ def clean_params(args):
     """
     convert to float, use defaults where requested
     """
+    defaults = DEFAULT_PARAMS[args.model]
     if args.params:
-        defaults = DEFAULT_PARAMS[args.model]
         return [float(x if x != 'rand' else 'inf') if x != 'def' else default
                 for (x, default) in zip(args.params, defaults)]
     else:
-        return args.params
+        return [float('inf')] * len(defaults)
 
     
 def get_random_params(args, n=1):
@@ -269,6 +269,27 @@ def save_nwb(args, v, a, b, c, d):
     log.info("done.")
     
 
+def plot(args, data, stim):
+    ntimepts = int(h.tstop/h.dt)
+    t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
+    if args.plot or args.plot_v:
+        plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
+    if args.plot or args.plot_stim:
+        plt.plot(t_axis, stim[:ntimepts], label='stim')
+    if args.plot or args.plot_ina:
+        plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
+    if args.plot or args.plot_ik:
+        plt.plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
+    if args.plot or args.plot_ica:
+        plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
+    if args.plot or args.plot_i_cap:
+        plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
+
+    if not args.no_legend:
+        plt.legend()
+        
+    plt.show()
+    
 # def silence_spikes(v, args):
 #     npts = int(args.silence/args.dt)
 #     return max(v[:npts]) > 0
@@ -288,10 +309,17 @@ def simulate(args, params):
     if h.dt != args.dt:
         raise ValueError("Invalid choice of dt")
 
+    hoc_vectors = {
+        'v': h.Vector(ntimepts),
+        'ina': h.Vector(ntimepts),
+        'ik': h.Vector(ntimepts),
+        'ica': h.Vector(ntimepts),
+        'i_cap': h.Vector(ntimepts),
+    }
+    
     # Define the cell
     # This doesn't work when done in a separate function, for some reason
     # I think 'dummy' needs to stay in scope?
-    v = h.Vector(ntimepts)
     if args.model == 'izhi':
         dummy = h.Section()
         cell = h.Izhi2003a(0.5,sec=dummy)
@@ -302,7 +330,7 @@ def simulate(args, params):
         cell.c = c
         cell.d = d
         
-        v.record(cell._ref_V)
+        hoc_vectors['v'].record(cell._ref_V) # Capital V because it's not the real membrane voltage
     elif args.model == 'hh_point_5param':
         cell = h.Section()
         cell.insert(args.hh_model)
@@ -317,7 +345,11 @@ def simulate(args, params):
         ca.gbar = gcabar
         cell.cm = cm
 
-        v.record(cell(0.5)._ref_v)
+        hoc_vectors['v'].record(cell(0.5)._ref_v)
+        hoc_vectors['ina'].record(cell(0.5)._ref_ina)
+        hoc_vectors['ica'].record(cell(0.5)._ref_ica)
+        hoc_vectors['ik'].record(cell(0.5)._ref_ik)
+        hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
     else:
         raise ValueError("choose 'izhi' or 'hh_point_5param'")
 
@@ -332,13 +364,6 @@ def simulate(args, params):
 
     # attach the stim to the cell
     attach_stim(args)
-    
-    # Set up recordings of u and v
-    # u = h.Vector(ntimepts)
-    # u.record(cell._ref_u)
-
-    # v = h.Vector(ntimepts)
-    # v.record(cell._ref_V)
 
     # Run
     log.debug("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
@@ -349,21 +374,17 @@ def simulate(args, params):
     log.debug("Time to simulate: {}".format(datetime.now() - _start))
 
     # numpy-ify
-    # u = np.array(u)
-    v = np.array(v)
+    data = {k: np.array(v) for k, v in hoc_vectors.items()}
 
     # Plot
-    if args.plot:
-        t_axis = np.linspace(0, len(v)*h.dt, len(v)-1)
-        plt.plot(t_axis, v[:-1])
-        plt.plot(t_axis, stim[:len(v)-1])
-        plt.show()
+    plot(args, data, stim)
         
-    return v
+    return data
 
 def main(args):
 
-    if not any([args.plot, args.outfile, args.force]):
+    if not any([args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
+                args.plot_ica, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
@@ -392,8 +413,8 @@ def main(args):
         if args.print_every and i % args.print_every == 0:
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
-        v = simulate(args, params)
-        buf[i, :] = v[:-1]
+        data = simulate(args, params)
+        buf[i, :] = data['v'][:-1]
         
     # Save to disk
     if args.outfile:
@@ -415,7 +436,22 @@ if __name__ == '__main__':
     parser.add_argument('--create-params', action='store_true', default=False,
                         help="create the params file (--param-file) and exit. Must use with --num")
 
-    parser.add_argument('--plot', action='store_true', default=False)
+    parser.add_argument('--plot', action='store_true', default=False,
+                        help="plot everything")
+    parser.add_argument('--plot-stim', action='store_true', default=False,
+                        help="plot stimulus")
+    parser.add_argument('--plot-v', action='store_true', default=False,
+                        help="plot voltage")
+    parser.add_argument('--plot-ina', action='store_true', default=False,
+                        help="plot sodium current")
+    parser.add_argument('--plot-ik', action='store_true', default=False,
+                        help="plot potassium current")
+    parser.add_argument('--plot-ica', action='store_true', default=False,
+                        help="plot calcium current")
+    parser.add_argument('--plot-i-cap', '--plot-icap', action='store_true', default=False,
+                        help="plot calcium current")
+    parser.add_argument('--no-legend', action='store_true', default=False,
+                        help="do not display the legend on the plot")
     
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
