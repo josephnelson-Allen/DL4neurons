@@ -22,13 +22,14 @@ NSAMPLES=10000
 
 stimname=chirp_damp_10k
 stimfile=stims/${stimname}.csv
-paramfile=params/${DSET_NAME}.csv
+paramfile=$RUNDIR/${DSET_NAME}.csv
 OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 args="--outfile $OUTFILE --stim-file ${stimfile} --param-file ${paramfile} \
       --model $MODELNAME --print-every 10"
 
+srun -n 1 python runpy $args --create-params
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 
 
