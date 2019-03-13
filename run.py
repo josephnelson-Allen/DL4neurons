@@ -402,7 +402,7 @@ if __name__ == '__main__':
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit")
     parser.add_argument('--create-params', action='store_true', default=False,
-                        help="create the params file (--param-file) and exit")
+                        help="create the params file (--param-file) and exit. Must use with --num")
 
     parser.add_argument('--plot-v', action='store_true', default=False)
     parser.add_argument('--plot-u', action='store_true', default=False)
@@ -411,7 +411,7 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    parser.add_argument('--tstop', type=int, default=160)
+    parser.add_argument('--tstop', type=int, default=200)
     parser.add_argument('--dt', type=float, default=.02)
 
     # parser.add_argument('--silence', type=int, default=0,
@@ -437,6 +437,6 @@ if __name__ == '__main__':
         create_h5(args, nsamples=(args.num or NSAMPLES))
         # create_nwb(args)
     elif args.create_params:
-        np.savetxt("params/hh_v1.csv", get_random_params(args, n=10000))
+        np.savetxt(args.param_file, get_random_params(args, n=args.num))
     else:
         main(args)
