@@ -20,18 +20,19 @@ mkdir $RUNDIR
 DSET_NAME=${MODELNAME}_v$VERSION
 NSAMPLES=10000
 
-stimfile=stims/chirp_damp_10k.csv
 stimname=chirp_damp_10k
+stimfile=stims/${stimname}.csv
+paramfile=params/${DSET_NAME}.csv
 OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
-args="--outfile $OUTFILE --stim-file ${stimfile} --param-file params/${DSET_NAME}.csv \
+args="--outfile $OUTFILE --stim-file ${stimfile} --param-file ${paramfile} \
       --model $MODELNAME "
 
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 
 
-chmod -R a+x $RUNDIR
+chmod -R a+r $RUNDIR
 
 # for stim in $(ls stims)
 # do
