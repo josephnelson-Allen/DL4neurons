@@ -36,7 +36,7 @@ from neuron import h, gui
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (.12, .025, 20.0, .001, 1.0),
+    'hh_point_5param': (1000, 0.5, 0.1, .001, 0.7),
 }
 NPARAMS = {
     'izhi': 4,
@@ -141,7 +141,7 @@ multiplier = {
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
     'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 10.0,
+    'chirp_damp_10k.csv': 50.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
@@ -167,7 +167,7 @@ def attach_stim(args):
         h('objref clamp')
         clamp = h.IClamp(0.5)
         clamp.delay = 0
-        clamp.dur = 100
+        clamp.dur = h.tstop
         h.clamp = clamp
 
         h('objref stimvals')
@@ -314,6 +314,7 @@ def simulate(args, params):
         'ina': h.Vector(ntimepts),
         'ik': h.Vector(ntimepts),
         'ica': h.Vector(ntimepts),
+        'i_leak': h.Vector(ntimepts),
         'i_cap': h.Vector(ntimepts),
     }
     
@@ -333,22 +334,23 @@ def simulate(args, params):
         hoc_vectors['v'].record(cell._ref_V) # Capital V because it's not the real membrane voltage
     elif args.model == 'hh_point_5param':
         cell = h.Section()
-        cell.insert(args.hh_model)
+        cell.insert('na')
+        cell.insert('kv')
         cell.insert('ca')
-        hh = getattr(cell(0.5), args.hh_model)
-        ca = cell(0.5).ca
+        cell.insert('pas')
 
         gnabar, gkbar, gcabar, gl, cm = params
-        hh.gnabar = gnabar
-        hh.gkbar = gkbar
-        hh.gl = gl
-        ca.gbar = gcabar
+        cell(0.5).na.gbar = gnabar
+        cell(0.5).kv.gbar = gkbar
+        cell(0.5).ca.gbar = gcabar
+        cell(0.5).pas.g = gl
         cell.cm = cm
 
         hoc_vectors['v'].record(cell(0.5)._ref_v)
         hoc_vectors['ina'].record(cell(0.5)._ref_ina)
         hoc_vectors['ica'].record(cell(0.5)._ref_ica)
         hoc_vectors['ik'].record(cell(0.5)._ref_ik)
+        hoc_vectors['i_cap'].record(cell(0.5).pas._ref_i)
         hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
     else:
         raise ValueError("choose 'izhi' or 'hh_point_5param'")
@@ -426,7 +428,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
 
     parser.add_argument('--model', choices=['izhi', 'hh_point_5param'], default='hh_point_5param')
-    parser.add_argument('--hh-model', choices=['hh', 'hh_custom'], default='hh_custom')
     parser.add_argument('--celsius', type=float, default=33)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
