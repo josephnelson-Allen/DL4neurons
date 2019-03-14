@@ -36,7 +36,7 @@ from neuron import h, gui
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (1000, 5, 0.1, .0004, 1.0),
+    'hh_point_5param': (500, 10, 1.5, .0005, 0.5),
 }
 NPARAMS = {
     'izhi': 4,
@@ -48,11 +48,11 @@ range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 5)
 
-range_gnabar = (800, 1200)
-range_gkbar = (3.5, 6.5)
-range_gcabar = (0.06, 0.14)
-range_gl = (0.0002, 0.0006)
-range_cm = (0.7, 1.3)
+range_gnabar = (200, 800)
+range_gkbar = (8, 15)
+range_gcabar = (1, 2)
+range_gl = (0.0004, 0.00055)
+range_cm = (0.3, 0.7)
 
 
 RANGES = {
