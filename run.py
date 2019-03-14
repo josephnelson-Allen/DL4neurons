@@ -167,7 +167,7 @@ def attach_stim(args):
         h('objref clamp')
         clamp = h.IClamp(0.5)
         clamp.delay = 0
-        clamp.dur = 100
+        clamp.dur = h.tstop
         h.clamp = clamp
 
         h('objref stimvals')
