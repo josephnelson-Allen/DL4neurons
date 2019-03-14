@@ -36,7 +36,7 @@ from neuron import h, gui
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (.12, .025, 20.0, .001, 1.0),
+    'hh_point_5param': (500, 10, 1.5, .0005, 0.5),
 }
 NPARAMS = {
     'izhi': 4,
@@ -48,24 +48,11 @@ range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 5)
 
-# range_gnabar = (0.06, 0.10)
-# range_gkbar = (0.01, 0.04)
-# range_gcabar = (15.0, 50.0)
-# range_gl = (0.0002, 0.002)
-# range_cm = (0.5, 3.0)
-
-# Tight ranges, for debugging
-range_gnabar = (0.1, 0.15)
-range_gkbar = (0.015, 0.035)
-range_gcabar = (14, 26)
-range_gl = (0.0005, 0.0015)
-range_cm = (0.7, 1.3)
-
-# range_gnabar = (0.3, 0.4)
-# range_gkbar = (0.15, 0.16)
-# range_gcabar = (0.05, 0.06)
-# range_gl = (0.0002, 0.0004)
-# range_cm = (0.7,1.3)
+range_gnabar = (200, 800)
+range_gkbar = (8, 15)
+range_gcabar = (1, 2)
+range_gl = (0.0004, 0.00055)
+range_cm = (0.3, 0.7)
 
 
 RANGES = {
@@ -141,7 +128,7 @@ multiplier = {
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
     'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 10.0,
+    'chirp_damp_10k.csv': 15.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
@@ -284,6 +271,8 @@ def plot(args, data, stim):
         plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
     if args.plot or args.plot_i_cap:
         plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
+    if args.plot or args.plot_i_leak:
+        plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
 
     if not args.no_legend:
         plt.legend()
@@ -314,6 +303,7 @@ def simulate(args, params):
         'ina': h.Vector(ntimepts),
         'ik': h.Vector(ntimepts),
         'ica': h.Vector(ntimepts),
+        'i_leak': h.Vector(ntimepts),
         'i_cap': h.Vector(ntimepts),
     }
     
@@ -333,22 +323,23 @@ def simulate(args, params):
         hoc_vectors['v'].record(cell._ref_V) # Capital V because it's not the real membrane voltage
     elif args.model == 'hh_point_5param':
         cell = h.Section()
-        cell.insert(args.hh_model)
+        cell.insert('na')
+        cell.insert('kv')
         cell.insert('ca')
-        hh = getattr(cell(0.5), args.hh_model)
-        ca = cell(0.5).ca
+        cell.insert('pas')
 
         gnabar, gkbar, gcabar, gl, cm = params
-        hh.gnabar = gnabar
-        hh.gkbar = gkbar
-        hh.gl = gl
-        ca.gbar = gcabar
+        cell(0.5).na.gbar = gnabar
+        cell(0.5).kv.gbar = gkbar
+        cell(0.5).ca.gbar = gcabar
+        cell(0.5).pas.g = gl
         cell.cm = cm
 
         hoc_vectors['v'].record(cell(0.5)._ref_v)
         hoc_vectors['ina'].record(cell(0.5)._ref_ina)
         hoc_vectors['ica'].record(cell(0.5)._ref_ica)
         hoc_vectors['ik'].record(cell(0.5)._ref_ik)
+        hoc_vectors['i_cap'].record(cell(0.5).pas._ref_i)
         hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
     else:
         raise ValueError("choose 'izhi' or 'hh_point_5param'")
@@ -426,7 +417,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
 
     parser.add_argument('--model', choices=['izhi', 'hh_point_5param'], default='hh_point_5param')
-    parser.add_argument('--hh-model', choices=['hh', 'hh_custom'], default='hh_custom')
     parser.add_argument('--celsius', type=float, default=33)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
@@ -449,7 +439,9 @@ if __name__ == '__main__':
     parser.add_argument('--plot-ica', action='store_true', default=False,
                         help="plot calcium current")
     parser.add_argument('--plot-i-cap', '--plot-icap', action='store_true', default=False,
-                        help="plot calcium current")
+                        help="plot capacitive current")
+    parser.add_argument('--plot-i-leak', '--plot-ileak', action='store_true', default=False,
+                        help="plot leak current")
     parser.add_argument('--no-legend', action='store_true', default=False,
                         help="do not display the legend on the plot")
     
