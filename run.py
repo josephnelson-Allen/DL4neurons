@@ -36,7 +36,7 @@ from neuron import h, gui
 
 DEFAULT_PARAMS = {
     'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (1000, 0.5, 0.1, .001, 0.7),
+    'hh_point_5param': (1000, 5, 0.1, .0004, 1.0),
 }
 NPARAMS = {
     'izhi': 4,
@@ -48,24 +48,11 @@ range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 5)
 
-# range_gnabar = (0.06, 0.10)
-# range_gkbar = (0.01, 0.04)
-# range_gcabar = (15.0, 50.0)
-# range_gl = (0.0002, 0.002)
-# range_cm = (0.5, 3.0)
-
-# Tight ranges, for debugging
-range_gnabar = (0.1, 0.15)
-range_gkbar = (0.015, 0.035)
-range_gcabar = (14, 26)
-range_gl = (0.0005, 0.0015)
+range_gnabar = (800, 1200)
+range_gkbar = (3.5, 6.5)
+range_gcabar = (0.06, 0.14)
+range_gl = (0.0002, 0.0006)
 range_cm = (0.7, 1.3)
-
-# range_gnabar = (0.3, 0.4)
-# range_gkbar = (0.15, 0.16)
-# range_gcabar = (0.05, 0.06)
-# range_gl = (0.0002, 0.0004)
-# range_cm = (0.7,1.3)
 
 
 RANGES = {
@@ -141,7 +128,7 @@ multiplier = {
     'chirp_05.csv': 10.0,
     'chirp_damp.csv': 15.0,
     'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 50.0,
+    'chirp_damp_10k.csv': 15.0,
     'he_1i_1.csv': 20.0,
 }
 def get_stim(args):
@@ -284,6 +271,8 @@ def plot(args, data, stim):
         plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
     if args.plot or args.plot_i_cap:
         plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
+    if args.plot or args.plot_i_leak:
+        plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
 
     if not args.no_legend:
         plt.legend()
@@ -450,7 +439,9 @@ if __name__ == '__main__':
     parser.add_argument('--plot-ica', action='store_true', default=False,
                         help="plot calcium current")
     parser.add_argument('--plot-i-cap', '--plot-icap', action='store_true', default=False,
-                        help="plot calcium current")
+                        help="plot capacitive current")
+    parser.add_argument('--plot-i-leak', '--plot-ileak', action='store_true', default=False,
+                        help="plot leak current")
     parser.add_argument('--no-legend', action='store_true', default=False,
                         help="do not display the legend on the plot")
     
