@@ -48,6 +48,13 @@ print('parU shape',parU.shape)
 print('physRange shape',physRange.shape,physRange)
 
 
+plt.scatter(parP[:, 1], parP[:, 2])
+plt.xlabel('gkbar')
+plt.ylabel('gcabar')
+plt.show()
+exit()
+
+
 stim=h5f['stim']
 stim=np.array(stim)
 

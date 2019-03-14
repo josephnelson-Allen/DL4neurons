@@ -62,14 +62,18 @@ RANGES = {
 
 NSAMPLES = 10000
 
+i_mem = None
     
 def myadvance():
+    global i_mem
     idx = int(h.t/h.dt)
-    if idx < len(h.stim) and args.model == 'izhi':
-        h.cell.Iin = h.stim[int(h.t/h.dt)]
-    if args.save_current:
-        h.i_mem[idx] = h.cell.i_membrane_
+    # if idx < len(h.stim) and args.model == 'izhi':
+    #     h.cell.Iin = h.stim[int(h.t/h.dt)]
     h.fadvance()
+    i_mem[idx] = h.cell(0.5).i_membrane_
+    if idx == 8000:
+        plt.plot(i_mem)
+        plt.show()
 
     
 def _rangeify(data, _range):
@@ -258,7 +262,8 @@ def save_nwb(args, v, a, b, c, d):
     log.info("done.")
     
 
-def plot(args, data, stim): 
+def plot(args, data, stim):
+    global i_mem 
     if not np.any([
             args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
             args.plot_ica, args.plot_i_cap, args.plot_i_leak, args.plot_i_mem
@@ -283,7 +288,8 @@ def plot(args, data, stim):
         plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
     if args.save_current and (args.plot or args.plot_i_mem):
         # plt.plot(t_axis, data['i_mem'][:ntimepts] * 10, label='i_mem*10')
-        plt.plot(t_axis, h.i_mem[:ntimepts]*10)
+        # plt.plot(t_axis, h.i_mem[:ntimepts]*10)
+        plt.plot(t_axis, i_mem[:ntimepts]*1000)
 
     if not args.no_legend:
         plt.legend()
@@ -300,14 +306,11 @@ def setup_hoc(args):
     if args.save_current:
         h.cvode.use_fast_imem(1)
         h('proc advance() {nrnpython("myadvance()")}')
-        h('objref i_mem')
 
-
+        
 def simulate(args, params, stim):
     _start = datetime.now()
 
-    h.i_mem = np.zeros(int(args.tstop/args.dt)+1)
-    
     # Simulation parameters
     h.tstop = args.tstop
     h.steps_per_ms = 1./args.dt
@@ -392,7 +395,7 @@ def simulate(args, params, stim):
     return data
 
 def main(args):
-
+    global i_mem
     if not any([
             args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
             args.plot_ica, args.plot_i_leak, args.plot_i_cap, args.plot_i_mem,
@@ -432,6 +435,9 @@ def main(args):
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
 
+        # Reset i_mem
+        i_mem = np.zeros(int(args.tstop/args.dt)+1)
+    
         # Run
         data = simulate(args, params, stim)
 
