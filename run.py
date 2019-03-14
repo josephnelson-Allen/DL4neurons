@@ -65,8 +65,10 @@ NSAMPLES = 10000
     
 def myadvance():
     idx = int(h.t/h.dt)
-    if idx < len(h.stim):
+    if idx < len(h.stim) and args.model == 'izhi':
         h.cell.Iin = h.stim[int(h.t/h.dt)]
+    if args.save_current:
+        h.i_mem[idx] = h.cell.i_membrane_
     h.fadvance()
 
     
@@ -200,7 +202,7 @@ def _normalize(args, data, minmax=1):
 
     
 def save_h5(args, buf, params, start, stop):
-    log.info("saving into h5")
+    log.info("saving into {}".format(args.outfile))
     if comm and n_tasks > 1:
         log.debug("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
@@ -256,7 +258,13 @@ def save_nwb(args, v, a, b, c, d):
     log.info("done.")
     
 
-def plot(args, data, stim):
+def plot(args, data, stim): 
+    if not np.any([
+            args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
+            args.plot_ica, args.plot_i_cap, args.plot_i_leak, args.plot_i_mem
+    ]):
+        return
+    
     ntimepts = int(h.tstop/h.dt)
     t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
     if args.plot or args.plot_v:
@@ -273,6 +281,9 @@ def plot(args, data, stim):
         plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
     if args.plot or args.plot_i_leak:
         plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
+    if args.save_current and (args.plot or args.plot_i_mem):
+        # plt.plot(t_axis, data['i_mem'][:ntimepts] * 10, label='i_mem*10')
+        plt.plot(t_axis, h.i_mem[:ntimepts]*10)
 
     if not args.no_legend:
         plt.legend()
@@ -284,11 +295,19 @@ def plot(args, data, stim):
 #     return max(v[:npts]) > 0
 
 
-def simulate(args, params):
+def setup_hoc(args):
+    h.celsius = args.celsius
+    if args.save_current:
+        h.cvode.use_fast_imem(1)
+        h('proc advance() {nrnpython("myadvance()")}')
+        h('objref i_mem')
+
+
+def simulate(args, params, stim):
     _start = datetime.now()
 
-    h.celsius = args.celsius
-
+    h.i_mem = np.zeros(int(args.tstop/args.dt)+1)
+    
     # Simulation parameters
     h.tstop = args.tstop
     h.steps_per_ms = 1./args.dt
@@ -327,6 +346,12 @@ def simulate(args, params):
         cell.insert('kv')
         cell.insert('ca')
         cell.insert('pas')
+        if args.save_current:
+            cell.insert('extracellular')
+            hoc_vectors['i_mem'] = h.Vector(ntimepts)
+            hoc_vectors['i_mem'].record(cell(0.5)._ref_i_membrane_)
+            # Trailing underscore gives total membrane current
+            # as opposed to specific current (current per unit area)
 
         gnabar, gkbar, gcabar, gl, cm = params
         cell(0.5).na.gbar = gnabar
@@ -339,13 +364,10 @@ def simulate(args, params):
         hoc_vectors['ina'].record(cell(0.5)._ref_ina)
         hoc_vectors['ica'].record(cell(0.5)._ref_ica)
         hoc_vectors['ik'].record(cell(0.5)._ref_ik)
-        hoc_vectors['i_cap'].record(cell(0.5).pas._ref_i)
+        hoc_vectors['i_leak'].record(cell(0.5).pas._ref_i)
         hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
     else:
         raise ValueError("choose 'izhi' or 'hh_point_5param'")
-
-    # Define the stimulus
-    stim = get_stim(args)
 
     # Make the stimulus and cell objects accessible from hoc
     h('objref stim')
@@ -367,17 +389,19 @@ def simulate(args, params):
     # numpy-ify
     data = {k: np.array(v) for k, v in hoc_vectors.items()}
 
-    # Plot
-    plot(args, data, stim)
-        
     return data
 
 def main(args):
 
-    if not any([args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
-                args.plot_ica, args.outfile, args.force]):
+    if not any([
+            args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
+            args.plot_ica, args.plot_i_leak, args.plot_i_cap, args.plot_i_mem,
+            args.outfile, args.force
+    ]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
+
+    setup_hoc(args)
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
@@ -400,12 +424,25 @@ def main(args):
     ntimepts = int(args.tstop/args.dt)
     buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
 
+    # Get the stimulus
+    stim = get_stim(args)
+
     for i, params in enumerate(paramsets):
         if args.print_every and i % args.print_every == 0:
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
-        data = simulate(args, params)
-        buf[i, :] = data['v'][:-1]
+
+        # Run
+        data = simulate(args, params, stim)
+
+        # Store
+        if args.outfile:
+            datakey = 'i_mem' if args.save_current else 'v'
+            buf[i, :] = data[datakey][:-1]
+        
+        # Plot
+        plot(args, data, stim)
+        
         
     # Save to disk
     if args.outfile:
@@ -442,6 +479,8 @@ if __name__ == '__main__':
                         help="plot capacitive current")
     parser.add_argument('--plot-i-leak', '--plot-ileak', action='store_true', default=False,
                         help="plot leak current")
+    parser.add_argument('--plot-i-mem', '--plot-imem', action='store_true', default=False,
+                        help="plot membrane current. Must pass --save-current")
     parser.add_argument('--no-legend', action='store_true', default=False,
                         help="do not display the legend on the plot")
     
@@ -476,6 +515,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--print-every', type=int, default=None)
     parser.add_argument('--debug', action='store_true', default=False)
+    parser.add_argument('--save-current', '--store-current', action='store_true', default=False,
+                        help="store membrane currents instead of potentials")
     
     args = parser.parse_args()
 

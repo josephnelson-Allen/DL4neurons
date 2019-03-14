@@ -62,7 +62,6 @@ j=0
 
 for ii in range(50):  
     i=np.random.randint(nTrace)
-    i=ii
     voltage = voltB[i]#-voltB[0]
     id = i
     paru=parU[i]
