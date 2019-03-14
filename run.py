@@ -378,6 +378,10 @@ def main(args):
                 args.plot_ica, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
+    
+    if args.stim_file:
+        log.info("not using --tstop because --stim-file was specified")
+        args.tstop = len(get_stim(args))
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
@@ -471,7 +475,7 @@ if __name__ == '__main__':
     parser.add_argument('--stim-type', type=str, default=None)
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
     parser.add_argument('--stim-file', type=str, required=False, default='stims/chirp_damp_10k.csv',
-                        help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx")# and --tstop")
+                        help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
     parser.add_argument('--stim-dc-offset', type=float, default=0.0)
 
     parser.add_argument('--print-every', type=int, default=None)
