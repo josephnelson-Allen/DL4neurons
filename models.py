@@ -11,7 +11,7 @@ class BaseModel(object):
         h.celsius = kwargs.pop('celsius', 33)
         self.log = kwargs.pop('log', print)
 
-        # model params
+        # Model params
         for (var, val) in zip(self.PARAM_NAMES, args):
             setattr(self, var, val)
 
@@ -23,14 +23,10 @@ class BaseModel(object):
         h.tstop = tstop
         h.steps_per_ms = 1./dt
         h.stdinit()
-        self.ntimepts = int(h.tstop/h.dt)
-
-    def iclamp_attach_pt(self):
-        return h.cell(0.5)
 
     def attach_clamp(self):
         h('objref clamp')
-        clamp = h.IClamp(self.iclamp_attach_pt())
+        clamp = h.IClamp(h.cell(0.5))
         clamp.delay = 0
         clamp.dur = h.tstop
         h.clamp = clamp
@@ -172,6 +168,11 @@ class HHBallStick7Param(BaseModel):
         dend.diam = self.dend_diam
         dend.insert('na')
         dend.insert('kv')
+
+        dend.connect(soma(1))
+
+        # Persist it
+        self.dend = dend
         
         for sec in h.allsec():
             sec.cm = self.cm
