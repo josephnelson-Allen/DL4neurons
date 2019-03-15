@@ -186,3 +186,11 @@ class HHBallStick7Param(BaseModel):
             seg.kv.gbar = self.gkbar_dend
 
         return soma
+
+    def attach_recordings(self, ntimepts):
+        hoc_vectors = super(HHBallStick7Param, self).attach_recordings(ntimepts)
+
+        hoc_vectors['v_dend'] = h.Vector(ntimepts)
+        hoc_vectors['v_dend'].record(self.dend(1)._ref_v) # record from distal end of stick
+        
+        return hoc_vectors

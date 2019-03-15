@@ -135,25 +135,26 @@ def save_h5(args, buf, params, start, stop):
 
 
 def plot(args, data, stim):
+
     ntimepts = len(stim)
     t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
     
     plt.figure(figsize=(10, 5))
     plt.xlabel('Time (ms)')
 
-    if args.plot or args.plot_v:
+    if args.plot == [] or 'v' in args.plot:
         plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
-    if args.plot or args.plot_stim:
+    if args.plot == [] or 'stim' in args.plot:
         plt.plot(t_axis, stim[:ntimepts], label='stim')
-    if args.plot or args.plot_ina:
+    if args.plot == [] or 'ina' in args.plot:
         plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
-    if args.plot or args.plot_ik:
+    if args.plot == [] or 'ik' in args.plot:
         plt.plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
-    if args.plot or args.plot_ica:
+    if args.plot == [] or 'ica' in args.plot:
         plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
-    if args.plot or args.plot_i_cap:
+    if args.plot == [] or 'i_cap' in args.plot:
         plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
-    if args.plot or args.plot_i_leak:
+    if args.plot == [] or 'i_leak' in args.plot:
         plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
 
     if not args.no_legend:
@@ -163,8 +164,7 @@ def plot(args, data, stim):
 
 
 def main(args):
-    if not any([args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
-                args.plot_ica, args.outfile, args.force]):
+    if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
@@ -231,22 +231,12 @@ if __name__ == '__main__':
         help="create the params file (--param-file) and exit. Must use with --num"
     )
 
-    parser.add_argument('--plot', action='store_true', default=False,
-                        help="plot everything")
-    parser.add_argument('--plot-stim', action='store_true', default=False,
-                        help="plot stimulus")
-    parser.add_argument('--plot-v', action='store_true', default=False,
-                        help="plot voltage")
-    parser.add_argument('--plot-ina', action='store_true', default=False,
-                        help="plot sodium current")
-    parser.add_argument('--plot-ik', action='store_true', default=False,
-                        help="plot potassium current")
-    parser.add_argument('--plot-ica', action='store_true', default=False,
-                        help="plot calcium current")
-    parser.add_argument('--plot-i-cap', '--plot-icap', action='store_true', default=False,
-                        help="plot capacitive current")
-    parser.add_argument('--plot-i-leak', '--plot-ileak', action='store_true', default=False,
-                        help="plot leak current")
+    parser.add_argument(
+        '--plot', nargs='*',
+        choices=['v', 'stim', 'ina', 'ica', 'ik', 'i_leak', 'i_cap', 'v_dend'],
+        default=None,
+        help="--plot w/ no arguments: plot everything. --plot [args]: print the given variables"
+    )
     parser.add_argument('--no-legend', action='store_true', default=False,
                         help="do not display the legend on the plot")
     
