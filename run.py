@@ -124,20 +124,13 @@ def get_mpi_idx(args, nsamples):
     return start, stop
 
 
-multiplier = {
-    'Ramp_0p5.csv': 30.0,
-    'Step_0p2.csv': 30.0,
-    'chirp_05.csv': 10.0,
-    'chirp_damp.csv': 15.0,
-    'chirp_damp_8k.csv': 15.0,
-    'chirp_damp_10k.csv': 15.0,
-    'he_1i_1.csv': 20.0,
-}
 def get_stim(args):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
     if args.stim_file:
         stim_fn = os.path.basename(args.stim_file)
-        return (np.genfromtxt(args.stim_file, dtype=np.float64) + args.stim_dc_offset) * (args.stim_multiplier or multiplier[stim_fn])
+        multiplier = args.stim_multiplier or (.12 if args.model == 'hh_ball_stick_7param' else 15.0)
+        log.debug("Stim multiplier = {}".format(multiplier))
+        return (np.genfromtxt(args.stim_file, dtype=np.float64) + args.stim_dc_offset) * multiplier
     else:
         return stims[args.stim_type][args.stim_idx]
 
@@ -239,7 +232,7 @@ def plot(args, data, stim):
     plt.show()
 
 
-def record_all(args, hoc_vectors):
+def record_all(args, cell, hoc_vectors):
     hoc_vectors['v'].record(cell(0.5)._ref_v)
     hoc_vectors['ina'].record(cell(0.5)._ref_ina)
     hoc_vectors['ica'].record(cell(0.5)._ref_ica)
@@ -298,10 +291,11 @@ def simulate(args, params):
         cell(0.5).ca.gbar = gcabar
         cell(0.5).pas.g = gl
         cell.cm = cm
+
+        record_all(args, cell, hoc_vectors)
     elif args.model == 'hh_ball_stick_7param':
         cell = h.Section()
         cell.L = cell.diam = SOMA_DIAM
-        
         cell.insert('na')
         cell.insert('kv')
         cell.insert('ca')
@@ -310,7 +304,6 @@ def simulate(args, params):
         dend = h.Section()
         dend.L = DEND_LENGTH
         dend.diam = DEND_DIAM
-
         dend.insert('na')
         dend.insert('kv')
         
@@ -326,12 +319,7 @@ def simulate(args, params):
             seg.na.gbar = gnabar_dend
             seg.kv.gbar = gkbar_dend
 
-        hoc_vectors['v'].record(cell(0.5)._ref_v)
-        hoc_vectors['ina'].record(cell(0.5)._ref_ina)
-        hoc_vectors['ica'].record(cell(0.5)._ref_ica)
-        hoc_vectors['ik'].record(cell(0.5)._ref_ik)
-        hoc_vectors['i_leak'].record(cell(0.5).pas._ref_i)
-        hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
+        record_all(args, cell, hoc_vectors)
     else:
         raise WRONG_MODEL_ERROR
 
@@ -462,7 +450,7 @@ if __name__ == '__main__':
     # CHOOSE STIMULUS
     parser.add_argument('--stim-type', type=str, default=None)
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
-    parser.add_argument('--stim-file', type=str, default='stims/chirp_damp_10k.csv',
+    parser.add_argument('--stim-file', type=str, default='stims/chirp_damp_16k_v1.csv',
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
     parser.add_argument('--stim-dc-offset', type=float, default=0.0)
     parser.add_argument('--stim-multiplier', type=float, default=None)
