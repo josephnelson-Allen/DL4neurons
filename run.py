@@ -1,9 +1,5 @@
 from __future__ import print_function
 
-"""
-Run this script from the same directory as the compiled modfiles
-"""
-
 import os
 import json
 import itertools
@@ -32,35 +28,53 @@ except:
     
 from neuron import h, gui
 
-DEFAULT_PARAMS = {
-    'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (500, 10, 1.5, .0005, 0.5),
-}
-NPARAMS = {
-    'izhi': 4,
-    'hh_point_5param': 5,
-}
+ALL_MODELS = (
+    'izhi',
+    'hh_point_5param',
+    'hh_ball_stick_7param',
+)
+WRONG_MODEL_ERROR = ValueError("choose {}".format('or'.join("'{}'".format(model) for model in ALL_MODELS)))
 
+# izhi
 range_a = (0.01, 0.1)
 range_b = (0.1, 0.4)
 range_c = (-80, -50)
 range_d = (0.5, 5)
 
+# hh_point_5param
 range_gnabar = (200, 800)
 range_gkbar = (8, 15)
 range_gcabar = (1, 2)
 range_gl = (0.0004, 0.00055)
 range_cm = (0.3, 0.7)
 
+# hh_ball_stick_7param
+range_gnabar_soma = (200, 800)
+range_gnabar_dend = (200, 800)
+range_gkbar_soma = (8, 15)
+range_gkbar_dend = (8, 15)
+range_gcabar_soma = (1, 2)
+range_gl_soma = (0.0004, 0.00055)
+range_cm = (0.3, 0.7)
+
+SOMA_DIAM = 21 # source: https://synapseweb.clm.utexas.edu/dimensions-dendrites and Fiala and Harris, 1999, table 1.1
+DEND_DIAM = SOMA_DIAM / 10.
+DEND_LENGTH = SOMA_DIAM * 10.
 
 RANGES = {
     'izhi': (range_a, range_b, range_c, range_d),
     'hh_point_5param': (range_gnabar, range_gkbar, range_gcabar, range_gl, range_cm),
+    'hh_ball_stick_7param': (range_gnabar_soma, range_gnabar_dend, range_gkbar_soma, range_gkbar_dend, range_gcabar_soma, range_gl_soma, range_cm),
 }
 
-NSAMPLES = 10000
+DEFAULT_PARAMS = {
+    'izhi': (0.02, 0.2, -65., 2.),
+    'hh_point_5param': (500, 10, 1.5, .0005, 0.5),
+    'hh_ball_stick_7param': (500, 500, 10, 10, 1.5, .0005, 0.5),
+}
 
-    
+
+# TODO: play() a Vector into h.cell.Iin instead of this shit
 def myadvance():
     idx = int(h.t/h.dt)
     if idx < len(h.stim):
@@ -98,7 +112,7 @@ def get_random_params(args, n=1):
     return rand
 
         
-def get_mpi_idx(args, nsamples=NSAMPLES):
+def get_mpi_idx(args, nsamples):
     params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
     stop = min(params_per_task * (rank + 1), nsamples)
@@ -108,16 +122,6 @@ def get_mpi_idx(args, nsamples=NSAMPLES):
     log.info("This rank is processing param sets {} through {}".format(start, stop))
 
     return start, stop
-
-
-def get_params_mpi(nsamples=NSAMPLES):
-    """
-    Get the list of parameter sets for this MPI task
-    """
-    paramsets = get_paramsets(nsamples=nsamples)
-    start, stop = get_mpi_idx(nsamples=nsamples)
-
-    return paramsets[start:stop], start, stop
 
 
 multiplier = {
@@ -133,26 +137,21 @@ def get_stim(args):
     # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
     if args.stim_file:
         stim_fn = os.path.basename(args.stim_file)
-        stim = (np.genfromtxt(args.stim_file, dtype=np.float64) + args.stim_dc_offset) * multiplier[stim_fn]
+        return (np.genfromtxt(args.stim_file, dtype=np.float64) + args.stim_dc_offset) * (args.stim_multiplier or multiplier[stim_fn])
     else:
-        stim = stims[args.stim_type][args.stim_idx]
-
-    # silence = np.zeros(int(args.silence/args.dt))
-    # return np.concatenate([silence, stim, silence])
-    
-    return stim
+        return stims[args.stim_type][args.stim_idx]
 
 
-def attach_stim(args):
+def attach_stim(args, where=None):
     if args.model == 'izhi':
         # redefine NEURON's advance() (runs one timestep) to update the current
         h('proc advance() {nrnpython("myadvance()")}')
-    elif args.model == 'hh_point_5param':
+    elif args.model in ('hh_point_5param', 'hh_ball_stick_7param'):
         # Use an IClamp object
         h('objref clamp')
-        clamp = h.IClamp(0.5)
+        clamp = h.IClamp(where or h.cell(0.5))
         clamp.delay = 0
-        clamp.dur = h.tstop
+        clamp.dur = args.tstop
         h.clamp = clamp
 
         h('objref stimvals')
@@ -160,10 +159,10 @@ def attach_stim(args):
         h.stimvals = stimvals
         stimvals.play("clamp.amp = $1", h.dt)
     else:
-        raise ValueError("choose 'izhi' or 'hh_point_5param'")
+        raise WRONG_MODEL_ERROR
 
 
-def create_h5(args, nsamples=NSAMPLES):
+def create_h5(args, nsamples):
     """
     Run in serial mode
     """
@@ -171,7 +170,7 @@ def create_h5(args, nsamples=NSAMPLES):
     log.info("Creating h5 file")
     with h5py.File(args.outfile, 'w') as f:
         # write params
-        ndim = NPARAMS[args.model]
+        ndim = len(RANGES[args.model])
         f.create_dataset('phys_par', shape=(nsamples, ndim))
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
@@ -216,44 +215,6 @@ def save_h5(args, buf, params, start, stop):
     log.debug("closed h5")
 
 
-def create_nwb(args):
-    log.info("Creating and writing nwb file {}...".format(args.outfile))
-    nwb = NWBFile(
-        session_description='izhikevich simulation',
-        identifier='izhi',
-        session_start_time=datetime.now(),
-        file_create_date=datetime.now(),
-        experimenter='Vyassa Baratham',
-        experiment_description='izhikevich simulations for DL',
-        session_id='izhi',
-        institution='LBL/UCB',
-        lab='NSE Lab',
-        pharmacology='',
-        notes='',
-    )
-    add_stims(nwb)
-    with NWBHDF5IO(args.outfile, 'w') as io:
-        io.write(nwb)
-    log.info("Done.")
-
-
-def save_nwb(args, v, a, b, c, d):
-    # outfile must exist
-    log.info("Saving nwb...")
-    with NWBHDF5IO(args.outfile, 'a', comm=comm) as io:
-        nwb = io.read()
-        params_dict = {'a': a, 'b': b, 'c': c, 'd': d}
-
-        stim_str = '{}_{:02d}'.format(args.stim_type, args.stim_idx)
-        param_str = hash((a, b, c, d))
-        dset_name = '{}__{}'.format(stim_str, param_str)
-        dset = TimeSeries(name=dset_name, data=v, description=json.dumps(params_dict),
-                          starting_time=0.0, rate=1.0/h.dt)
-        nwb.add_acquisition(dset)
-        io.write(nwb)
-    log.info("done.")
-    
-
 def plot(args, data, stim):
     ntimepts = int(h.tstop/h.dt)
     t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
@@ -276,10 +237,15 @@ def plot(args, data, stim):
         plt.legend()
         
     plt.show()
-    
-# def silence_spikes(v, args):
-#     npts = int(args.silence/args.dt)
-#     return max(v[:npts]) > 0
+
+
+def record_all(args, hoc_vectors):
+    hoc_vectors['v'].record(cell(0.5)._ref_v)
+    hoc_vectors['ina'].record(cell(0.5)._ref_ina)
+    hoc_vectors['ica'].record(cell(0.5)._ref_ica)
+    hoc_vectors['ik'].record(cell(0.5)._ref_ik)
+    hoc_vectors['i_leak'].record(cell(0.5).pas._ref_i)
+    hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
 
 
 def simulate(args, params):
@@ -332,15 +298,42 @@ def simulate(args, params):
         cell(0.5).ca.gbar = gcabar
         cell(0.5).pas.g = gl
         cell.cm = cm
+    elif args.model == 'hh_ball_stick_7param':
+        cell = h.Section()
+        cell.L = cell.diam = SOMA_DIAM
+        
+        cell.insert('na')
+        cell.insert('kv')
+        cell.insert('ca')
+        cell.insert('pas')
+
+        dend = h.Section()
+        dend.L = DEND_LENGTH
+        dend.diam = DEND_DIAM
+
+        dend.insert('na')
+        dend.insert('kv')
+        
+        gnabar_soma, gnabar_dend, gkbar_soma, gkbar_dend, gcabar_soma, gl_soma, cm = params
+        for sec in h.allsec():
+            sec.cm = cm
+        for seg in cell:
+            seg.na.gbar = gnabar_soma
+            seg.kv.gbar = gkbar_soma
+            seg.ca.gbar = gcabar_soma
+            seg.pas.g = gl_soma
+        for seg in dend:
+            seg.na.gbar = gnabar_dend
+            seg.kv.gbar = gkbar_dend
 
         hoc_vectors['v'].record(cell(0.5)._ref_v)
         hoc_vectors['ina'].record(cell(0.5)._ref_ina)
         hoc_vectors['ica'].record(cell(0.5)._ref_ica)
         hoc_vectors['ik'].record(cell(0.5)._ref_ik)
-        hoc_vectors['i_cap'].record(cell(0.5).pas._ref_i)
+        hoc_vectors['i_leak'].record(cell(0.5).pas._ref_i)
         hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
     else:
-        raise ValueError("choose 'izhi' or 'hh_point_5param'")
+        raise WRONG_MODEL_ERROR
 
     # Define the stimulus
     stim = get_stim(args)
@@ -411,14 +404,14 @@ def main(args):
         
     # Save to disk
     if args.outfile:
-        # save_nwb(args, v, a, b, c, d)
         save_h5(args, buf, paramsets, start, stop)
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
 
-    parser.add_argument('--model', choices=['izhi', 'hh_point_5param'], default='hh_point_5param')
+    parser.add_argument('--model', choices=['izhi', 'hh_point_5param', 'hh_ball_stick_7param'],
+                        default='hh_ball_stick_7param')
     parser.add_argument('--celsius', type=float, default=33)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
@@ -453,11 +446,8 @@ if __name__ == '__main__':
     parser.add_argument('--tstop', type=int, default=200)
     parser.add_argument('--dt', type=float, default=.02)
 
-    # parser.add_argument('--silence', type=int, default=0,
-    #                     help="amount of pre/post-stim silence (ms)")
-
     # CHOOSE PARAMETERS
-    parser.add_argument('--num', type=int, default=None, required=False,
+    parser.add_argument('--num', type=int, default=None,
                         help="number of param values to choose. Will choose randomly. " + \
                         "See --params. When multithreaded, this is the total number over all ranks")
     parser.add_argument('--params', type=str, nargs='+', default=None,
@@ -467,14 +457,15 @@ if __name__ == '__main__':
                         'eg to use the default 1st param, random 2nd param, ' + \
                         'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
     )
-    parser.add_argument('--param-file', '--params-file', type=str, required=False, default=None)
+    parser.add_argument('--param-file', '--params-file', type=str, default=None)
 
     # CHOOSE STIMULUS
     parser.add_argument('--stim-type', type=str, default=None)
     parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
-    parser.add_argument('--stim-file', type=str, required=False, default='stims/chirp_damp_10k.csv',
+    parser.add_argument('--stim-file', type=str, default='stims/chirp_damp_10k.csv',
                         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
     parser.add_argument('--stim-dc-offset', type=float, default=0.0)
+    parser.add_argument('--stim-multiplier', type=float, default=None)
 
     parser.add_argument('--print-every', type=int, default=None)
     parser.add_argument('--debug', action='store_true', default=False)
@@ -486,10 +477,8 @@ if __name__ == '__main__':
 
     log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG if args.debug else log.INFO)
 
-    # args.tstop += 2 * args.silence
-
     if args.create:
-        create_h5(args, nsamples=(args.num or NSAMPLES))
+        create_h5(args, args.num)
         # create_nwb(args)
     elif args.create_params:
         np.savetxt(args.param_file, get_random_params(args, n=args.num))
