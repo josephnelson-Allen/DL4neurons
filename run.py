@@ -117,7 +117,7 @@ def _normalize(args, data, minmax=1):
 
     
 def save_h5(args, buf, params, start, stop):
-    log.info("saving into h5")
+    log.info("saving into h5 file {}".format(args.outfile))
     if comm and n_tasks > 1:
         log.debug("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
@@ -130,8 +130,8 @@ def save_h5(args, buf, params, start, stop):
         f['phys_par'][start:stop, :] = params
         f['norm_par'][start:stop, :] = _normalize(args, params)
         f['voltages'][start:stop, :] = buf
-        log.debug("saved h5")
-    log.debug("closed h5")
+        log.info("saved h5")
+    log.info("closed h5")
 
 
 def plot(args, data, stim):
