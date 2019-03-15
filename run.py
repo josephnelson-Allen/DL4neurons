@@ -9,7 +9,6 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
-# from pynwb import NWBFile, NWBHDF5IO, TimeSeries
 
 from stimulus import stims, add_stims
 import models
@@ -28,8 +27,6 @@ except:
     
 from neuron import h, gui
 
-ALL_MODELS = (
-)
 MODELS_BY_NAME = {
     'izhi': models.Izhi,
     'hh_point_5param': models.HHPoint5Param,
