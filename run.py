@@ -379,7 +379,7 @@ def main(args):
     
     if args.stim_file:
         log.info("not using --tstop because --stim-file was specified")
-        args.tstop = len(get_stim(args))
+        args.tstop = len(get_stim(args)) * args.dt
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
