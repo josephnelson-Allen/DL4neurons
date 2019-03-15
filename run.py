@@ -80,21 +80,16 @@ def get_mpi_idx(args, nsamples):
 
 
 def get_stim(args):
-    # TODO?: variable length stimuli, or determine simulation duration from stimulus length?
-    if args.stim_file:
-        stim_fn = os.path.basename(args.stim_file)
-        multiplier = args.stim_multiplier or (.12 if args.model == 'hh_ball_stick_7param' else 15.0)
-        log.debug("Stim multiplier = {}".format(multiplier))
-        return (np.genfromtxt(args.stim_file, dtype=np.float64) + args.stim_dc_offset) * multiplier
-    else:
-        return stims[args.stim_type][args.stim_idx]
+    stim_fn = os.path.basename(args.stim_file)
+    multiplier = args.stim_multiplier or (.12 if args.model == 'hh_ball_stick_7param' else 15.0)
+    log.debug("Stim multiplier = {}".format(multiplier))
+    return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
 
 def create_h5(args, nsamples):
     """
     Run in serial mode
     """
-    # TODO: tstop, rate, and other parameters
     log.info("Creating h5 file")
     with h5py.File(args.outfile, 'w') as f:
         # write params
@@ -108,7 +103,7 @@ def create_h5(args, nsamples):
 
         # create stim and voltage datasets
         stim = get_stim(args)
-        ntimepts = int(args.tstop/args.dt)
+        ntimepts = len(stim)
         f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
@@ -144,7 +139,7 @@ def save_h5(args, buf, params, start, stop):
 
 
 def plot(args, data, stim):
-    ntimepts = int(h.tstop/h.dt)
+    ntimepts = len(stim)
     t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
     
     plt.figure(figsize=(10, 5))
@@ -176,6 +171,14 @@ def main(args):
                 args.plot_ica, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
+
+    if args.create:
+        create_h5()
+        exit()
+
+    if args.create_params:
+        np.savetxt(args.param_file, get_random_params(args, n=args.num))
+        exit()
     
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
@@ -202,7 +205,7 @@ def main(args):
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
 
-        model = MODELS_BY_NAME[args.model](*params, log=log)
+        model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
         data = model.simulate(stim, args.dt)
         buf[i, :] = data['v'][:-1]
 
@@ -216,14 +219,16 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
 
-    parser.add_argument('--model', choices=['izhi', 'hh_point_5param', 'hh_ball_stick_7param'],
+    parser.add_argument('--model', choices=MODELS_BY_NAME.keys(),
                         default='hh_ball_stick_7param')
     parser.add_argument('--celsius', type=float, default=33)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to. Must exist unless --create is passed')
     parser.add_argument('--create', action='store_true', default=False,
-                        help="create the file, store all stimuli, and then exit")
+                        help="create the file, store all stimuli, and then exit " \
+                        + "(useful for writing to the file from multiple ranks)"
+    )
     parser.add_argument('--create-params', action='store_true', default=False,
                         help="create the params file (--param-file) and exit. Must use with --num")
 
@@ -249,7 +254,6 @@ if __name__ == '__main__':
     parser.add_argument('--force', action='store_true', default=False,
                         help="make the script run even if you don't plot or save anything")
 
-    parser.add_argument('--tstop', type=int, default=200)
     parser.add_argument('--dt', type=float, default=.02)
 
     # CHOOSE PARAMETERS
@@ -266,12 +270,17 @@ if __name__ == '__main__':
     parser.add_argument('--param-file', '--params-file', type=str, default=None)
 
     # CHOOSE STIMULUS
-    parser.add_argument('--stim-type', type=str, default=None)
-    parser.add_argument('--stim-idx', '--stim-i', type=int, default=0)
-    parser.add_argument('--stim-file', type=str, default='stims/chirp_damp_16k_v1.csv',
-                        help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
-    parser.add_argument('--stim-dc-offset', type=float, default=0.0)
-    parser.add_argument('--stim-multiplier', type=float, default=None)
+    parser.add_argument(
+        '--stim-file', type=str, default='stims/chirp_damp_16k_v1.csv',
+        help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
+    parser.add_argument(
+        '--stim-dc-offset', type=float, default=0.0,
+        help="apply a DC offset to the stimulus (shift it). Happens after --stim-multiplier"
+    )
+    parser.add_argument(
+        '--stim-multiplier', type=float, default=None,
+        help="scale the stimulus amplitude by this factor. Happens before --stim-dc-offset"
+    )
 
     parser.add_argument('--print-every', type=int, default=None)
     parser.add_argument('--debug', action='store_true', default=False)
@@ -283,9 +292,4 @@ if __name__ == '__main__':
 
     log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG if args.debug else log.INFO)
 
-    if args.create:
-        create_h5(args, args.num)
-    elif args.create_params:
-        np.savetxt(args.param_file, get_random_params(args, n=args.num))
-    else:
-        main(args)
+    main(args)
