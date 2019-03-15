@@ -35,11 +35,6 @@ MODELS_BY_NAME = {
     'hh_point_5param': models.HHPoint5Param,
     'hh_ball_stick_7param': models.HHBallStick7Param,
 }
-WRONG_MODEL_ERROR = ValueError(
-    "choose {}".format(
-        'or'.join("'{}'".format(model) for model in MODELS_BY_NAME.values())
-    )
-)
 
     
 def _rangeify(data, _range):
