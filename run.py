@@ -218,6 +218,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', choices=MODELS_BY_NAME.keys(),
                         default='hh_ball_stick_7param')
     parser.add_argument('--celsius', type=float, default=33)
+    parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to. Must exist unless --create is passed')
@@ -225,8 +226,10 @@ if __name__ == '__main__':
                         help="create the file, store all stimuli, and then exit " \
                         + "(useful for writing to the file from multiple ranks)"
     )
-    parser.add_argument('--create-params', action='store_true', default=False,
-                        help="create the params file (--param-file) and exit. Must use with --num")
+    parser.add_argument(
+        '--create-params', action='store_true', default=False,
+        help="create the params file (--param-file) and exit. Must use with --num"
+    )
 
     parser.add_argument('--plot', action='store_true', default=False,
                         help="plot everything")
@@ -247,21 +250,24 @@ if __name__ == '__main__':
     parser.add_argument('--no-legend', action='store_true', default=False,
                         help="do not display the legend on the plot")
     
-    parser.add_argument('--force', action='store_true', default=False,
-                        help="make the script run even if you don't plot or save anything")
-
-    parser.add_argument('--dt', type=float, default=.02)
+    parser.add_argument(
+        '--force', action='store_true', default=False,
+        help="make the script run even if you don't plot or save anything"
+    )
 
     # CHOOSE PARAMETERS
-    parser.add_argument('--num', type=int, default=None,
-                        help="number of param values to choose. Will choose randomly. " + \
-                        "See --params. When multithreaded, this is the total number over all ranks")
-    parser.add_argument('--params', type=str, nargs='+', default=None,
-                        help='When used with --num, fixes the value of some params. To indicate ' + \
-                        'that a param should not be held fixed, set it to "rand". ' + \
-                        'to use the default value, use "def"' + \
-                        'eg to use the default 1st param, random 2nd param, ' + \
-                        'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
+    parser.add_argument(
+        '--num', type=int, default=None,
+        help="number of param values to choose. Will choose randomly. " + \
+        "See --params. When multithreaded, this is the total number over all ranks"
+    )
+    parser.add_argument(
+        '--params', type=str, nargs='+', default=None,
+        help='When used with --num, fixes the value of some params. To indicate ' + \
+        'that a param should not be held fixed, set it to "rand". ' + \
+        'to use the default value, use "def"' + \
+        'eg to use the default 1st param, random 2nd param, ' + \
+        'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
     )
     parser.add_argument('--param-file', '--params-file', type=str, default=None)
 
