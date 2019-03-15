@@ -90,12 +90,12 @@ def create_h5(args, nsamples):
     log.info("Creating h5 file")
     with h5py.File(args.outfile, 'w') as f:
         # write params
-        ndim = len(RANGES[args.model])
+        ndim = len(MODELS_BY_NAME[args.model].PARAM_RANGES)
         f.create_dataset('phys_par', shape=(nsamples, ndim))
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
         # write param range
-        phys_par_range = np.stack(RANGES[args.model])
+        phys_par_range = np.stack(MODELS_BY_NAME[args.model].PARAM_RANGES)
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float64)
 
         # create stim and voltage datasets
