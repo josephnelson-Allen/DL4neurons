@@ -128,7 +128,6 @@ def save_h5(args, buf, params, start, stop):
         log.debug("opened h5")
         log.debug(str(params))
         f['phys_par'][start:stop, :] = params
-        mins, maxes = np.min(params, axis=0), np.max(params, axis=0)
         f['norm_par'][start:stop, :] = _normalize(args, params)
         f['voltages'][start:stop, :] = buf
         log.debug("saved h5")
