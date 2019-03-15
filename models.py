@@ -36,10 +36,9 @@ class BaseModel(object):
         h.clamp = clamp
 
     def attach_stim(self, stim):
-        h('objref stimvals')
-        stimvals = h.Vector().from_python(stim)
-        h.stimvals = stimvals
-        stimvals.play("{} = $1".format(self.stim_variable_str), h.dt)
+        # assign to self to persist it
+        self.stimvals = h.Vector().from_python(stim)
+        self.stimvals.play("{} = $1".format(self.stim_variable_str), h.dt)
 
     def attach_recordings(self, ntimepts):
         hoc_vectors = {

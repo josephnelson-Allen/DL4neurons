@@ -283,9 +283,6 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
-    if args.params and not args.num:
-        args.num = 1
-
     log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG if args.debug else log.INFO)
 
     main(args)
