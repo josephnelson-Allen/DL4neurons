@@ -2,6 +2,6 @@
 
 Quickstart:
 
-`$ nrnivmodl *.mod`
+`$ nrnivmodl modfiles/*.mod`
 
 `$ python run.py --help`
