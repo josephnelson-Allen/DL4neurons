@@ -87,7 +87,7 @@ def create_h5(args, nsamples):
     """
     Run in serial mode
     """
-    log.info("Creating h5 file")
+    log.info("Creating h5 file {}".format(args.outfile))
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = len(MODELS_BY_NAME[args.model].PARAM_RANGES)
