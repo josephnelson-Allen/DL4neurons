@@ -1,9 +1,7 @@
 from __future__ import print_function
 
 """
-Run this script from the same directory as the compiled izhi2003a.mod and ca.mod
-
-NB: on OSX, run using `pythonw` (first, `conda install python.app`) for plotting to work
+Run this script from the same directory as the compiled modfiles
 """
 
 import os
