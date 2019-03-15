@@ -108,7 +108,8 @@ class Izhi(BaseModel):
 class HHPoint5Param(BaseModel):
     PARAM_NAMES = ('gnabar', 'gkbar', 'gcabar', 'gl', 'cm')
     DEFAULT_PARAMS = (500, 10, 1.5, .0005, 0.5)
-    PARAM_RANGES = ( (200, 800), (8, 15), (1, 2), (0.0004, 0.00055), (0.3, 0.7) )
+    # PARAM_RANGES = ( (200, 800), (8, 15), (1, 2), (0.0004, 0.00055), (0.3, 0.7) )
+    PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
 
     def create_cell(self):
         cell = h.Section()
@@ -136,15 +137,16 @@ class HHBallStick7Param(BaseModel):
         'cm'
     )
     DEFAULT_PARAMS = (500, 500, 10, 10, 1.5, .0005, 0.5)
-    PARAM_RANGES = (
-        (200, 800),
-        (200, 800),
-        (8, 15),
-        (8, 15),
-        (1, 2),
-        (0.0004, 0.00055),
-        (0.3, 0.7)
-    )
+    # PARAM_RANGES = (
+    #     (200, 800),
+    #     (200, 800),
+    #     (8, 15),
+    #     (8, 15),
+    #     (1, 2),
+    #     (0.0004, 0.00055),
+    #     (0.3, 0.7)
+    # )
+    PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
 
     DEFAULT_SOMA_DIAM = 21 # source: https://synapseweb.clm.utexas.edu/dimensions-dendrites and Fiala and Harris, 1999, table 1.1
 

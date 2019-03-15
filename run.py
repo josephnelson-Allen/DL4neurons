@@ -51,7 +51,7 @@ def clean_params(args):
 
     
 def get_random_params(args, n=1):
-    ranges = MDOELS_BY_NAME[args.model].PARAM_RANGES
+    ranges = MODELS_BY_NAME[args.model].PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
     params = clean_params(args)
@@ -78,7 +78,7 @@ def get_mpi_idx(args, nsamples):
 
 def get_stim(args):
     stim_fn = os.path.basename(args.stim_file)
-    multiplier = args.stim_multiplier or (.12 if args.model == 'hh_ball_stick_7param' else 15.0)
+    multiplier = args.stim_multiplier or (.18 if args.model == 'hh_ball_stick_7param' else 15.0)
     log.debug("Stim multiplier = {}".format(multiplier))
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
