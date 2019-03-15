@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import os
 import json
-import itertools
 import logging as log
 from argparse import ArgumentParser
 from datetime import datetime
@@ -13,6 +12,7 @@ import h5py
 # from pynwb import NWBFile, NWBHDF5IO, TimeSeries
 
 from stimulus import stims, add_stims
+import models
 
 try:
     from mpi4py import MPI
@@ -29,57 +29,17 @@ except:
 from neuron import h, gui
 
 ALL_MODELS = (
-    'izhi',
-    'hh_point_5param',
-    'hh_ball_stick_7param',
 )
-WRONG_MODEL_ERROR = ValueError("choose {}".format('or'.join("'{}'".format(model) for model in ALL_MODELS)))
-
-# izhi
-range_a = (0.01, 0.1)
-range_b = (0.1, 0.4)
-range_c = (-80, -50)
-range_d = (0.5, 5)
-
-# hh_point_5param
-range_gnabar = (200, 800)
-range_gkbar = (8, 15)
-range_gcabar = (1, 2)
-range_gl = (0.0004, 0.00055)
-range_cm = (0.3, 0.7)
-
-# hh_ball_stick_7param
-range_gnabar_soma = (200, 800)
-range_gnabar_dend = (200, 800)
-range_gkbar_soma = (8, 15)
-range_gkbar_dend = (8, 15)
-range_gcabar_soma = (1, 2)
-range_gl_soma = (0.0004, 0.00055)
-range_cm = (0.3, 0.7)
-
-SOMA_DIAM = 21 # source: https://synapseweb.clm.utexas.edu/dimensions-dendrites and Fiala and Harris, 1999, table 1.1
-DEND_DIAM = SOMA_DIAM / 10.
-DEND_LENGTH = SOMA_DIAM * 10.
-
-RANGES = {
-    'izhi': (range_a, range_b, range_c, range_d),
-    'hh_point_5param': (range_gnabar, range_gkbar, range_gcabar, range_gl, range_cm),
-    'hh_ball_stick_7param': (range_gnabar_soma, range_gnabar_dend, range_gkbar_soma, range_gkbar_dend, range_gcabar_soma, range_gl_soma, range_cm),
+MODELS_BY_NAME = {
+    'izhi': models.Izhi,
+    'hh_point_5param': models.HHPoint5Param,
+    'hh_ball_stick_7param': models.HHBallStick7Param,
 }
-
-DEFAULT_PARAMS = {
-    'izhi': (0.02, 0.2, -65., 2.),
-    'hh_point_5param': (500, 10, 1.5, .0005, 0.5),
-    'hh_ball_stick_7param': (500, 500, 10, 10, 1.5, .0005, 0.5),
-}
-
-
-# TODO: play() a Vector into h.cell.Iin instead of this shit
-def myadvance():
-    idx = int(h.t/h.dt)
-    if idx < len(h.stim):
-        h.cell.Iin = h.stim[int(h.t/h.dt)]
-    h.fadvance()
+WRONG_MODEL_ERROR = ValueError(
+    "choose {}".format(
+        'or'.join("'{}'".format(model) for model in MODELS_BY_NAME.values())
+    )
+)
 
     
 def _rangeify(data, _range):
@@ -90,7 +50,7 @@ def clean_params(args):
     """
     convert to float, use defaults where requested
     """
-    defaults = DEFAULT_PARAMS[args.model]
+    defaults = MODELS_BY_NAME[args.model].DEFAULT_PARAMS
     if args.params:
         return [float(x if x != 'rand' else 'inf') if x != 'def' else default
                 for (x, default) in zip(args.params, defaults)]
@@ -99,7 +59,7 @@ def clean_params(args):
 
     
 def get_random_params(args, n=1):
-    ranges = RANGES[args.model]
+    ranges = MDOELS_BY_NAME[args.model].PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
     params = clean_params(args)
@@ -135,26 +95,6 @@ def get_stim(args):
         return stims[args.stim_type][args.stim_idx]
 
 
-def attach_stim(args, where=None):
-    if args.model == 'izhi':
-        # redefine NEURON's advance() (runs one timestep) to update the current
-        h('proc advance() {nrnpython("myadvance()")}')
-    elif args.model in ('hh_point_5param', 'hh_ball_stick_7param'):
-        # Use an IClamp object
-        h('objref clamp')
-        clamp = h.IClamp(where or h.cell(0.5))
-        clamp.delay = 0
-        clamp.dur = args.tstop
-        h.clamp = clamp
-
-        h('objref stimvals')
-        stimvals = h.Vector().from_python(h.stim)
-        h.stimvals = stimvals
-        stimvals.play("clamp.amp = $1", h.dt)
-    else:
-        raise WRONG_MODEL_ERROR
-
-
 def create_h5(args, nsamples):
     """
     Run in serial mode
@@ -181,9 +121,9 @@ def create_h5(args, nsamples):
 
 def _normalize(args, data, minmax=1):
     nsamples = data.shape[0]
-    mins = np.array([tup[0] for tup in RANGES[args.model]])
+    mins = np.array([tup[0] for tup in MODELS_BY_NAME[args.model].PARAM_RANGES])
     mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
-    ranges = np.array([tup[1]-tup[0] for tup in RANGES[args.model]])
+    ranges = np.array([_max - _min for (_min, _max) in MODELS_BY_NAME[args.model].PARAM_RANGES])
     ranges = np.tile(ranges, (nsamples, 1))
 
     return 2*minmax * ( (data - mins)/ranges ) - minmax
@@ -211,6 +151,10 @@ def save_h5(args, buf, params, start, stop):
 def plot(args, data, stim):
     ntimepts = int(h.tstop/h.dt)
     t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
+    
+    plt.figure(figsize=(10, 5))
+    plt.xlabel('Time (ms)')
+
     if args.plot or args.plot_v:
         plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
     if args.plot or args.plot_stim:
@@ -232,136 +176,12 @@ def plot(args, data, stim):
     plt.show()
 
 
-def record_all(args, cell, hoc_vectors):
-    hoc_vectors['v'].record(cell(0.5)._ref_v)
-    hoc_vectors['ina'].record(cell(0.5)._ref_ina)
-    hoc_vectors['ica'].record(cell(0.5)._ref_ica)
-    hoc_vectors['ik'].record(cell(0.5)._ref_ik)
-    hoc_vectors['i_leak'].record(cell(0.5).pas._ref_i)
-    hoc_vectors['i_cap'].record(cell(0.5)._ref_i_cap)
-
-
-def simulate(args, params):
-    _start = datetime.now()
-
-    h.celsius = args.celsius
-
-    # Simulation parameters
-    h.tstop = args.tstop
-    h.steps_per_ms = 1./args.dt
-    h.stdinit() # sets h.dt based on h.steps_per_ms
-    ntimepts = int(h.tstop/h.dt)
-
-    if h.dt != args.dt:
-        raise ValueError("Invalid choice of dt")
-
-    hoc_vectors = {
-        'v': h.Vector(ntimepts),
-        'ina': h.Vector(ntimepts),
-        'ik': h.Vector(ntimepts),
-        'ica': h.Vector(ntimepts),
-        'i_leak': h.Vector(ntimepts),
-        'i_cap': h.Vector(ntimepts),
-    }
-    
-    # Define the cell
-    # This doesn't work when done in a separate function, for some reason
-    # I think 'dummy' needs to stay in scope?
-    if args.model == 'izhi':
-        dummy = h.Section()
-        cell = h.Izhi2003a(0.5,sec=dummy)
-        
-        a, b, c, d = params
-        cell.a = a
-        cell.b = b
-        cell.c = c
-        cell.d = d
-        
-        hoc_vectors['v'].record(cell._ref_V) # Capital V because it's not the real membrane voltage
-    elif args.model == 'hh_point_5param':
-        cell = h.Section()
-        cell.insert('na')
-        cell.insert('kv')
-        cell.insert('ca')
-        cell.insert('pas')
-
-        gnabar, gkbar, gcabar, gl, cm = params
-        cell(0.5).na.gbar = gnabar
-        cell(0.5).kv.gbar = gkbar
-        cell(0.5).ca.gbar = gcabar
-        cell(0.5).pas.g = gl
-        cell.cm = cm
-
-        record_all(args, cell, hoc_vectors)
-    elif args.model == 'hh_ball_stick_7param':
-        cell = h.Section()
-        cell.L = cell.diam = SOMA_DIAM
-        cell.insert('na')
-        cell.insert('kv')
-        cell.insert('ca')
-        cell.insert('pas')
-
-        dend = h.Section()
-        dend.L = DEND_LENGTH
-        dend.diam = DEND_DIAM
-        dend.insert('na')
-        dend.insert('kv')
-        
-        gnabar_soma, gnabar_dend, gkbar_soma, gkbar_dend, gcabar_soma, gl_soma, cm = params
-        for sec in h.allsec():
-            sec.cm = cm
-        for seg in cell:
-            seg.na.gbar = gnabar_soma
-            seg.kv.gbar = gkbar_soma
-            seg.ca.gbar = gcabar_soma
-            seg.pas.g = gl_soma
-        for seg in dend:
-            seg.na.gbar = gnabar_dend
-            seg.kv.gbar = gkbar_dend
-
-        record_all(args, cell, hoc_vectors)
-    else:
-        raise WRONG_MODEL_ERROR
-
-    # Define the stimulus
-    stim = get_stim(args)
-
-    # Make the stimulus and cell objects accessible from hoc
-    h('objref stim')
-    h.stim = stim
-    h('objref cell')
-    h.cell = cell
-
-    # attach the stim to the cell
-    attach_stim(args)
-
-    # Run
-    log.debug("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
-    log.debug("({} total timesteps)".format(ntimepts))
-
-    h.run()
-
-    log.debug("Time to simulate: {}".format(datetime.now() - _start))
-
-    # numpy-ify
-    data = {k: np.array(v) for k, v in hoc_vectors.items()}
-
-    # Plot
-    plot(args, data, stim)
-        
-    return data
-
 def main(args):
-
     if not any([args.plot, args.plot_v, args.plot_stim, args.plot_ina, args.plot_ik,
                 args.plot_ica, args.outfile, args.force]):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
     
-    if args.stim_file:
-        log.info("not using --tstop because --stim-file was specified")
-        args.tstop = len(get_stim(args)) * args.dt
-
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
         start, stop = get_mpi_idx(args, len(all_paramsets))
@@ -376,19 +196,22 @@ def main(args):
         start, stop = 0, 1
     else:
         log.info("Cell parameters not specified, running with default parameters")
-        paramsets = [ DEFAULT_PARAMS[args.model] ]
+        paramsets = [ MODELS_BY_NAME[args.model].DEFAULT_PARAMS ]
         start, stop = 0, 1
 
-    # bad_params = []
-    ntimepts = int(args.tstop/args.dt)
-    buf = np.zeros(shape=(stop-start, ntimepts), dtype=np.float64)
+    stim = get_stim(args)
+    buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float64)
 
     for i, params in enumerate(paramsets):
         if args.print_every and i % args.print_every == 0:
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
-        data = simulate(args, params)
+
+        model = MODELS_BY_NAME[args.model](*params, log=log)
+        data = model.simulate(stim, args.dt)
         buf[i, :] = data['v'][:-1]
+
+        plot(args, data, stim)
         
     # Save to disk
     if args.outfile:
@@ -467,7 +290,6 @@ if __name__ == '__main__':
 
     if args.create:
         create_h5(args, args.num)
-        # create_nwb(args)
     elif args.create_params:
         np.savetxt(args.param_file, get_random_params(args, n=args.num))
     else:
