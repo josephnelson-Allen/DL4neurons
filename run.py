@@ -176,6 +176,8 @@ def main(args):
                          + "Pass --force to continue anyways")
 
     if args.create:
+        if not args.num:
+            raise ValueError("Must pass --num when creating h5 file")
         create_h5(args, args.num)
         exit()
 
