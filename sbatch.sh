@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q regular
 #SBATCH -N 1
-#SBATCH --array 1-100
+#SBATCH --array 1-20
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -13,17 +13,18 @@
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
-nrnivmodl *.mod
+# nrnivmodl modfiles/*.mod
 
 MODELNAME=hh_ball_stick_9param
 VERSION=1
 
-RUNDIR=runs/${SLURM_JOB_ID}
+# RUNDIR=runs/${SLURM_JOB_ID}
+RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir $RUNDIR
 DSET_NAME=${MODELNAME}_v$VERSION
-NSAMPLES=10000
+NSAMPLES=50000
 
-stimname=chirp_damp_10k
+stimname=chirp_damp_16k_v1
 stimfile=stims/${stimname}.csv
 paramfile=$RUNDIR/${DSET_NAME}.csv
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
