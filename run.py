@@ -98,7 +98,7 @@ def create_h5(args, nsamples):
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = len(MODELS_BY_NAME[args.model].PARAM_RANGES)
-        f.create_dataset('phys_par', shape=(nsamples, ndim))
+        f.create_dataset('phys_par', shape=(nsamples, ndim), dtype=np.float64)
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
         # write param range

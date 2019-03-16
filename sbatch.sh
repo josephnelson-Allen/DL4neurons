@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q regular
+#SBATCH -q debug
 #SBATCH -N 1
-#SBATCH --array 1-20
+#SBATCH --array 1-1
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -32,9 +32,9 @@ OUTFILE=$RUNDIR/${DSET_NAME}_${SLURM_ARRAY_TASK_ID}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 args="--outfile $OUTFILE --stim-file ${stimfile} --param-file ${paramfile} \
-      --model $MODELNAME --print-every 100"
+      --model $MODELNAME --num $NSAMPLES print-every 100"
 
-srun -n 1 python run.py $args --create-params --num $NSAMPLES
+srun -n 1 python run.py $args --create-params
 srun -n 1 python run.py $args --create
 srun --label -n 64 python run.py $args 
 
