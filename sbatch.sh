@@ -32,7 +32,7 @@ OUTFILE=$RUNDIR/${DSET_NAME}_${SLURM_ARRAY_TASK_ID}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 args="--outfile $OUTFILE --stim-file ${stimfile} --param-file ${paramfile} \
-      --model $MODELNAME --print-every 10"
+      --model $MODELNAME --print-every 100"
 
 srun -n 1 python run.py $args --create-params --num $NSAMPLES
 srun -n 1 python run.py $args --create
