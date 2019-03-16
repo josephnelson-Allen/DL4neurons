@@ -1,21 +1,22 @@
 #!/bin/bash -l
-#SBATCH -q debug
+#SBATCH -q regular
 #SBATCH -N 1
+#SBATCH --array 1-100
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%j.out"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%j.err"
+#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.out"
+#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.err"
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
 nrnivmodl *.mod
 
-MODELNAME=hh_point_5param
-VERSION=3
+MODELNAME=hh_ball_stick_9param
+VERSION=1
 
 RUNDIR=runs/${SLURM_JOB_ID}
 mkdir $RUNDIR
@@ -25,7 +26,8 @@ NSAMPLES=10000
 stimname=chirp_damp_10k
 stimfile=stims/${stimname}.csv
 paramfile=$RUNDIR/${DSET_NAME}.csv
-OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
+# OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
+OUTFILE=$RUNDIR/${DSET_NAME}_${SLURM_ARRAY_TASK_ID}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 args="--outfile $OUTFILE --stim-file ${stimfile} --param-file ${paramfile} \

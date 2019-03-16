@@ -31,8 +31,15 @@ MODELS_BY_NAME = {
     'izhi': models.Izhi,
     'hh_point_5param': models.HHPoint5Param,
     'hh_ball_stick_7param': models.HHBallStick7Param,
+    'hh_ball_stick_9param': models.HHBallStick9Param,
 }
 
+STIM_MULTIPLIERS = {
+    'izhi': 15.0,
+    'hh_point_5param': 15.0,
+    'hh_ball_stick_7param': 0.18,
+    'hh_ball_stick_9param': 0.3,
+}
     
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
@@ -78,7 +85,7 @@ def get_mpi_idx(args, nsamples):
 
 def get_stim(args):
     stim_fn = os.path.basename(args.stim_file)
-    multiplier = args.stim_multiplier or (.18 if args.model == 'hh_ball_stick_7param' else 15.0)
+    multiplier = args.stim_multiplier or STIM_MULTIPLIERS[args.model]
     log.debug("Stim multiplier = {}".format(multiplier))
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
@@ -135,32 +142,32 @@ def save_h5(args, buf, params, start, stop):
 
 
 def plot(args, data, stim):
+    if args.plot is not None:
+        ntimepts = len(stim)
+        t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
 
-    ntimepts = len(stim)
-    t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
-    
-    plt.figure(figsize=(10, 5))
-    plt.xlabel('Time (ms)')
+        plt.figure(figsize=(10, 5))
+        plt.xlabel('Time (ms)')
 
-    if args.plot == [] or 'v' in args.plot:
-        plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
-    if args.plot == [] or 'stim' in args.plot:
-        plt.plot(t_axis, stim[:ntimepts], label='stim')
-    if args.plot == [] or 'ina' in args.plot:
-        plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
-    if args.plot == [] or 'ik' in args.plot:
-        plt.plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
-    if args.plot == [] or 'ica' in args.plot:
-        plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
-    if args.plot == [] or 'i_cap' in args.plot:
-        plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
-    if args.plot == [] or 'i_leak' in args.plot:
-        plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
+        if args.plot == [] or 'v' in args.plot:
+            plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
+        if args.plot == [] or 'stim' in args.plot:
+            plt.plot(t_axis, stim[:ntimepts], label='stim')
+        if args.plot == [] or 'ina' in args.plot:
+            plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
+        if args.plot == [] or 'ik' in args.plot:
+            plt.plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
+        if args.plot == [] or 'ica' in args.plot:
+            plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
+        if args.plot == [] or 'i_cap' in args.plot:
+            plt.plot(t_axis, data['i_cap'][:ntimepts] * 100, label='i_cap*100')
+        if args.plot == [] or 'i_leak' in args.plot:
+            plt.plot(t_axis, data['i_leak'][:ntimepts] * 100, label='i_leak*100')
 
-    if not args.no_legend:
-        plt.legend()
-        
-    plt.show()
+        if not args.no_legend:
+            plt.legend()
+
+        plt.show()
 
 
 def main(args):
@@ -169,7 +176,7 @@ def main(args):
                          + "Pass --force to continue anyways")
 
     if args.create:
-        create_h5()
+        create_h5(args, args.num)
         exit()
 
     if args.create_params:

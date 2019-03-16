@@ -173,7 +173,8 @@ class HHBallStick7Param(BaseModel):
 
         dend.connect(soma(1))
 
-        # Persist it
+        # Persist them
+        self.soma = soma
         self.dend = dend
         
         for sec in h.allsec():
@@ -196,3 +197,29 @@ class HHBallStick7Param(BaseModel):
         hoc_vectors['v_dend'].record(self.dend(1)._ref_v) # record from distal end of stick
         
         return hoc_vectors
+
+class HHBallStick9Param(HHBallStick7Param):
+    PARAM_NAMES = (
+        'gnabar_soma',
+        'gnabar_dend',
+        'gkbar_soma',
+        'gkbar_dend',
+        'gcabar_soma',
+        'gcabar_dend',
+        'gl_soma',
+        'gl_dend',
+        'cm'
+    )
+    DEFAULT_PARAMS = (500, 500, 10, 10, 1.5, 1.5, .0005, .0005, 0.5)
+    PARAM_RANGES = tuple((0.7*default, 1.8*default) for default in DEFAULT_PARAMS)
+
+    def create_cell(self):
+        super(HHBallStick9Param, self).create_cell()
+
+        self.dend.insert('ca')
+        self.dend.insert('pas')
+        for seg in self.dend:
+            seg.ca.gbar = self.gcabar_dend
+            seg.pas.g = self.gl_dend
+
+        return self.soma
