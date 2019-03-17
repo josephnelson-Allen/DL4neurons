@@ -151,6 +151,8 @@ def plot(args, data, stim):
 
         if args.plot == [] or 'v' in args.plot:
             plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
+        if args.plot == [] or 'v_dend' in args.plot:
+            plt.plot(t_axis, data['v_dend'][:ntimepts], label='v_dend')
         if args.plot == [] or 'stim' in args.plot:
             plt.plot(t_axis, stim[:ntimepts], label='stim')
         if args.plot == [] or 'ina' in args.plot:
