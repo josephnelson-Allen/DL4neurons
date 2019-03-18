@@ -90,6 +90,11 @@ def get_stim(args):
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
 
+def countspikes(trace, thresh=10):
+    thresh_crossings = np.diff( (trace > thresh).astype('int') )
+    return np.sum(thresh_crossings == 1)
+
+
 def create_h5(args, nsamples):
     """
     Run in serial mode
@@ -105,10 +110,11 @@ def create_h5(args, nsamples):
         phys_par_range = np.stack(MODELS_BY_NAME[args.model].PARAM_RANGES)
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float64)
 
-        # create stim and voltage datasets
+        # create stim, qa, and voltage datasets
         stim = get_stim(args)
         ntimepts = len(stim)
         f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
+        f.create_dataset('qa', shape=(nsamples,), dtype=np.float64)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
 
@@ -123,7 +129,7 @@ def _normalize(args, data, minmax=1):
     return 2*minmax * ( (data - mins)/ranges ) - minmax
 
     
-def save_h5(args, buf, params, start, stop):
+def save_h5(args, buf, qa, params, start, stop):
     log.info("saving into h5 file {}".format(args.outfile))
     if comm and n_tasks > 1:
         log.debug("using parallel")
@@ -137,6 +143,7 @@ def save_h5(args, buf, params, start, stop):
         f['phys_par'][start:stop, :] = params
         f['norm_par'][start:stop, :] = _normalize(args, params)
         f['voltages'][start:stop, :] = buf
+        f['qa'][start:stop] = qa
         log.info("saved h5")
     log.info("closed h5")
 
@@ -206,6 +213,7 @@ def main(args):
 
     stim = get_stim(args)
     buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float64)
+    qa = np.zeros(stop-start)
 
     for i, params in enumerate(paramsets):
         if args.print_every and i % args.print_every == 0:
@@ -215,12 +223,13 @@ def main(args):
         model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
         data = model.simulate(stim, args.dt)
         buf[i, :] = data['v'][:-1]
+        qa[i] = countspikes(data['v'])
 
         plot(args, data, stim)
         
     # Save to disk
     if args.outfile:
-        save_h5(args, buf, paramsets, start, stop)
+        save_h5(args, buf, qa, paramsets, start, stop)
 
 
 if __name__ == '__main__':
