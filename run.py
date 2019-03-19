@@ -32,6 +32,7 @@ MODELS_BY_NAME = {
     'hh_point_5param': models.HHPoint5Param,
     'hh_ball_stick_7param': models.HHBallStick7Param,
     'hh_ball_stick_9param': models.HHBallStick9Param,
+    'hh_two_dend_13param': models.HHTwoDend13Param,
 }
 
 STIM_MULTIPLIERS = {
@@ -39,6 +40,7 @@ STIM_MULTIPLIERS = {
     'hh_point_5param': 15.0,
     'hh_ball_stick_7param': 0.18,
     'hh_ball_stick_9param': 0.3,
+    'hh_two_dend_13param': 0.4,
 }
     
 def _rangeify(data, _range):
@@ -56,12 +58,20 @@ def clean_params(args):
     else:
         return [float('inf')] * len(defaults)
 
+
+def report_random_params(args, params):
+    param_names = MODELS_BY_NAME[args.model].PARAM_NAMES
+    for param, name in zip(params, param_names):
+        if param == float('inf'):
+            log.info("Using random values for '{}'".format(name))
+
     
 def get_random_params(args, n=1):
     ranges = MODELS_BY_NAME[args.model].PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
     params = clean_params(args)
+    report_random_params(args, params)
     for i, (_range, param) in enumerate(zip(ranges, params)):
         # Default params swapped in by clean_params()
         if param == float('inf'):
@@ -283,7 +293,7 @@ if __name__ == '__main__':
 
     # CHOOSE STIMULUS
     parser.add_argument(
-        '--stim-file', type=str, default='stims/chirp_damp_16k_v1.csv',
+        '--stim-file', type=str, default='stims/chirp16a.csv',
         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
     parser.add_argument(
         '--stim-dc-offset', type=float, default=0.0,

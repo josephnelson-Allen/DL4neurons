@@ -223,3 +223,57 @@ class HHBallStick9Param(HHBallStick7Param):
             seg.pas.g = self.gl_dend
 
         return self.soma
+
+class HHTwoDend13Param(HHBallStick9Param):
+    PARAM_NAMES = (
+        'gnabar_soma',
+        'gnabar_apic',
+        'gnabar_basal',
+        'gkbar_soma',
+        'gkbar_apic',
+        'gkbar_basal',
+        'gcabar_soma',
+        'gcabar_apic',
+        'gcabar_basal',
+        'gl_soma',
+        'gl_apic',
+        'gl_basal',
+        'cm'
+    )
+    DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 5, 5, 10, .0005, .0005, .0005, 0.5)
+    PARAM_RANGES = tuple((0.5*default, 2.0*default) for default in DEFAULT_PARAMS)
+
+    def __init__(self, *args, **kwargs):
+        super(HHTwoDend13Param, self).__init__(*args, **kwargs)
+
+        # Rename *_apic to *_dend (super ctor sets them based on PARAM_NAME
+        self.gnabar_dend = self.gnabar_apic
+        self.gkbar_dend = self.gkbar_apic
+        self.gcabar_dend = self.gcabar_apic
+        self.gl_dend = self.gl_apic
+
+    def create_cell(self):
+        super(HHTwoDend13Param, self).create_cell()
+
+        self.apic = self.dend
+        
+        self.basal = [h.Section(), h.Section()]
+
+        for sec in self.basal:
+            sec.L = self.dend_length / 4.
+            sec.diam = self.dend_diam
+
+            sec.connect(self.soma(0))
+            
+            sec.insert('na')
+            sec.insert('kv')
+            sec.insert('ca')
+            sec.insert('pas')
+            for seg in sec:
+                seg.na.gbar = self.gnabar_basal
+                seg.kv.gbar = self.gkbar_basal
+                seg.ca.gbar = self.gcabar_basal
+                seg.pas.g = self.gl_basal
+
+            
+        return self.soma
