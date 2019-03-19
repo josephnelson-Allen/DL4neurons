@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH -q debug
+#SBATCH -q regular
 #SBATCH -N 1
 #SBATCH --array 0-9
 #SBATCH -t 00:30:00
