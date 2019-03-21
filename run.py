@@ -195,6 +195,8 @@ def add_qa(args):
         nsamples, ntimepts = v.shape
         f.create_dataset('qa', shape=(nsamples,))
         for i in range(nsamples):
+            if args.print_every and i % args.print_every == 0:
+                log.info("done {}".format(i))
             f['qa'][i] = countspikes(v[i, :])
 
 
