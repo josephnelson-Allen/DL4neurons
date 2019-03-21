@@ -189,6 +189,15 @@ def plot(args, data, stim):
         plt.show()
 
 
+def add_qa(args):
+    with h5py.File(args.outfile, 'a') as f:
+        v = f['voltages']
+        nsamples, ntimepts = v.shape
+        f.create_dataset('qa', shape=(nsamples,))
+        for i in range(nsamples):
+            f['qa'][i] = countspikes(v[i, :])
+
+
 def main(args):
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
@@ -202,6 +211,10 @@ def main(args):
 
     if args.create_params:
         np.savetxt(args.param_file, get_random_params(args, n=args.num))
+        exit()
+
+    if args.add_qa:
+        add_qa(args)
         exit()
     
     if args.param_file:
@@ -260,6 +273,7 @@ if __name__ == '__main__':
         '--create-params', action='store_true', default=False,
         help="create the params file (--param-file) and exit. Must use with --num"
     )
+    parser.add_argument('--add-qa', action='store_true', default=False)
 
     parser.add_argument(
         '--plot', nargs='*',
