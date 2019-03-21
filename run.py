@@ -199,13 +199,19 @@ def add_qa(args):
         
     start, stop = get_mpi_idx(args, args.num)
         
-    with h5py.File(args.outfile, 'a', **kwargs) as f:
-        v = f['voltages']
+    with h5py.File(args.outfile, 'r', **kwargs) as f:
+        v = f['voltages'][start:stop, :]
+
+    qa = np.zeros(stop-start)
+
+    for i in range(start, stop):
+        if args.print_every and i % args.print_every == 0:
+            log.info("done {}".format(i))
+        qa[i] = countspikes(v[i, :])
+
+    with h5py.File(args.outfile, 'r', **kwargs) as f:
         f.create_dataset('qa', shape=(args.num,))
-        for i in range(start, stop):
-            if args.print_every and i % args.print_every == 0:
-                log.info("done {}".format(i))
-            f['qa'][i] = countspikes(v[i, :])
+        f['qa'][start:stop] = qa
 
 
 def main(args):
