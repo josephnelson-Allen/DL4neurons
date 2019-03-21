@@ -190,11 +190,19 @@ def plot(args, data, stim):
 
 
 def add_qa(args):
-    with h5py.File(args.outfile, 'a') as f:
+    if comm and n_tasks > 1:
+        log.debug("using parallel")
+        kwargs = {'driver': 'mpio', 'comm': comm}
+    else:
+        log.debug("using serial")
+        kwargs = {}
+        
+    start, stop = get_mpi_idx(args, args.num)
+        
+    with h5py.File(args.outfile, 'a', **kwargs) as f:
         v = f['voltages']
-        nsamples, ntimepts = v.shape
-        f.create_dataset('qa', shape=(nsamples,))
-        for i in range(nsamples):
+        f.create_dataset('qa', shape=(args.num,))
+        for i in range(start, stop):
             if args.print_every and i % args.print_every == 0:
                 log.info("done {}".format(i))
             f['qa'][i] = countspikes(v[i, :])
