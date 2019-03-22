@@ -209,9 +209,11 @@ def add_qa(args):
             log.info("done {}".format(i))
         qa[i] = countspikes(v[i, :])
 
-    with h5py.File(args.outfile, 'r', **kwargs) as f:
+    with h5py.File(args.outfile, 'a', **kwargs) as f:
         f.create_dataset('qa', shape=(args.num,))
         f['qa'][start:stop] = qa
+
+    log.info("done")
 
 
 def main(args):
