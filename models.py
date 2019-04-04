@@ -1,7 +1,11 @@
 from __future__ import print_function
 
+import sys
+import logging as log
 from datetime import datetime
+from argparse import ArgumentParser
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from neuron import h, gui
@@ -288,3 +292,55 @@ MODELS_BY_NAME = {
     'hh_two_dend_13param': HHTwoDend13Param,
 }
 
+
+if __name__ == '__main__':
+    # When executed as a script, this will generate and display traces of the given model at the given params (or its defaults) and overlay a trace with the params shifted 1 rmse
+    parser = ArgumentParser()
+
+    # parser.add_argument('--model', choices=MODELS_BY_NAME.keys(), default='izhi')
+    parser.add_argument('--params', nargs='+', type=float, required=False, default=None)
+    parser.add_argument('--rmse', nargs='+', type=float, required=True)
+
+    args = parser.parse_args()
+
+    # model_cls = MODELS_BY_NAME[args.model]
+
+    rmse = {
+        'izhi': [0.0018, 0.0052, 0.38, 0.076],
+        'hh_point_5param': [0.09, 0.39, 0.38, 0.04, 0.05],
+        'hh_ball_stick_7param': [0.12, 0.13, 0.16, 0.17, 0.13, 0.03, 0.03],
+        'hh_ball_stick_9param': [15, 20, .39, .53, .072, .08, 9e-6, 9.7e-6, .0087],
+        'hh_two_dend_13param': [58, 37, 130, 13, 11, 31, .75, .65, 1.9, 9.5e-5, 2.1e-5, .0002, .016],
+    }
+
+    stim = np.genfromtxt('stims/chirp23a.csv') * 15.0
+
+    plt.subplot(6, 1, 1)
+    plt.plot(stim, color='red', label='stimulus')
+    plt.title("Stimulus")
+
+    x_axis = np.arange(0, 460, 0.02)
+
+    for i, (model_name, model_cls) in enumerate(MODELS_BY_NAME.items()):
+        plt.subplot(6, 1, i+2)
+        plt.title(model_name)
+        
+        model = model_cls(*model_cls.DEFAULT_PARAMS, log=log)
+        trace = model.simulate(stim, .01)
+        plt.plot(x_axis, trace['v'][:len(stim)], label='Default params')
+
+        params2 = [param + rmse for param, rmse in zip(model_cls.DEFAULT_PARAMS, rmse[model_name])]
+
+        model = model_cls(*params2, log=log)
+        trace = model.simulate(stim, 0.02)
+        plt.plot(x_axis, trace['v'][:len(stim)], label='Default + 1 rmse')
+
+        if i != 4:
+            plt.gca().get_xaxis().set_visible(False)
+        else:
+            plt.xlabel("Time (ms)")
+
+    plt.subplots_adjust(hspace=0.4)
+
+    plt.legend()
+    plt.show()
