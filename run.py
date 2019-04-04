@@ -87,16 +87,25 @@ def get_mpi_idx(args, nsamples):
     return start, stop
 
 
-def get_stim(args):
+def get_stim(args, mult=None):
     stim_fn = os.path.basename(args.stim_file)
-    multiplier = args.stim_multiplier or STIM_MULTIPLIERS[args.model]
+    multiplier = mult or args.stim_multiplier or STIM_MULTIPLIERS[args.model]
     log.debug("Stim multiplier = {}".format(multiplier))
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
 
-def countspikes(trace, thresh=10):
-    thresh_crossings = np.diff( (trace > thresh).astype('int') )
-    return np.sum(thresh_crossings == 1)
+def _qa(args, trace, thresh=10):
+    trace = trace[:-1]
+    stim = get_stim(args, mult=1)
+    hyp_trace = trace[stim == -1.0]
+    main_trace = trace[(stim != -1) & (stim != 0)]
+
+    hyp_crossings = np.diff( (hyp_trace > thresh).astype('int') )
+    main_crossings = np.diff( (main_trace > thresh).astype('int') )
+    num_hyp_crossings = np.sum(hyp_crossings == 1)
+    num_main_crossings = np.sum(main_crossings == 1)
+    
+    return (num_hyp_crossings == 0) and (num_main_crossings > 0)
 
 
 def create_h5(args, nsamples):
@@ -202,7 +211,7 @@ def add_qa(args):
     for i in range(start, stop):
         if args.print_every and i % args.print_every == 0:
             log.info("done {}".format(i))
-        qa[i] = countspikes(v[i, :])
+        qa[i] = _qa(v[i, :])
 
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         f.create_dataset('qa', shape=(args.num,))
@@ -262,7 +271,7 @@ def main(args):
         model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
         data = model.simulate(stim, args.dt)
         buf[i, :] = data['v'][:-1]
-        qa[i] = countspikes(data['v'])
+        qa[i] = _qa(args, data['v'])
 
         plot(args, data, stim)
         

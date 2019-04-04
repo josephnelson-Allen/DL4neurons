@@ -122,9 +122,10 @@ plt.clf()
 
 
 def histo(cls, _dist_from_truth, _correct, col=['k', 'r'], bins=None, i=None):
-    print(cls)
-    print(sum(_correct), "Correct")
-    print(len(_correct) - sum(_correct), "Wrong")
+    if cls in classname_to_params:
+        cls_i = classname_to_params.keys().index(cls)
+        print("C{} ({}): {}/{}".format(cls_i, cls, sum(_correct), len(_correct)-sum(_correct)))
+        
     bins = bins or int(len(_correct)/20)
 
     if i is not None:
