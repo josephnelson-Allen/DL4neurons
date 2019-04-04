@@ -190,6 +190,33 @@ def plot(args, data, stim):
         plt.show()
 
 
+def add_qa(args):
+    if comm and n_tasks > 1:
+        log.debug("using parallel")
+        kwargs = {'driver': 'mpio', 'comm': comm}
+    else:
+        log.debug("using serial")
+        kwargs = {}
+        
+    start, stop = get_mpi_idx(args, args.num)
+        
+    with h5py.File(args.outfile, 'r', **kwargs) as f:
+        v = f['voltages'][start:stop, :]
+
+    qa = np.zeros(stop-start)
+
+    for i in range(start, stop):
+        if args.print_every and i % args.print_every == 0:
+            log.info("done {}".format(i))
+        qa[i] = countspikes(v[i, :])
+
+    with h5py.File(args.outfile, 'a', **kwargs) as f:
+        f.create_dataset('qa', shape=(args.num,))
+        f['qa'][start:stop] = qa
+
+    log.info("done")
+
+
 def main(args):
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
@@ -205,9 +232,13 @@ def main(args):
         np.savetxt(args.param_file, get_random_params(args, n=args.num))
         exit()
 
+    if args.add_qa:
+        add_qa(args)
+        exit()
+    
     if args.blind and not args.param_file:
         raise ValueError("Must pass --param-file with --blind")
-    
+
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
         start, stop = get_mpi_idx(args, len(all_paramsets))
@@ -264,6 +295,7 @@ if __name__ == '__main__':
         '--create-params', action='store_true', default=False,
         help="create the params file (--param-file) and exit. Must use with --num"
     )
+    parser.add_argument('--add-qa', action='store_true', default=False)
 
     parser.add_argument(
         '--plot', nargs='*',
