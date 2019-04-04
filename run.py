@@ -99,7 +99,7 @@ def _qa(args, trace, thresh=10):
     # stim = get_stim(args, mult=1)
     # hyp_trace = trace[stim == -1.0]
     # main_trace = trace[(stim != -1) & (stim != 0)]
-    hyp_trace = trace[4000:5400] + trace[20500:22000]
+    hyp_trace = np.concatenate([trace[4000:5400], trace[20500:22000]])
     main_trace = trace[6001:16999]
 
     hyp_crossings = np.diff( (hyp_trace > thresh).astype('int') )
