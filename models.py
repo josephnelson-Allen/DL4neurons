@@ -82,6 +82,7 @@ class Izhi(BaseModel):
     PARAM_NAMES = ('a', 'b', 'c', 'd')
     DEFAULT_PARAMS = (0.01, 0.2, -65., 2.)
     PARAM_RANGES = ( (0.01, 0.1), (0.1, 0.4), (-80, -50), (0.5, 5) )
+    # PARAM_RANGES = ( (-.03, 0.06), (-1.1, 0.4), (-70, -40), (0, 10) )
 
     @property
     def stim_variable_str(self):
