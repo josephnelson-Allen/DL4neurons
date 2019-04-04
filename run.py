@@ -150,10 +150,11 @@ def save_h5(args, buf, qa, params, start, stop):
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.debug("opened h5")
         log.debug(str(params))
-        f['phys_par'][start:stop, :] = params
-        f['norm_par'][start:stop, :] = _normalize(args, params)
         f['voltages'][start:stop, :] = buf
         f['qa'][start:stop] = qa
+        if not args.blind:
+            f['phys_par'][start:stop, :] = params
+            f['norm_par'][start:stop, :] = _normalize(args, params)
         log.info("saved h5")
     log.info("closed h5")
 
@@ -203,6 +204,9 @@ def main(args):
     if args.create_params:
         np.savetxt(args.param_file, get_random_params(args, n=args.num))
         exit()
+
+    if args.blind and not args.param_file:
+        raise ValueError("Must pass --param-file with --blind")
     
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
@@ -290,6 +294,9 @@ if __name__ == '__main__':
         'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
     )
     parser.add_argument('--param-file', '--params-file', type=str, default=None)
+    parser.add_argument('--blind', action='store_true', default=False,
+                        help='do not save parameter values in the output nwb. ' + \
+                        'You better have saved them using --param-file')
 
     # CHOOSE STIMULUS
     parser.add_argument(
