@@ -277,3 +277,13 @@ class HHTwoDend13Param(HHBallStick9Param):
 
             
         return self.soma
+
+
+MODELS_BY_NAME = {
+    'izhi': Izhi,
+    'hh_point_5param': HHPoint5Param,
+    'hh_ball_stick_7param': HHBallStick7Param,
+    'hh_ball_stick_9param': HHBallStick9Param,
+    'hh_two_dend_13param': HHTwoDend13Param,
+}
+

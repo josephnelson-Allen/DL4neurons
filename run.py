@@ -27,13 +27,7 @@ except:
     
 from neuron import h, gui
 
-MODELS_BY_NAME = {
-    'izhi': models.Izhi,
-    'hh_point_5param': models.HHPoint5Param,
-    'hh_ball_stick_7param': models.HHBallStick7Param,
-    'hh_ball_stick_9param': models.HHBallStick9Param,
-    'hh_two_dend_13param': models.HHTwoDend13Param,
-}
+MODELS_BY_NAME = models.MODELS_BY_NAME
 
 STIM_MULTIPLIERS = {
     'izhi': 15.0,
