@@ -305,12 +305,14 @@ if __name__ == '__main__':
 
     # model_cls = MODELS_BY_NAME[args.model]
 
-    rmse = {
-        'izhi': [0.0018, 0.0052, 0.38, 0.076],
-        'hh_point_5param': [0.09, 0.39, 0.38, 0.04, 0.05],
-        'hh_ball_stick_7param': [0.12, 0.13, 0.16, 0.17, 0.13, 0.03, 0.03],
-        'hh_ball_stick_9param': [15, 20, .39, .53, .072, .08, 9e-6, 9.7e-6, .0087],
-        'hh_two_dend_13param': [58, 37, 130, 13, 11, 31, .75, .65, 1.9, 9.5e-5, 2.1e-5, .0002, .016],
+    all_rmse = {
+        'izhi': [0.0045, 0.011, 0.068, 0.27],
+        'hh_point_5param': [rmse * (_max - _min)/2.0 for rmse, (_min, _max)
+                            in zip([0.09, 0.39, 0.38, 0.04, 0.05],
+                                   HHPoint5Param.PARAM_RANGES)], # could not find rmse valuse in physical units
+        'hh_ball_stick_7param': [49, 55, 1.3, 1.4, 0.16, 1e-5, 0.012],
+        'hh_ball_stick_9param': [12, 16, .32, .44, .061, .068, 5.2e-6, 6.8e-6, .0042],
+        'hh_two_dend_13param': [51, 34, 110, 12, 9.7, 29, .7, .61, 1.7, 3.9e-5, 2e-5, 7.5e-5, .011],
     }
 
     STIM_MULTIPLIERS = {
@@ -320,36 +322,69 @@ if __name__ == '__main__':
         'hh_ball_stick_9param': 0.3,
         'hh_two_dend_13param': 0.5,
     }
-    stim = np.genfromtxt('stims/chirp23a.csv')
+    stim = np.genfromtxt('stims/chirp16a.csv')
 
-    plt.subplot(6, 1, 1)
-    plt.plot(stim, color='red', label='stimulus')
-    plt.title("Stimulus")
-
-    x_axis = np.arange(0, 460, 0.02)
 
     for i, (model_name, model_cls) in enumerate(MODELS_BY_NAME.items()):
-        plt.subplot(6, 1, i+2)
-        plt.title(model_name)
+        nparam = len(model_cls.PARAM_NAMES)
 
-        thisstim = stim * STIM_MULTIPLIERS[model_name]
+        plt.figure(figsize=(8, 2*(nparam+2)))
         
+        plt.subplot(nparam+2, 1, 1)
+        plt.plot(stim, color='red', label='stimulus')
+        plt.title("Stimulus")
+        plt.legend()
+
+        x_axis = np.linspace(0, len(stim)*0.02, len(stim))
+        
+        thisstim = stim * STIM_MULTIPLIERS[model_name]
+
         model = model_cls(*model_cls.DEFAULT_PARAMS, log=log)
-        trace = model.simulate(thisstim, 0.02)
-        plt.plot(x_axis, trace['v'][:len(stim)], label='Default params')
+        default_trace = model.simulate(thisstim, 0.02)['v'][:len(stim)]
+        
+        for i, (param_name, rmse) in enumerate(zip(model_cls.PARAM_NAMES, all_rmse[model_name])):
+            plt.subplot(nparam+2, 1, i+2)
+            plt.title(param_name)
 
-        params2 = [param + rmse for param, rmse in zip(model_cls.DEFAULT_PARAMS, rmse[model_name])]
+            plt.plot(x_axis, default_trace, label='Default params', color='k')
 
-        model = model_cls(*params2, log=log)
-        trace = model.simulate(thisstim, 0.02)
-        plt.plot(x_axis, trace['v'][:len(stim)], label='Default + 1 rmse')
+            params = list(model_cls.DEFAULT_PARAMS)
+            params[i] += rmse
+            model = model_cls(*params, log=log)
+            trace = model.simulate(thisstim, 0.02)
+            plt.plot(x_axis, trace['v'][:len(stim)], label='Default + 1 rmse', color='blue')
+            
+            params = list(model_cls.DEFAULT_PARAMS)
+            params[i] -= rmse
+            model = model_cls(*params, log=log)
+            trace = model.simulate(thisstim, 0.02)
+            plt.plot(x_axis, trace['v'][:len(stim)], label='Default - 1 rmse', color='orange')
 
-        if i != 4:
             plt.gca().get_xaxis().set_visible(False)
-        else:
-            plt.xlabel("Time (ms)")
 
-    plt.subplots_adjust(hspace=0.4)
 
-    plt.legend()
-    plt.show()
+        # extreme smears
+        plt.subplot(nparam+2, 1, nparam+2)
+        plt.title("All param smear")
+
+
+        params_add = [param + rmse for param, rmse in zip(model_cls.DEFAULT_PARAMS, all_rmse[model_name])]
+        params_sub = [param - rmse for param, rmse in zip(model_cls.DEFAULT_PARAMS, all_rmse[model_name])]
+        
+        plt.plot(x_axis, default_trace, label='Default params', color='k')
+        
+        model_add = model_cls(*params_add, log=log)
+        trace = model_add.simulate(thisstim, 0.02)
+        plt.plot(x_axis, trace['v'][:len(stim)], label='Default + 1 rmse', color='blue')
+
+        model_sub = model_cls(*params_sub, log=log)
+        trace = model_sub.simulate(thisstim, 0.02)
+        plt.plot(x_axis, trace['v'][:len(stim)], label='Default - 1 rmse', color='orange')
+
+        # on the last plot only
+        plt.xlabel("Time (ms)")
+        plt.legend()
+
+        plt.subplots_adjust(hspace=0.4)
+
+        plt.savefig('pred_actual_voltages/{}.png'.format(model_name))
