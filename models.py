@@ -85,7 +85,8 @@ class BaseModel(object):
 class Izhi(BaseModel):
     PARAM_NAMES = ('a', 'b', 'c', 'd')
     DEFAULT_PARAMS = (0.01, 0.2, -65., 2.)
-    PARAM_RANGES = ( (0.01, 0.1), (0.1, 0.4), (-80, -50), (0.5, 5) )
+    PARAM_RANGES = ( (0.01, 0.1), (0.1, 0.4), (-80, -50), (0.5, 5) ) # v5 blind sample 
+    # PARAM_RANGES = ( (0.01, 0.1), (0.1, 0.4), (-80, -50), (0.5, 10) ) # v6b, not used
     # PARAM_RANGES = ( (-.03, 0.06), (-1.1, 0.4), (-70, -40), (0, 10) )
 
     @property
@@ -113,8 +114,8 @@ class Izhi(BaseModel):
 class HHPoint5Param(BaseModel):
     PARAM_NAMES = ('gnabar', 'gkbar', 'gcabar', 'gl', 'cm')
     DEFAULT_PARAMS = (500, 10, 1.5, .0005, 0.5)
-    # PARAM_RANGES = ( (200, 800), (8, 15), (1, 2), (0.0004, 0.00055), (0.3, 0.7) )
     PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
+    PARAM_RANGES_v4 = ( (200, 800), (8, 15), (1, 2), (0.0004, 0.00055), (0.3, 0.7) )
 
     def create_cell(self):
         cell = h.Section()
@@ -203,6 +204,9 @@ class HHBallStick7Param(BaseModel):
         
         return hoc_vectors
 
+class HHBallStick4ParamEasy(HHBallStick7Param):
+    pass
+
 class HHBallStick9Param(HHBallStick7Param):
     PARAM_NAMES = (
         'gnabar_soma',
@@ -216,7 +220,8 @@ class HHBallStick9Param(HHBallStick7Param):
         'cm'
     )
     DEFAULT_PARAMS = (500, 500, 10, 10, 1.5, 1.5, .0005, .0005, 0.5)
-    PARAM_RANGES = tuple((0.7*default, 1.8*default) for default in DEFAULT_PARAMS)
+    # PARAM_RANGES = tuple((0.7*default, 1.8*default) for default in DEFAULT_PARAMS)
+    PARAM_RANGES = tuple((0.5*default, 2.0*default) for default in DEFAULT_PARAMS)
 
     def create_cell(self):
         super(HHBallStick9Param, self).create_cell()
@@ -310,10 +315,16 @@ if __name__ == '__main__':
         'hh_point_5param': [rmse * (_max - _min)/2.0 for rmse, (_min, _max)
                             in zip([0.09, 0.39, 0.38, 0.04, 0.05],
                                    HHPoint5Param.PARAM_RANGES)], # could not find rmse valuse in physical units
+        # 'hh_point_5param': [rmse * (_max - _min)/2.0 for rmse, (_min, _max)
+        #                     in zip([.07, .11, .1, .05, .05],
+        #                            HHPoint5Param.PARAM_RANGES_v4)],
         'hh_ball_stick_7param': [49, 55, 1.3, 1.4, 0.16, 1e-5, 0.012],
         'hh_ball_stick_9param': [12, 16, .32, .44, .061, .068, 5.2e-6, 6.8e-6, .0042],
         'hh_two_dend_13param': [51, 34, 110, 12, 9.7, 29, .7, .61, 1.7, 3.9e-5, 2e-5, 7.5e-5, .011],
     }
+
+    print(all_rmse['hh_point_5param'])
+    exit()
 
     STIM_MULTIPLIERS = {
         'izhi': 15.0,

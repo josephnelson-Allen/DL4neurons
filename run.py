@@ -107,7 +107,7 @@ def _qa(args, trace, thresh=10):
     num_hyp_crossings = np.sum(hyp_crossings == 1)
     num_main_crossings = np.sum(main_crossings == 1)
 
-    print(num_hyp_crossings, num_main_crossings)
+    # print(num_hyp_crossings, num_main_crossings)
     
     return (num_hyp_crossings == 0) and (num_main_crossings > 0) and (num_main_crossings <= 30)
 
@@ -339,7 +339,7 @@ if __name__ == '__main__':
 
     # CHOOSE STIMULUS
     parser.add_argument(
-        '--stim-file', type=str, default='stims/chirp16a.csv',
+        '--stim-file', type=str, default='stims/chirp23a.csv',
         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
     parser.add_argument(
         '--stim-dc-offset', type=float, default=0.0,
@@ -350,7 +350,7 @@ if __name__ == '__main__':
         help="scale the stimulus amplitude by this factor. Happens before --stim-dc-offset"
     )
 
-    parser.add_argument('--print-every', type=int, default=None)
+    parser.add_argument('--print-every', type=int, default=100)
     parser.add_argument('--debug', action='store_true', default=False)
     
     args = parser.parse_args()

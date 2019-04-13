@@ -12,7 +12,9 @@ if len(sys.argv)!=2 :
     print('provide input YAML name, aborting'); exit(1)
 h5N=sys.argv[1]
 
-parNameLF=[ ('gnabar',0), ('gkbar',1), ('gcabar',2),('gl',3),  ('cm',4) ] # HH_5par_v1
+# parNameLF=[ ('gnabar',0), ('gkbar',1), ('gcabar',2),('gl',3),  ('cm',4) ] # HH_5par_v1
+# parNameLF = [ ('a', 0), ('b', 1), ('c', 2), ('d', 3) ]
+parNameLF = [ ('gnabar_soma', 0), ('gnabar_dend', 1), ('gkbar_soma', 2), ('gkbar_dend', 3), ('gcabar_soma', 4), ('gcabar_dend', 5), ('gl_soma', 6), ('gl_dend', 7), ('cm', 8) ] ## HH 9param
 #Respectively, those are max sodium conductance, max potassium conductance, max calcium conductance, leak conductance, and membrane capacitance.
 
 print('Opening ',h5N)
