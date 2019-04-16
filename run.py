@@ -131,7 +131,7 @@ def create_h5(args, nsamples):
         stim = get_stim(args)
         ntimepts = len(stim)
         f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
-        f.create_dataset('qa', shape=(nsamples,), dtype=np.float64)
+        f.create_dataset('binQA', shape=(nsamples,), dtype=np.float64)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
 
@@ -158,7 +158,7 @@ def save_h5(args, buf, qa, params, start, stop):
         log.debug("opened h5")
         log.debug(str(params))
         f['voltages'][start:stop, :] = buf
-        f['qa'][start:stop] = qa
+        f['binQA'][start:stop] = qa
         if not args.blind:
             f['phys_par'][start:stop, :] = params
             f['norm_par'][start:stop, :] = _normalize(args, params)
