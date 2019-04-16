@@ -14,9 +14,10 @@ class BaseModel(object):
     def __init__(self, *args, **kwargs):
         h.celsius = kwargs.pop('celsius', 33)
         self.log = kwargs.pop('log', print)
+        params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
 
         # Model params
-        for (var, val) in zip(self.PARAM_NAMES, args):
+        for (var, val) in params.items():
             setattr(self, var, val)
 
     @property
@@ -250,7 +251,8 @@ class HHTwoDend13Param(HHBallStick9Param):
         'gl_basal',
         'cm'
     )
-    DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 5, 5, 10, .0005, .0005, .0005, 0.5)
+    # DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 5, 5, 10, .0005, .0005, .0005, 0.5) # Until 10par v1
+    DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 10, 10, 10, .0005, .0005, .0005, 0.5)
     PARAM_RANGES = tuple((0.5*default, 2.0*default) for default in DEFAULT_PARAMS)
 
     def __init__(self, *args, **kwargs):

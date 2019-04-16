@@ -224,6 +224,23 @@ def add_qa(args):
     log.info("done")
 
 
+def lock_params(args, paramsets):
+    assert len(args.locked_params) % 2 == 0
+    
+    paramnames = MODELS_BY_NAME[args.model].PARAM_NAMES
+    nsets = len(args.locked_params)//2
+    
+    sources = [args.locked_params[i*2] for i in range(nsets)]
+    targets = [args.locked_params[i*2+1] for i in range(nsets)]
+
+    for source, target in zip(sources, targets):
+        source_i = paramnames.index(source)
+        target_i = paramnames.index(target)
+        paramsets[:, target_i] = paramsets[:, source_i]
+
+    import ipdb; ipdb.set_trace()
+    
+
 def main(args):
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
@@ -262,6 +279,8 @@ def main(args):
         log.info("Cell parameters not specified, running with default parameters")
         paramsets = [ MODELS_BY_NAME[args.model].DEFAULT_PARAMS ]
         start, stop = 0, 1
+
+    lock_params(args, paramsets)
 
     stim = get_stim(args)
     buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float64)
@@ -352,6 +371,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--print-every', type=int, default=100)
     parser.add_argument('--debug', action='store_true', default=False)
+
+    parser.add_argument('--lock-params', type=str, nargs='+')
     
     args = parser.parse_args()
 
