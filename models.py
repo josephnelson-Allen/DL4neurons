@@ -252,7 +252,7 @@ class HHTwoDend13Param(HHBallStick9Param):
         'cm'
     )
     # DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 5, 5, 10, .0005, .0005, .0005, 0.5) # Until 10par v1
-    DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 10, 10, 10, .0005, .0005, .0005, 0.5)
+    DEFAULT_PARAMS = (500, 500, 500, 10, 10, 10, 1.5, 1.5, 1.5, .0005, .0005, .0005, 0.5) # not used yet
     PARAM_RANGES = tuple((0.5*default, 2.0*default) for default in DEFAULT_PARAMS)
 
     def __init__(self, *args, **kwargs):
@@ -333,7 +333,7 @@ if __name__ == '__main__':
         'hh_point_5param': 20.0,
         'hh_ball_stick_7param': 0.18,
         'hh_ball_stick_9param': 0.3,
-        'hh_two_dend_13param': 0.5,
+        'hh_two_dend_13param': 1.0,
     }
     stim = np.genfromtxt('stims/chirp16a.csv')
 

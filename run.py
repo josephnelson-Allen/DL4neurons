@@ -34,7 +34,7 @@ STIM_MULTIPLIERS = {
     'hh_point_5param': 15.0,
     'hh_ball_stick_7param': 0.18,
     'hh_ball_stick_9param': 0.3,
-    'hh_two_dend_13param': 0.4,
+    'hh_two_dend_13param': 0.5,
 }
     
 def _rangeify(data, _range):
@@ -47,6 +47,7 @@ def clean_params(args):
     """
     defaults = MODELS_BY_NAME[args.model].DEFAULT_PARAMS
     if args.params:
+        assert len(args.params) == len(defaults)
         return [float(x if x != 'rand' else 'inf') if x != 'def' else default
                 for (x, default) in zip(args.params, defaults)]
     else:
@@ -94,12 +95,13 @@ def get_stim(args, mult=None):
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
 
-def _qa(args, trace, thresh=10):
+def _qa(args, trace, thresh=20):
     trace = trace[:-1]
     # stim = get_stim(args, mult=1)
     # hyp_trace = trace[stim == -1.0]
     # main_trace = trace[(stim != -1) & (stim != 0)]
-    hyp_trace = np.concatenate([trace[4000:5400], trace[20500:22000]])
+    # hyp_trace = np.concatenate([trace[4000:5400], trace[20500:22000]])
+    hyp_trace = trace[4000:5400]
     main_trace = trace[6001:16999]
 
     hyp_crossings = np.diff( (hyp_trace > thresh).astype('int') )
@@ -230,16 +232,14 @@ def lock_params(args, paramsets):
     paramnames = MODELS_BY_NAME[args.model].PARAM_NAMES
     nsets = len(args.locked_params)//2
     
-    sources = [args.locked_params[i*2] for i in range(nsets)]
-    targets = [args.locked_params[i*2+1] for i in range(nsets)]
+    targets = [args.locked_params[i*2] for i in range(nsets)]
+    sources = [args.locked_params[i*2+1] for i in range(nsets)]
 
     for source, target in zip(sources, targets):
         source_i = paramnames.index(source)
         target_i = paramnames.index(target)
         paramsets[:, target_i] = paramsets[:, source_i]
 
-    import ipdb; ipdb.set_trace()
-    
 
 def main(args):
     if (not args.outfile) and (not args.force) and (args.plot is None):
@@ -277,7 +277,7 @@ def main(args):
         start, stop = 0, 1
     else:
         log.info("Cell parameters not specified, running with default parameters")
-        paramsets = [ MODELS_BY_NAME[args.model].DEFAULT_PARAMS ]
+        paramsets = np.atleast_2d(MODELS_BY_NAME[args.model].DEFAULT_PARAMS)
         start, stop = 0, 1
 
     lock_params(args, paramsets)
@@ -369,10 +369,10 @@ if __name__ == '__main__':
         help="scale the stimulus amplitude by this factor. Happens before --stim-dc-offset"
     )
 
-    parser.add_argument('--print-every', type=int, default=100)
+    parser.add_argument('--print-every', type=int, default=1000)
     parser.add_argument('--debug', action='store_true', default=False)
 
-    parser.add_argument('--lock-params', type=str, nargs='+')
+    parser.add_argument('--locked-params', '--lock-params', type=str, nargs='+', default=[])
     
     args = parser.parse_args()
 

@@ -14,7 +14,8 @@ h5N=sys.argv[1]
 
 # parNameLF=[ ('gnabar',0), ('gkbar',1), ('gcabar',2),('gl',3),  ('cm',4) ] # HH_5par_v1
 # parNameLF = [ ('a', 0), ('b', 1), ('c', 2), ('d', 3) ]
-parNameLF = [ ('gnabar_soma', 0), ('gnabar_dend', 1), ('gkbar_soma', 2), ('gkbar_dend', 3), ('gcabar_soma', 4), ('gcabar_dend', 5), ('gl_soma', 6), ('gl_dend', 7), ('cm', 8) ] ## HH 9param
+# parNameLF = [ ('gnabar_soma', 0), ('gnabar_dend', 1), ('gkbar_soma', 2), ('gkbar_dend', 3), ('gcabar_soma', 4), ('gcabar_dend', 5), ('gl_soma', 6), ('gl_dend', 7), ('cm', 8) ] ## HH 9param
+parNameLF = [ ('gnabar_soma', 0), ('gnabar_apic', 1), ('gnabar_basal', 2), ('gkbar_soma', 3), ('gkbar_apic', 4), ('gkbar_basal', 5), ('gcabar_soma', 6), ('gcabar_apic', 7), ('gcabar_basal', 8), ('gl_soma', 9), ('gl_apic', 10), ('gl_basal', 11), ('cm', 12) ] ## HH 13params
 #Respectively, those are max sodium conductance, max potassium conductance, max calcium conductance, leak conductance, and membrane capacitance.
 
 print('Opening ',h5N)
