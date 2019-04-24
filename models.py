@@ -83,12 +83,35 @@ class BaseModel(object):
         return {k: np.array(v) for (k, v) in hoc_vectors.items()}
 
 
+class Mainen(BaseModel):
+    PARAM_NAMES = ()
+    DEFAULT_PARAMS = ()
+    PARAM_RANGES = ()
+    STIM_MULTIPLIER = 2.0
+
+    def __init__(self, *args, **kwargs):
+        h.load_file('demofig1.hoc')
+        super(Mainen, self).__init__(*args, **kwargs)
+
+    @property
+    def stim_variable_str(self):
+        return "st.amp"
+
+    def create_cell(self):
+        h.load_3dcell('cells/j7.hoc')
+        return h.soma
+
+    def attach_clamp(self):
+        self.log.debug("Mainen, not using separate clamp")
+
+
 class Izhi(BaseModel):
     PARAM_NAMES = ('a', 'b', 'c', 'd')
     DEFAULT_PARAMS = (0.01, 0.2, -65., 2.)
     PARAM_RANGES = ( (0.01, 0.1), (0.1, 0.4), (-80, -50), (0.5, 5) ) # v5 blind sample 
     # PARAM_RANGES = ( (0.01, 0.1), (0.1, 0.4), (-80, -50), (0.5, 10) ) # v6b, not used
     # PARAM_RANGES = ( (-.03, 0.06), (-1.1, 0.4), (-70, -40), (0, 10) )
+    STIM_MULTIPLIER = 15.0
 
     @property
     def stim_variable_str(self):
@@ -117,6 +140,7 @@ class HHPoint5Param(BaseModel):
     DEFAULT_PARAMS = (500, 10, 1.5, .0005, 0.5)
     PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
     PARAM_RANGES_v4 = ( (200, 800), (8, 15), (1, 2), (0.0004, 0.00055), (0.3, 0.7) )
+    STIM_MULTIPLIER = 20.0
 
     def create_cell(self):
         cell = h.Section()
@@ -154,6 +178,7 @@ class HHBallStick7Param(BaseModel):
     #     (0.3, 0.7)
     # )
     PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
+    STIM_MULTIPLIER = 0.18
 
     DEFAULT_SOMA_DIAM = 21 # source: https://synapseweb.clm.utexas.edu/dimensions-dendrites and Fiala and Harris, 1999, table 1.1
 
@@ -223,6 +248,7 @@ class HHBallStick9Param(HHBallStick7Param):
     DEFAULT_PARAMS = (500, 500, 10, 10, 1.5, 1.5, .0005, .0005, 0.5)
     # PARAM_RANGES = tuple((0.7*default, 1.8*default) for default in DEFAULT_PARAMS)
     PARAM_RANGES = tuple((0.5*default, 2.0*default) for default in DEFAULT_PARAMS)
+    STIM_MULTIPLIER = 0.3
 
     def create_cell(self):
         super(HHBallStick9Param, self).create_cell()
@@ -254,6 +280,7 @@ class HHTwoDend13Param(HHBallStick9Param):
     # DEFAULT_PARAMS = (500, 500, 500, 100, 100, 100, 5, 5, 10, .0005, .0005, .0005, 0.5) # Until 10par v1
     DEFAULT_PARAMS = (500, 500, 500, 10, 10, 10, 1.5, 1.5, 1.5, .0005, .0005, .0005, 0.5) # not used yet
     PARAM_RANGES = tuple((0.5*default, 2.0*default) for default in DEFAULT_PARAMS)
+    STIM_MULTIPLIER = 1.0
 
     def __init__(self, *args, **kwargs):
         super(HHTwoDend13Param, self).__init__(*args, **kwargs)
@@ -297,6 +324,7 @@ MODELS_BY_NAME = {
     'hh_ball_stick_7param': HHBallStick7Param,
     'hh_ball_stick_9param': HHBallStick9Param,
     'hh_two_dend_13param': HHTwoDend13Param,
+    'mainen': Mainen,
 }
 
 
@@ -328,13 +356,7 @@ if __name__ == '__main__':
     print(all_rmse['hh_point_5param'])
     exit()
 
-    STIM_MULTIPLIERS = {
-        'izhi': 15.0,
-        'hh_point_5param': 20.0,
-        'hh_ball_stick_7param': 0.18,
-        'hh_ball_stick_9param': 0.3,
-        'hh_two_dend_13param': 1.0,
-    }
+    
     stim = np.genfromtxt('stims/chirp16a.csv')
 
 
@@ -350,7 +372,7 @@ if __name__ == '__main__':
 
         x_axis = np.linspace(0, len(stim)*0.02, len(stim))
         
-        thisstim = stim * STIM_MULTIPLIERS[model_name]
+        thisstim = stim * MODELS_BY_NAME[model_name].STIM_MULTIPLIER
 
         model = model_cls(*model_cls.DEFAULT_PARAMS, log=log)
         default_trace = model.simulate(thisstim, 0.02)['v'][:len(stim)]

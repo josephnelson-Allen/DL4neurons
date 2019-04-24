@@ -29,14 +29,6 @@ from neuron import h, gui
 
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
-STIM_MULTIPLIERS = {
-    'izhi': 15.0,
-    'hh_point_5param': 15.0,
-    'hh_ball_stick_7param': 0.18,
-    'hh_ball_stick_9param': 0.3,
-    'hh_two_dend_13param': 0.5,
-}
-    
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
@@ -90,7 +82,7 @@ def get_mpi_idx(args, nsamples):
 
 def get_stim(args, mult=None):
     stim_fn = os.path.basename(args.stim_file)
-    multiplier = mult or args.stim_multiplier or STIM_MULTIPLIERS[args.model]
+    multiplier = mult or args.stim_multiplier or MODELS_BY_NAME[args.model].STIM_MULTIPLIER
     log.debug("Stim multiplier = {}".format(multiplier))
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
