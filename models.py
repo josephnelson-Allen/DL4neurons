@@ -84,10 +84,42 @@ class BaseModel(object):
 
 
 class Mainen(BaseModel):
-    PARAM_NAMES = ()
-    DEFAULT_PARAMS = ()
-    PARAM_RANGES = ()
-    STIM_MULTIPLIER = 2.0
+    PARAM_NAMES = (
+        'gna_dend',
+        'gna_node',
+        'gna_soma',
+        'gkv_axon',
+        'gkv_soma',
+        'gca_dend',
+        'gkm_dend',
+        'gkca_dend',
+        'gca_soma',
+        'gkm_soma',
+        'gkca_soma',
+        'depth_cad',
+        'c_m',
+        'rm',
+    )
+    DEFAULT_PARAMS = (
+        20, 30000, 20, 2000, 200, 0.3, 0.1, 3, 0.3, 0.1, 3, 0.1, 0.75, 30000
+    )
+    PARAM_RANGES = (
+        (10, 250),
+        (15000, 80000),
+        (10, 60000),
+        (1000, 5000),
+        (100, 2000),
+        (0.15, 0.6),
+        (0.05, 0.2),
+        (1.5, 6),
+        (.15, 6),
+        (0.001, 10),
+        (0.03, 300),
+        (0.05, 0.2),
+        (0.3, 1.5),
+        (15000, 60000),
+    )
+    STIM_MULTIPLIER = 1.0
 
     def __init__(self, *args, **kwargs):
         h.load_file('demofig1.hoc')
@@ -98,6 +130,22 @@ class Mainen(BaseModel):
         return "st.amp"
 
     def create_cell(self):
+        # replication of top of demofig1.hoc and fitCori.hoc
+        h.gna_dend = self.gna_dend
+        h.gna_node = self.gna_node
+        h.gna_soma = self.gna_soma
+        h.gkv_axon = self.gkv_axon
+        h.gkv_soma = self.gkv_soma
+        h.gca = self.gca_dend
+        h.gkm = self.gkm_dend
+        h.gkca = self.gkca_dend
+        h.gca_soma = self.gca_soma
+        h.gkm_soma = self.gkm_soma
+        h.gkca_soma = self.gkca_soma
+        h.depth_cad = self.depth_cad
+        h.rm = self.rm
+        h.c_m = self.c_m
+        
         h.load_3dcell('cells/j7.hoc')
         return h.soma
 

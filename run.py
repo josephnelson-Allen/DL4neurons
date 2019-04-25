@@ -300,7 +300,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--model', choices=MODELS_BY_NAME.keys(),
                         default='hh_ball_stick_7param')
-    parser.add_argument('--celsius', type=float, default=33)
+    parser.add_argument('--celsius', type=float, default=37)
     parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
