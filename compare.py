@@ -9,11 +9,11 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.patches import Circle
+import h5py
 import numpy as np
 # from scipy.stats import entropy
 
 from models import MODELS_BY_NAME
-from run import STIM_MULTIPLIERS
 
 import pyspike
 
@@ -36,44 +36,6 @@ def _rangeify(data, _range):
     return (data + 1) * (_range[1] - _range[0])/2.0 + _range[0]
 
 
-def predictions(answersfile, norm=False, modelname='izhi'):
-    _predictions = np.zeros((NSAMPLES, 4), dtype=np.float64)
-    izhi = MODELS_BY_NAME[modelname]
-    with open(answersfile) as prediction_file:
-        for line in prediction_file.readlines():
-            recid, vals = line.split('[')
-
-            # These ones come normalized
-            if norm:
-                _predictions[int(float(recid.strip()))] = vals.strip('] \n').split()
-            else:
-                _predictions[int(float(recid.strip()))] = [_rangeify(float(x), _range) for x, _range in zip(vals.strip('] \n').split(), izhi.PARAM_RANGES)]
-
-    return _predictions
-    
-
-def iter_true(paramsfile, norm=False):
-    true = np.zeros((NSAMPLES, 4), dtype=np.float64)
-    with open(paramsfile, 'r') as true_param_file:
-        for i, line in enumerate(true_param_file.readlines()):
-
-            # These ones come raw (NOT normalized)
-            if norm:
-                true[i] = normalize([float(x) for x in line.split()])
-            else:
-                true[i] = [float(x) for x in line.split()]
-
-    return true
-
-
-def iter_voltages(datafile):
-    """
-    Iterate over traces stored in the given datafile
-    """
-    with h5py.File(datafile, 'r') as infile:
-        return 
-
-
 def data_for(modelname, stim, *params, dt=0.02):
     """
     Run the simulation and get data back
@@ -85,29 +47,19 @@ def data_for(modelname, stim, *params, dt=0.02):
     return model.simulate(stim, dt)
 
 
-def iter_trials(modelname, paramfile, answersfile, datafile=None, stim=None):
+def iter_trials(modelname, answersfile, stim=None):
     """
     Iterate over tuples of true, predicted params and voltage traces of both
     """
-    if datafile:
-        true_voltages = iter_voltages(datafile)
-    else:
-        true_voltages = itertools.repeat(None)
+    ranges = MODELS_BY_NAME[modelname].PARAM_RANGES
+    with h5py.File(answersfile) as infile:
+        for phys_pred, unit_pred, unit_truth, trace_truth in zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D']):
+            # TODO: cut off traces at correct bins
+            if len(trace_truth) != 9000:
+                trace_truth = data_for(modelname, stim, *unit_truth)['v']
+            trace_pred = data_for(modelname, stim, *unit_pred)['v'][6000:15000]
 
-    for i, (truth, prediction, true_volt) in enumerate(
-            zip(iter_true(paramfile, norm=True),
-                predictions(answersfile, norm=True),
-                true_voltages,
-            )):
-        if not true_volt:
-            true_volt = data_for(modelname, stim, *truth)['v']
-
-        if not _qa(None, true_volt):
-            continue
-
-        predicted_volt = data_for(modelname, stim, *prediction)['v']
-
-        yield truth, prediction, true_volt, predicted_volt
+            yield unit_truth, unit_pred, trace_truth, trace_pred
 
 
 def _similarity(truth_v, predicted_v, method='isi', thresh=10):
@@ -129,7 +81,7 @@ def _similarity(truth_v, predicted_v, method='isi', thresh=10):
 def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='isi', stim=None):
     if not stim:
         stim = np.genfromtxt('stims/chirp23a.csv')
-        stim *= STIM_MULTIPLIERS[modelname]
+        stim *= MODELS_BY_NAME[modelname].STIM_MULTIPLIER
     
     binsize = 0.05
     nbins = int(2/binsize)
@@ -148,7 +100,7 @@ def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='i
     }
 
     binned_similarities = {pair: defaultdict(lambda: defaultdict(list)) for pair in pairs}
-    for i, (truth, prediction, truth_v, predicted_v) in enumerate(iter_trials(modelname, paramfile, answersfile, stim=stim)):
+    for i, (truth, prediction, truth_v, predicted_v) in enumerate(iter_trials(modelname, answersfile, stim=stim)):
         bin_idxs = [int((param+1) / binsize) for param in truth]
 
         similarity = _similarity(truth_v, predicted_v, method='isi')
@@ -170,8 +122,8 @@ def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='i
             if (bin1, bin2) in to_plot[pair]:
                 to_plot[pair][(bin1, bin2)] = (truth_v, predicted_v)
 
-        # if i >= 500:
-        #     break
+        if i >= 500:
+            break
                 
 
     for pair in pairs:
@@ -217,8 +169,9 @@ def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='i
             heatmap_ax.add_patch(dot)
 
             # Plot traces
-            x_axis = np.arange(0, len(truth_v)*.02, .02)
-            t_range = slice(5000, 14000)
+            x_axis = np.arange(0, len(predicted_v)*.02, .02)
+            # t_range = slice(5000, 14000)
+            t_range = slice(None)
             trace_axs[i].plot(
                 x_axis[t_range], truth_v[t_range], color=colors[i][1], label='Actual',
                 linewidth=0.5,
@@ -240,4 +193,4 @@ def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='i
 
 
 if __name__ == '__main__':
-    similarity_heatmaps('izhi', 'params/izhi_v5_blind_sample_params.csv', 'izhi_v5b_chirp_16a_blind1.answer')
+    similarity_heatmaps('izhi', 'params/izhi_v5_blind_sample_params.csv', 'cellRegr.sim.pred.h5') # 'izhi_v5b_chirp_16a_blind1.answer')
