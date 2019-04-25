@@ -19,8 +19,6 @@ import pyspike
 
 from neuron import h, gui
 
-NSAMPLES = 10000
-
 
 def _qa(args, trace, thresh=10):
     return np.sum(np.diff( (trace > thresh).astype('int') ) == 1)
@@ -122,8 +120,8 @@ def similarity_heatmaps(modelname, answersfile, similarity_measure='isi', stim=N
             if (bin1, bin2) in to_plot[pair]:
                 to_plot[pair][(bin1, bin2)] = (truth_v, predicted_v)
 
-        if i >= 500:
-            break
+        # if i >= 500:
+        #     break
                 
 
     for pair in pairs:
