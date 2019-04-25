@@ -55,9 +55,9 @@ def iter_trials(modelname, answersfile, stim=None):
     with h5py.File(answersfile) as infile:
         for phys_pred, unit_pred, unit_truth, trace_truth in zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D']):
             # TODO: cut off traces at correct bins
-            if len(trace_truth) != 9000:
+            if len(trace_truth) == 9000:
                 trace_truth = data_for(modelname, stim, *unit_truth)['v']
-            trace_pred = data_for(modelname, stim, *unit_pred)['v'][6000:15000]
+            trace_pred = data_for(modelname, stim, *unit_pred)['v']
 
             yield unit_truth, unit_pred, trace_truth, trace_pred
 
@@ -69,8 +69,8 @@ def _similarity(truth_v, predicted_v, method='isi', thresh=10):
     truth_spike_times = np.where(truth_spikes > 0)[0]
     predicted_spike_times = np.where(predicted_spikes > 0)[0]
 
-    truth_spike_train = pyspike.SpikeTrain(truth_spike_times, 6001, 17000)
-    predicted_spike_train = pyspike.SpikeTrain(predicted_spike_times, 6001, 17000)
+    truth_spike_train = pyspike.SpikeTrain(truth_spike_times, 5500, 14500)
+    predicted_spike_train = pyspike.SpikeTrain(predicted_spike_times, 5500, 14500)
 
     if method == 'isi':
         return np.abs(pyspike.isi_distance(truth_spike_train, predicted_spike_train))
@@ -78,7 +78,7 @@ def _similarity(truth_v, predicted_v, method='isi', thresh=10):
         raise ValueError("unknown similarity metric")
 
 
-def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='isi', stim=None):
+def similarity_heatmaps(modelname, answersfile, similarity_measure='isi', stim=None):
     if not stim:
         stim = np.genfromtxt('stims/chirp23a.csv')
         stim *= MODELS_BY_NAME[modelname].STIM_MULTIPLIER
@@ -193,4 +193,4 @@ def similarity_heatmaps(modelname, paramfile, answersfile, similarity_measure='i
 
 
 if __name__ == '__main__':
-    similarity_heatmaps('izhi', 'params/izhi_v5_blind_sample_params.csv', 'cellRegr.sim.pred.h5') # 'izhi_v5b_chirp_16a_blind1.answer')
+    similarity_heatmaps('izhi', 'cellRegr.sim.pred.h5') # 'izhi_v5b_chirp_16a_blind1.answer')
