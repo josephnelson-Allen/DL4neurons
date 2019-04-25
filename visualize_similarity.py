@@ -40,7 +40,7 @@ def data_for(modelname, stim, *params, dt=0.02):
     """
     model_cls = MODELS_BY_NAME[modelname]
     params = [_rangeify(x, _range) for x, _range in zip(params, model_cls.PARAM_RANGES)]
-    model = model_cls(*params, log=log, celsius=33)
+    model = model_cls(*params, log=log, celsius=37)
 
     return model.simulate(stim, dt)
 
