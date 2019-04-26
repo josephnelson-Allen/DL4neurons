@@ -124,10 +124,12 @@ class Similarity(object):
         with h5py.File(outfilename, 'w') as outfile:
             data = np.array(list(self.iter_exp_pred_similarity(sweepfile, block_start, block_end)))
             outfile.create_dataset('similarity', data=data)
+            outfile['similarity'].attrs['modelname'] = self.modelname
 
             with h5py.File(sweepfile, 'r') as infile:
-                outfile.create_dataset('physPred3D', data=infile['physPred3D'][:, :, ML_MODEL_i])
-                outfile.create_dataset('unitPred3D', data=infile['unitPred3D'][:, :, ML_MODEL_i])
+                outfile.create_dataset('physPred3D', data=infile['physPred3D'][block_start:block_end, :, ML_MODEL_i])
+                outfile.create_dataset('unitPred3D', data=infile['unitPred3D'][block_start:block_end, :, ML_MODEL_i])
+                outfile.create_dataset('sweep2D', data=infile['sweep2D'][block_start:block_end, :])
 
     def iter_sim_pred_similarity(self, predfile):
         """
@@ -158,14 +160,14 @@ class Similarity(object):
 def main(args):
     x = Similarity(args.model, 'stims/chirp23a.csv')
     
-    exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
-    x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile, args.block_start, args.block_end)
-    
     exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
     x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, args.block_start, args.block_end)
 
-    sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
-    x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
+    exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
+    x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile, args.block_start, args.block_end)
+    
+    # sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
+    # x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
 
     
 if __name__ == '__main__':
