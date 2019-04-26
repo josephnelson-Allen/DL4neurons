@@ -24,6 +24,11 @@ ch.setLevel(logging.INFO)
 log.addHandler(ch)
 
 
+BLOCKS = {
+    '041019A_1-ML203b_izhi_4pv6c.mpred.h5': [(0, 40), (44, 84), (90, 150), (187, 230), (231, 251)],
+}
+
+
 class Similarity(object):
     def __init__(self, modelname, stimfile, *args, **kwargs):
         self.modelname = modelname
@@ -115,21 +120,29 @@ class Similarity(object):
         Re-run the simulation w/ predicted params
         Compare the experimental and simulated traces, and yield the similarities
         """
-        log.info('Starting exp/pred similarity computation')
+        log.info('Doing one block of exp/pred similarity computation')
         for v_exp, phys_pred in self.iter_exp_block(sweepfile, block_start, block_end):
             v_sim = self._data_for(*phys_pred)
             yield self._similarity(v_exp, v_sim)
     
-    def save_exp_pred_similarity(self, sweepfile, outfilename, block_start, block_end):
-        with h5py.File(outfilename, 'w') as outfile:
-            data = np.array(list(self.iter_exp_pred_similarity(sweepfile, block_start, block_end)))
-            outfile.create_dataset('similarity', data=data)
+    def save_exp_pred_similarity(self, sweepfile, outfilename):
+        with h5py.File(outfilename, 'w') as outfile, \
+             h5py.File(sweepfile, 'r') as infile:
+            
+            data, phys_pred, unit_pred, sweep = [], [], [], []
+            for block_start, block_end in BLOCKS[sweepfile]:
+                data.append(np.array(list(
+                    self.iter_exp_pred_similarity(sweepfile, block_start, block_end)
+                )))
+                phys_pred.append(infile['physPred3D'][block_start:block_end, :, ML_MODEL_i])
+                unit_pred.append(infile['unitPred3D'][block_start:block_end, :, ML_MODEL_i])
+                sweep.append(infile['sweep2D'][block_start:block_end, :])
+                
+            outfile.create_dataset('similarity', data=np.concatenate(data))
             outfile['similarity'].attrs['modelname'] = self.modelname
-
-            with h5py.File(sweepfile, 'r') as infile:
-                outfile.create_dataset('physPred3D', data=infile['physPred3D'][block_start:block_end, :, ML_MODEL_i])
-                outfile.create_dataset('unitPred3D', data=infile['unitPred3D'][block_start:block_end, :, ML_MODEL_i])
-                outfile.create_dataset('sweep2D', data=infile['sweep2D'][block_start:block_end, :])
+            outfile.create_dataset('physPred3D', data=np.concatenate(phys_pred))
+            outfile.create_dataset('unitPred3D', data=np.concatenate(unit_pred))
+            outfile.create_dataset('sweep2D', data=np.concatenate(sweep))
 
     def iter_sim_pred_similarity(self, predfile):
         """
@@ -148,7 +161,8 @@ class Similarity(object):
         # TODO: save params too, direct from other h5 file
         with h5py.File(outfilename, 'w') as outfile:
             data = np.array(list(self.iter_sim_pred_similarity(predfile)))
-            outfile.create_dataset('similarity', data=data)
+            if 'similarity' not in outfile:
+                outfile.create_dataset('similarity', data=data)
             outfile['similarity'].attrs['modelname'] = self.modelname
 
             with h5py.File(predfile, 'r') as infile:
@@ -161,14 +175,14 @@ class Similarity(object):
 def main(args):
     x = Similarity(args.model, 'stims/chirp23a.csv')
     
-    exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
-    x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, args.block_start, args.block_end)
+    # exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
+    # x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, 90, 150)
 
-    exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
-    x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile, args.block_start, args.block_end)
+    # exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
+    # x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile)
     
-    # sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
-    # x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
+    sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5_TEST')
+    x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
 
     
 if __name__ == '__main__':
@@ -181,8 +195,6 @@ if __name__ == '__main__':
     parser.add_argument('--sweepfile', type=str, required=True)
     parser.add_argument('--simpredfile', type=str, required=True)
     # parser.add_argument('--outfile', type=str, required=False, default=None)
-    parser.add_argument('--block-start', type=int, default=0)
-    parser.add_argument('--block-end', type=int, default=-1)
     
     parser.add_argument('--dist', choices=['isi'], default='isi')
 
