@@ -46,7 +46,7 @@ def histogram(exp_exp_similarity, exp_pred_similarity, sim_pred_similarity):
     plt.show()
 
 
-def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity=None, sweepfile=None, nbins=20, phys=True, plot_params='pred', range_x=None, range_y=None):
+def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity=None, sweepfile=None, nbins=20, phys=True, plot_params='pred', range_x=None, range_y=None, vminmax=3):
     """
     Compute heatmaps of similarity between actual/predicted traces.
     if exp_exp_similarity is specified, we normalize to its mean/stdev
@@ -122,7 +122,7 @@ def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity
 
         # indices for random traces
         trace_i = np.random.choice(range(nsamples), 3)
-        trace_i[2] = 981
+        # trace_i[2] = 981
         trace_i = sorted(trace_i)
 
         # Grab 3 true traces
@@ -154,7 +154,7 @@ def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity
     cmap = plt.cm.RdGy
     cmap.set_bad('magenta')
     heatmap_ax.set_facecolor('magenta')
-    vminmax = np.nanmax(np.abs(binned_averaged_similarity))
+    vminmax = vminmax or np.nanpercentile(np.abs(binned_averaged_similarity), 98) / 0.98
     im = heatmap_ax.pcolormesh(all_bins_x, all_bins_y, binned_averaged_similarity.T,
                                cmap=cmap, vmin=-vminmax, vmax=vminmax)
     plt.colorbar(im, ax=heatmap_ax)
@@ -206,16 +206,16 @@ if __name__ == '__main__':
     # histogram('041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', '041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', 'cellRegr.sim.pred_SimPredSimilarity.h5')
 
     
-    pairs = [(0, 1), (1, 2), (2, 3), (3, 0)]
-    # pairs = [(0, 1),]
-    for x, y, in pairs:
-        similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=False, plot_params='pred')
-    #     similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=True, plot_params='pred')
+    # pairs = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    # # pairs = [(0, 1),]
+    # for x, y, in pairs:
+    #     similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=False, plot_params='pred')
+    # #     similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=True, plot_params='pred')
 
         
-    similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=2, param_y=3, phys=False, plot_params='pred', range_x=(1.05, 1.15), range_y=(.6, 1))
+    # similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=2, param_y=3, phys=False, plot_params='pred', range_x=(1.05, 1.15), range_y=(.6, 1))
 
-    similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=1, param_y=2, phys=False, plot_params='pred', range_x=(-1, -.75), range_y=(1.05, 1.15))
+    # similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=1, param_y=2, phys=False, plot_params='pred', range_x=(-1, -.75), range_y=(1.05, 1.15))
 
     similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=0, param_y=1, phys=False, plot_params='pred', range_x=(0.95, 1.15), range_y=(-.95, -.75))
 

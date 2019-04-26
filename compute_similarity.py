@@ -48,7 +48,8 @@ class Similarity(object):
         return self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)['v'][5500:14500]
 
     def _similarity(self, v1, v2, method='isi', **kwargs):
-        assert len(v1) == len(v2)
+        assert v1.shape == v2.shape
+        assert v1.ndim == 1
         if method == 'isi':
             thresh = kwargs.pop('thresh', 10)
             
@@ -93,7 +94,7 @@ class Similarity(object):
                     log.info('Done {}'.format(i))
                 if len(trace_truth) > 9000:
                     trace_truth = trace_truth[5500:14500]
-                yield phys_pred, unit_pred, unit_truth, trace_truth
+                yield phys_pred, unit_pred, unit_truth, trace_truth.squeeze()
 
                 # DEBUG
                 # if i > 500:
@@ -154,6 +155,7 @@ class Similarity(object):
         
         for phys_pred, unit_pred, unit_truth, v_truth in self.iter_sim_predictions(predfile):
             # phys_truth = self._rangeify(unit_truth)
+            # v_truth2 = self._data_for(*unit_truth, unit=True)
             v_pred = self._data_for(*phys_pred)
             yield self._similarity(v_truth, v_pred)
 
@@ -175,20 +177,20 @@ class Similarity(object):
 def main(args):
     x = Similarity(args.model, 'stims/chirp23a.csv')
     
-    # exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
-    # x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, 90, 150)
+    exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
+    x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, 90, 150)
 
-    # exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
-    # x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile)
+    exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
+    x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile)
     
-    sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5_TEST')
+    sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
     x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
 
     
 if __name__ == '__main__':
     parser = ArgumentParser()
 
-    # VB: Try running with --sweepfile 041019A_1-ML203b_izhi_4pv6c.mpred.h5 --block-start 90 --block-end 150 --simpredfile cellRegr.sim.pred.h5 
+    # VB: Try running with --sweepfile 041019A_1-ML203b_izhi_4pv6c.mpred.h5 --simpredfile cellRegr.sim.pred.h5 
 
 
     parser.add_argument('--model', choices=MODELS_BY_NAME.keys(), default='izhi')
