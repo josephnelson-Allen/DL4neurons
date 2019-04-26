@@ -11,184 +11,106 @@ import matplotlib.gridspec as gridspec
 from matplotlib.patches import Circle
 import h5py
 import numpy as np
-# from scipy.stats import entropy
 
 from models import MODELS_BY_NAME
-
-import pyspike
-
-from neuron import h, gui
+from compute_similarity import Similarity
 
 
-def _qa(args, trace, thresh=10):
-    return np.sum(np.diff( (trace > thresh).astype('int') ) == 1)
-
-def normalize(vals, minmax=1, modelname='izhi'):
-    model_cls = MODELS_BY_NAME[modelname]
-    mins = np.array([tup[0] for tup in model_cls.PARAM_RANGES])
-    ranges = np.array([_max - _min for (_min, _max) in model_cls.PARAM_RANGES])
-    return 2*minmax * ( (vals - mins)/ranges ) - minmax
+def histogram(exp_exp_similarity, exp_pred_similarity, sim_pred_similarity):
+    pass
 
 
-def _rangeify(data, _range):
-    return (data + 1) * (_range[1] - _range[0])/2.0 + _range[0]
-
-
-def data_for(modelname, stim, *params, dt=0.02):
+def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity=None, nbins=20, phys=True):
     """
-    Run the simulation and get data back
+    Compute heatmaps of similarity between actual/predicted traces.
+    if exp_exp_similarity is specified, we normalize to its mean/stdev
+    if phys=False, plot w/ unit-normalized params on axes
     """
-    model_cls = MODELS_BY_NAME[modelname]
-    params = [_rangeify(x, _range) for x, _range in zip(params, model_cls.PARAM_RANGES)]
-    model = model_cls(*params, log=log, celsius=37)
+    with h5py.File(similarity_file, 'r') as infile:
+        modelname = infile['similarity'].attrs['modelname']
+        param_ranges = MODELS_BY_NAME[modelname].PARAM_RANGES
+        param_names = MODELS_BY_NAME[modelname].PARAM_NAMES
+        nsamples = infile['similarity'].shape[0]
 
-    return model.simulate(stim, dt)
+        if exp_exp_similarity:
+            with h5py.File(exp_exp_similarity, 'r') as infile:
+                expexp_mean = np.average(infile['similarity'])
+                expexp_std = np.stdev(infile['similarity'])
+                # TODO: normalize incoming data
 
+        if phys:
+            range_x = param_ranges[param_x]
+            range_y = param_ranges[param_y]
+            paramskey = 'physTruth2D'
+            pred_paramskey = 'physPred2D'
+        else:
+            range_x = (-1, 1)
+            range_y = (-1, 1)
+            paramskey = 'unitTruth2D'
+            pred_paramskey = 'unitPred2D'
 
-def iter_trials(modelname, answersfile, stim=None):
-    """
-    Iterate over tuples of true, predicted params and voltage traces of both
-    """
-    ranges = MODELS_BY_NAME[modelname].PARAM_RANGES
-    with h5py.File(answersfile) as infile:
-        for phys_pred, unit_pred, unit_truth, trace_truth in zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D']):
-            # TODO: cut off traces at correct bins
-            if len(trace_truth) == 9000:
-                trace_truth = data_for(modelname, stim, *unit_truth)['v']
-            trace_pred = data_for(modelname, stim, *unit_pred)['v']
+        all_bins_x = np.linspace(*range_x, nbins)
+        all_bins_y = np.linspace(*range_y, nbins)
 
-            yield unit_truth, unit_pred, trace_truth, trace_pred
+        bins_x = np.digitize(infile[paramskey][:, param_x], all_bins_x)
+        bins_y = np.digitize(infile[paramskey][:, param_y], all_bins_y)
 
+        binned_similarities = defaultdict(list)
+        for bin_x, bin_y, similarity in zip(bins_x, bins_y, infile['similarity']):
+            binned_similarities[(bin_x, bin_y)].append(similarity)
 
-def _similarity(truth_v, predicted_v, method='isi', thresh=10):
-    truth_spikes = np.diff( (truth_v > thresh).astype('int') )
-    predicted_spikes = np.diff( (predicted_v > thresh).astype('int') )
+        binned_averaged_similarity = np.zeros(shape=(nbins, nbins))
+        for (bin_x, bin_y), similarities in binned_similarities.items():
+            binned_averaged_similarity[bin_x, bin_y] = np.average(similarities)
 
-    truth_spike_times = np.where(truth_spikes > 0)[0]
-    predicted_spike_times = np.where(predicted_spikes > 0)[0]
+        # Grab 3 random sets of params to plot traces for
+        trace_i = sorted(np.random.randint(0, nsamples, size=3))
+        true_params = infile[paramskey][trace_i, :]
+        pred_params = infile[pred_paramskey][trace_i, :]
 
-    truth_spike_train = pyspike.SpikeTrain(truth_spike_times, 5500, 14500)
-    predicted_spike_train = pyspike.SpikeTrain(predicted_spike_times, 5500, 14500)
-
-    if method == 'isi':
-        return np.abs(pyspike.isi_distance(truth_spike_train, predicted_spike_train))
-    else:
-        raise ValueError("unknown similarity metric")
-
-
-def similarity_heatmaps(modelname, answersfile, similarity_measure='isi', stim=None):
-    if not stim:
-        stim = np.genfromtxt('stims/chirp23a.csv')
-        stim *= MODELS_BY_NAME[modelname].STIM_MULTIPLIER
-    
-    binsize = 0.05
-    nbins = int(2/binsize)
-
-    model_cls = MODELS_BY_NAME[modelname]
-    nparam = len(model_cls.PARAM_RANGES)
-
-    pairs = [(0, 1), (1, 2), (2, 3), (3, 0)]
-
-    # pair -> bins to plot from
-    to_plot = {
-        (0, 1): {(10, 10):[None, None], (30, 10):[None, None], (30, 30):[None, None] },
-        (1, 2): { (10, 10):[None, None], (30, 10):[None, None], (30, 30):[None, None] },
-        (2, 3): { (10, 10):[None, None], (30, 10):[None, None], (30, 30):[None, None] },
-        (3, 0): { (10, 10):[None, None], (30, 10):[None, None], (30, 30):[None, None] },
-    }
-
-    binned_similarities = {pair: defaultdict(lambda: defaultdict(list)) for pair in pairs}
-    for i, (truth, prediction, truth_v, predicted_v) in enumerate(iter_trials(modelname, answersfile, stim=stim)):
-        bin_idxs = [int((param+1) / binsize) for param in truth]
-
-        similarity = _similarity(truth_v, predicted_v, method='isi')
-
-        # if similarity == 0:
-        #     import ipdb; ipdb.set_trace()
-
-        # if bin_idxs[2] > 10 and bin_idxs[3] > 10:
-        #     import ipdb; ipdb.set_trace()
-
-        if i % 100 == 0:
-            print(i)
             
-        for pair in pairs:
-            bin1 = bin_idxs[pair[0]]
-            bin2 = bin_idxs[pair[1]]
-            binned_similarities[pair][bin1][bin2].append(similarity)
+    # Display with correct axis labeling
+    plt.clf()
+    fig = plt.figure(figsize=(12, 4))
+    gs = gridspec.GridSpec(3, 6, figure=fig, wspace=0.5)
+    heatmap_ax = plt.subplot(gs[:3, :3])
+    trace_axs = [plt.subplot(gs[i, 3:]) for i in range(3)]
 
-            if (bin1, bin2) in to_plot[pair]:
-                to_plot[pair][(bin1, bin2)] = (truth_v, predicted_v)
+    cmap = 'hot' # TODO: Use one w/o white, use custom
+    
+    im = heatmap_ax.pcolor(all_bins_x, all_bins_y, binned_averaged_similarity, cmap=cmap)
+    plt.colorbar(im, ax=heatmap_ax)
+    heatmap_ax.set_xlabel('Parameter: {}'.format(param_names[param_x]))
+    heatmap_ax.set_ylabel('Parameter: {}'.format(param_names[param_y]))
 
-        # if i >= 500:
-        #     break
-                
+    # Plot traces
+    x_axis = np.arange(0, .02*9000, .02)
+    colors = (('k', 'grey',), ('green', 'lime'), ('blue', 'cyan'))
+    for true_par, pred_par, ax, (col_pred, col_true) in zip(true_params, pred_params, trace_axs, colors):
+        sim = Similarity(modelname, 'stims/chirp23a.csv')
+        true_v = sim._data_for(*true_par, unit=not phys) 
+        pred_v = sim._data_for(*pred_par, unit=not phys)
+        trace_similarity = sim._similarity(true_v, pred_v)
+        ax.plot(x_axis, pred_v, linewidth=0.5, label='Predicted', color=col_pred)
+        ax.plot(x_axis, true_v, linewidth=0.5, label='Actual', color=col_true)
+        ax.text(1.02, 0.8, "sim. = {0:.2f}".format(trace_similarity), transform=ax.transAxes)
+        ax.legend(bbox_to_anchor=(0.95, 0.8), loc=2)
 
-    for pair in pairs:
-        bins = binned_similarities[pair]
+        dot = Circle((true_par[param_x], true_par[param_y]), radius=0.04, color=col_true)
+        heatmap_ax.add_patch(dot)
 
-        avg_similarity = np.zeros(shape=(nbins, nbins))
-        for i in range(nbins):
-            for j in range(nbins):
-                avg_similarity[i, j] = np.mean(bins[i][j])
+    trace_axs[0].set_xticklabels([])
+    trace_axs[1].set_xticklabels([])
+    trace_axs[-1].set_xlabel("Time (ms)")
+    trace_axs[-1].set_ylabel("Volts")
 
-        paramname1 = model_cls.PARAM_NAMES[pair[0]]
-        paramname2 = model_cls.PARAM_NAMES[pair[1]]
-
-        range1 = model_cls.PARAM_RANGES[pair[0]]
-        range2 = model_cls.PARAM_RANGES[pair[1]]
-
-        plt.clf()
-        fig = plt.figure(figsize=(12, 4))
-
-        gs = gridspec.GridSpec(3, 6, figure=fig, wspace=0.5)
-        heatmap_ax = plt.subplot(gs[:3, :3])
-        trace_axs = [plt.subplot(gs[i, 3:]) for i in range(3)]
-
-        im = heatmap_ax.imshow(avg_similarity, cmap='hot', aspect='equal', extent=(-1, 1, -1, 1))
-
-        heatmap_ax.set_xlabel('Parameter: {}'.format(paramname1))
-        heatmap_ax.set_ylabel('Parameter: {}'.format(paramname2))
-
-        plt.gcf().colorbar(im, ax=heatmap_ax)
-
-        # Plot traces
-        colors = (('k', 'grey',), ('green', 'lime'), ('blue', 'cyan'))
-        for i, ((bin1, bin2), (truth_v, predicted_v)) in enumerate(to_plot[pair].items()):
-            # trace_axs[i].get_xaxis().set_visible(False)
-            if i != len(trace_axs)-1:
-                trace_axs[i].set_xticklabels([])
-            if truth_v is None:
-                continue
-            # heatmap_ax.scatter([bin1], [bin2], c=colors[i], marker='o')
-            x = 2 * (bin1-(nbins/2)) / nbins
-            y = 2 * (bin2-(nbins/2)) / nbins
-            dot = Circle((x, y), radius=.05, color=colors[i][1])
-            heatmap_ax.add_patch(dot)
-
-            # Plot traces
-            x_axis = np.arange(0, len(predicted_v)*.02, .02)
-            # t_range = slice(5000, 14000)
-            t_range = slice(None)
-            trace_axs[i].plot(
-                x_axis[t_range], truth_v[t_range], color=colors[i][1], label='Actual',
-                linewidth=0.5,
-            )
-            trace_axs[i].plot(
-                x_axis[t_range], predicted_v[t_range], color=colors[i][0], label='Predicted',
-                linewidth=0.5,
-            )
-            trace_axs[i].legend(bbox_to_anchor=(0.95, 0.8), loc=2)
-
-        # trace_axs[-1].get_xaxis().set_visible(True)
-        trace_axs[-1].set_xlabel("Time (ms)")
-        trace_axs[-1].set_ylabel("Volts")
-        
-        if '--save' in sys.argv:
-            plt.savefig('similarity/{}_avg_similarity_{}_vs_{}.png'.format(modelname, paramname1, paramname2))
-        plt.show()
-
+    if '--save' in sys.argv:
+        plt.savefig('similarity/{}_avg_similarity_{}_vs_{}.png'.format(modelname, param_names[param_x], param_names[param_y]))
+    plt.show()
 
 
 if __name__ == '__main__':
-    similarity_heatmaps('izhi', 'cellRegr.sim.pred.h5') # 'izhi_v5b_chirp_16a_blind1.answer')
+    # similarity_heatmaps('izhi', 'cellRegr.sim.pred.h5') # 'izhi_v5b_chirp_16a_blind1.answer')
+    pairs = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    for x, y, in pairs:
+        similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', param_x=x, param_y=y, phys=False)
