@@ -155,6 +155,7 @@ class Similarity(object):
                 outfile.create_dataset('physPred2D', data=infile['physPred2D'])
                 outfile.create_dataset('unitPred2D', data=infile['unitPred2D'])
                 outfile.create_dataset('unitTruth2D', data=infile['unitTruth2D'])
+                outfile.create_dataset('physTruth2D', data=infile['physTruth2D'])
 
             
 def main(args):

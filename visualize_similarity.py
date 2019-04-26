@@ -17,10 +17,36 @@ from compute_similarity import Similarity
 
 
 def histogram(exp_exp_similarity, exp_pred_similarity, sim_pred_similarity):
-    pass
+    with h5py.File(exp_exp_similarity) as infile:
+        exp_exp_sim = infile['similarity'][:]
+
+    with h5py.File(exp_pred_similarity) as infile:
+        exp_pred_sim = infile['similarity'][:]
+
+    with h5py.File(sim_pred_similarity) as infile:
+        sim_pred_sim = infile['similarity'][:]
+
+    # plt.hist([exp_exp_sim, exp_pred_sim, sim_pred_sim], density=True, bins=20, label=['exp/exp', 'exp/pred', 'sim/pred'])
+    plt.hist(exp_exp_sim, density=True, bins=80, alpha=0.4, label='exp/exp', edgecolor='k', color='blue')
+    plt.hist(exp_pred_sim, density=True, bins=10, alpha=0.4, label='exp/pred', edgecolor='k')
+    plt.hist(sim_pred_sim, density=True, bins=80, alpha=0.4, label='sim/pred', edgecolor='k', color='orange')
+
+    expexp_mean = np.average(exp_exp_sim)
+
+    plt.plot([expexp_mean, expexp_mean], plt.ylim(), color='blue', alpha=0.6, label='exp/exp mean')
+    # plt.text(expexp_mean*1.01, .9*plt.ylim()[1], '{0:.2f}'.format(expexp_mean), color='blue')
+    plt.text(
+        0.005, 0.95,
+        '{}% below'.format(int(100 * sum(sim_pred_sim < expexp_mean) / len(sim_pred_sim))),
+        transform=plt.gca().transAxes, color='orange'
+    )
+    
+    plt.xlabel('ISI distance')
+    plt.legend()
+    plt.show()
 
 
-def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity=None, sweepfile=None, nbins=20, phys=True, plot_params='pred'):
+def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity=None, sweepfile=None, nbins=20, phys=True, plot_params='pred', range_x=None, range_y=None):
     """
     Compute heatmaps of similarity between actual/predicted traces.
     if exp_exp_similarity is specified, we normalize to its mean/stdev
@@ -38,6 +64,7 @@ def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity
             with h5py.File(exp_exp_similarity, 'r') as expexp_infile:
                 expexp_mean = np.average(expexp_infile['similarity'])
                 expexp_std = np.std(expexp_infile['similarity'])
+                print(expexp_mean, expexp_std)
         else:
             expexp_mean, expexp_std = 0, 1
 
@@ -52,18 +79,20 @@ def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity
 
         if phys:
             if plot_params == 'truth':
-                range_x = param_ranges[param_x]
-                range_y = param_ranges[param_y]
+                range_x = range_x or param_ranges[param_x]
+                range_y = range_y or param_ranges[param_y]
             else:
-                range_x = [val*1.05 for val in param_ranges[param_x]]
-                range_y = [val*1.05 for val in param_ranges[param_y]]
+                range_x = range_x or [val*1.05 for val in param_ranges[param_x]]
+                range_y = range_y or [val*1.05 for val in param_ranges[param_y]]
             truth_paramskey = 'physTruth2D' if 'physTruth2D' in infile else 'physTruth3D'
-            pred_paramskey = 'physPred2D' if 'physPred2D' in infile else 'physPred2D'
+            pred_paramskey = 'physPred2D' if 'physPred2D' in infile else 'physPred3D'
         else:
             if plot_params == 'truth':
-                range_x = range_y = (-1, 1)
+                range_x = range_x or (-1, 1)
+                range_y = range_y or (-1, 1)
             else:
-                range_x = range_y = (-1.05, 1.05)
+                range_x = range_x or (-1.05, 1.05)
+                range_y = range_y or (-1.05, 1.05)
             truth_paramskey = 'unitTruth2D' if 'unitTruth2D' in infile else 'unitTruth3D'
             pred_paramskey = 'unitPred2D' if 'unitPred2D' in infile else 'unitPred3D'
 
@@ -153,9 +182,11 @@ def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity
         ax.text(1.02, 0.8, txt, transform=ax.transAxes, fontsize=8)
         ax.legend(bbox_to_anchor=(0.95, 0.8), loc=2, prop={'size': 6})
 
+        col_dot = col_true if plot_params == 'truth' else col_pred
         # TODO: The circles need to be drawn in axis coordinates, not data coords
-        dot = Circle((circle_par[param_x], circle_par[param_y]), radius=0.04, color=col_true)
-        heatmap_ax.add_patch(dot)
+        # dot = Circle((circle_par[param_x], circle_par[param_y]), radius=0.04, color=col_dot)
+        # heatmap_ax.add_patch(dot, transform=heatmap_ax.transAxes)
+        heatmap_ax.scatter(circle_par[param_x], circle_par[param_y], color=col_dot)
 
     trace_axs[0].set_xticklabels([])
     trace_axs[1].set_xticklabels([])
@@ -169,9 +200,12 @@ def similarity_heatmap(similarity_file, param_x=0, param_y=1, exp_exp_similarity
 
 if __name__ == '__main__':
     pairs = [(0, 1), (1, 2), (2, 3), (3, 0)]
-    pairs = [(0, 1),]
+    # pairs = [(0, 1),]
     for x, y, in pairs:
-        # similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=False, plot_params='pred')
-        similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=False, plot_params='pred')
+        similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=False, plot_params='pred')
+        similarity_heatmap('cellRegr.sim.pred_SimPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=x, param_y=y, phys=True, plot_params='pred')
 
-    
+        
+    similarity_heatmap('041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', exp_exp_similarity='041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', param_x=0, param_y=1, phys=False, plot_params='pred', range_x=(0.97, 1.05), range_y=(-.8, -0.84))
+
+    histogram('041019A_1-ML203b_izhi_4pv6c.mpred_ExpExpSimilarity.h5', '041019A_1-ML203b_izhi_4pv6c.mpred_ExpPredSimilarity.h5', 'cellRegr.sim.pred_SimPredSimilarity.h5')
