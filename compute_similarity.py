@@ -29,7 +29,7 @@ log.addHandler(ch)
 BLOCKS = {
     '041019A_1-ML203b_izhi_4pv6c.mpred.h5': [(0, 40), (44, 84), (90, 150), (187, 230), (231, 251)],
 }
-FULL_TIME_AXIS = np.arange(0, .02*15500, .02) # Time axis of traces
+FULL_TIME_AXIS = np.arange(0, .02*9000, .02) # Time axis of traces
 
 class Similarity(object):
     def __init__(self, modelname, stimfile, *args, **kwargs):
@@ -47,13 +47,15 @@ class Similarity(object):
         """
         stim = stim or self.stim
         phys_params = self._rangeify(params) if unit else params
-        return self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)['v']
+        return self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)['v'][5500:14500]
 
     def _make_efel_trace(v):
         import ipdb; ipdb.set_trace()
         return {
             'T': TIME,
-            
+            'V': v,
+            'stim_start': [0],
+            'stim_end': [180],
         }
 
     def _similarity(self, v1, v2, method='isi', **kwargs):
@@ -78,7 +80,8 @@ class Similarity(object):
         elif method == 'efel':
             trace1 = _make_efel_trace(v1)
             trace2 = _make_efel_trace(v2)
-            efel.getFeatureValues([trace1, trace2], EFEL_FEATURES)
+            x = efel.getFeatureValues([trace1, trace2], EFEL_FEATURES)
+            import ipdb; ipdb.set_trace()
         else:
             raise ValueError("unknown similarity metric")
 
@@ -161,10 +164,7 @@ class Similarity(object):
                     if print_every and i%print_every == 0:
                         log.info('Done {}'.format(i))
                     if len(trace_truth) > 9000:
-                        # trace_truth = trace_truth[5500:14500]
-                        pass
-                    else:
-                        import ipdb; ipdb.set_trace()
+                        trace_truth = trace_truth[5500:14500]
                     yield phys_pred, unit_pred, unit_truth, trace_truth.squeeze()
 
                     # DEBUG
