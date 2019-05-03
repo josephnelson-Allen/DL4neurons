@@ -9,6 +9,7 @@ import os
 import numpy as np
 import h5py
 import pyspike
+import efel
 
 from models import MODELS_BY_NAME
 
@@ -28,7 +29,7 @@ log.addHandler(ch)
 BLOCKS = {
     '041019A_1-ML203b_izhi_4pv6c.mpred.h5': [(0, 40), (44, 84), (90, 150), (187, 230), (231, 251)],
 }
-
+FULL_TIME_AXIS = np.arange(0, .02*15500, .02) # Time axis of traces
 
 class Similarity(object):
     def __init__(self, modelname, stimfile, *args, **kwargs):
@@ -46,7 +47,14 @@ class Similarity(object):
         """
         stim = stim or self.stim
         phys_params = self._rangeify(params) if unit else params
-        return self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)['v'][5500:14500]
+        return self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)['v']
+
+    def _make_efel_trace(v):
+        import ipdb; ipdb.set_trace()
+        return {
+            'T': TIME,
+            
+        }
 
     def _similarity(self, v1, v2, method='isi', **kwargs):
         assert v1.shape == v2.shape
@@ -63,10 +71,14 @@ class Similarity(object):
             # spike_train_1 = pyspike.SpikeTrain(spike_times_1, 5500, 14500)
             # spike_train_2 = pyspike.SpikeTrain(spike_times_2, 5500, 14500)
 
-            spike_train_1 = pyspike.SpikeTrain(spike_times_1, 9000*.02)
+            spike_train_1 = pyspike.SpikeTrain(spike_times_1, 9000*.02) # TODO: need # timebins
             spike_train_2 = pyspike.SpikeTrain(spike_times_2, 9000*.02)
 
             return np.abs(pyspike.isi_distance(spike_train_1, spike_train_2))
+        elif method == 'efel':
+            trace1 = _make_efel_trace(v1)
+            trace2 = _make_efel_trace(v2)
+            efel.getFeatureValues([trace1, trace2], EFEL_FEATURES)
         else:
             raise ValueError("unknown similarity metric")
 
@@ -88,30 +100,6 @@ class Similarity(object):
                     v_exp = infile['sweep2D'][i, :]
                     phys_pred = infile['physPred3D'][i, :, ML_MODEL_i]
                     yield v_exp, phys_pred
-
-    def iter_sim_predictions(self, predfiles, print_every=100):
-        """
-        For each simulated sample, yield the predicted params(phys), predicted params(unit),
-        true params(unit), true trace
-        """
-        # if os.path.isdir(predfile):
-        #     predfiles = os.listdir(predfile)
-        # else:
-        #     predfiles = [predfile]
-
-        for fn in predfiles:
-            with h5py.File(fn, 'r') as infile:
-                for i, (phys_pred, unit_pred, unit_truth, trace_truth) in enumerate(zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D'])):
-                    if print_every and i%print_every == 0:
-                        log.info('Done {}'.format(i))
-                    if len(trace_truth) > 9000:
-                        trace_truth = trace_truth[5500:14500]
-                    yield phys_pred, unit_pred, unit_truth, trace_truth.squeeze()
-
-                    # DEBUG
-                    # if i > 500:
-                    #     break
-                    # END DEBUG
 
     def iter_exp_exp_similarity(self, sweepfile, block_start, block_end):
         """
@@ -156,6 +144,33 @@ class Similarity(object):
             outfile.create_dataset('physPred3D', data=np.concatenate(phys_pred))
             outfile.create_dataset('unitPred3D', data=np.concatenate(unit_pred))
             outfile.create_dataset('sweep2D', data=np.concatenate(sweep))
+
+    def iter_sim_predictions(self, predfiles, print_every=100):
+        """
+        For each simulated sample, yield the predicted params(phys), predicted params(unit),
+        true params(unit), true trace
+        """
+        # if os.path.isdir(predfile):
+        #     predfiles = os.listdir(predfile)
+        # else:
+        #     predfiles = [predfile]
+
+        for fn in predfiles:
+            with h5py.File(fn, 'r') as infile:
+                for i, (phys_pred, unit_pred, unit_truth, trace_truth) in enumerate(zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D'])):
+                    if print_every and i%print_every == 0:
+                        log.info('Done {}'.format(i))
+                    if len(trace_truth) > 9000:
+                        # trace_truth = trace_truth[5500:14500]
+                        pass
+                    else:
+                        import ipdb; ipdb.set_trace()
+                    yield phys_pred, unit_pred, unit_truth, trace_truth.squeeze()
+
+                    # DEBUG
+                    # if i > 500:
+                    #     break
+                    # END DEBUG
 
     def iter_sim_pred_similarity(self, predfile):
         """
