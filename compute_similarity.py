@@ -4,6 +4,7 @@ Compute all-pairs similarity within an experimental block and save to disk
 from argparse import ArgumentParser
 import logging
 import itertools
+import os
 
 import numpy as np
 import h5py
@@ -73,33 +74,44 @@ class Similarity(object):
         """
         For each trial, yield the experimental trace and predicted params.
         """
-        with h5py.File(sweepfile, 'r') as infile:
-            if block_end == -1:
-                block_end = infile['sweep2D'].shape[0]
-            
-            # TODO: read whole block at once?
-            for i in range(block_start, block_end):
-                v_exp = infile['sweep2D'][i, :]
-                phys_pred = infile['physPred3D'][i, :, ML_MODEL_i]
-                yield v_exp, phys_pred
+        if os.path.isdir(sweepfile):
+            sweepfiles = os.listdir(sweepfile)
+        else:
+            sweepfiles = [sweepfile]
+        for fn in sweepfiles:
+            with h5py.File(fn, 'r') as infile:
+                if block_end == -1:
+                    block_end = infile['sweep2D'].shape[0]
 
-    def iter_sim_predictions(self, predfile, print_every=100):
+                # TODO: read whole block at once?
+                for i in range(block_start, block_end):
+                    v_exp = infile['sweep2D'][i, :]
+                    phys_pred = infile['physPred3D'][i, :, ML_MODEL_i]
+                    yield v_exp, phys_pred
+
+    def iter_sim_predictions(self, predfiles, print_every=100):
         """
         For each simulated sample, yield the predicted params(phys), predicted params(unit),
         true params(unit), true trace
         """
-        with h5py.File(predfile, 'r') as infile:
-            for i, (phys_pred, unit_pred, unit_truth, trace_truth) in enumerate(zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D'])):
-                if print_every and i%print_every == 0:
-                    log.info('Done {}'.format(i))
-                if len(trace_truth) > 9000:
-                    trace_truth = trace_truth[5500:14500]
-                yield phys_pred, unit_pred, unit_truth, trace_truth.squeeze()
+        # if os.path.isdir(predfile):
+        #     predfiles = os.listdir(predfile)
+        # else:
+        #     predfiles = [predfile]
 
-                # DEBUG
-                # if i > 500:
-                #     break
-                # END DEBUG
+        for fn in predfiles:
+            with h5py.File(fn, 'r') as infile:
+                for i, (phys_pred, unit_pred, unit_truth, trace_truth) in enumerate(zip(infile['physPred2D'], infile['unitPred2D'], infile['unitTruth2D'], infile['trace2D'])):
+                    if print_every and i%print_every == 0:
+                        log.info('Done {}'.format(i))
+                    if len(trace_truth) > 9000:
+                        trace_truth = trace_truth[5500:14500]
+                    yield phys_pred, unit_pred, unit_truth, trace_truth.squeeze()
+
+                    # DEBUG
+                    # if i > 500:
+                    #     break
+                    # END DEBUG
 
     def iter_exp_exp_similarity(self, sweepfile, block_start, block_end):
         """
@@ -176,15 +188,25 @@ class Similarity(object):
             
 def main(args):
     x = Similarity(args.model, 'stims/chirp23a.csv')
-    
-    exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
-    x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, 90, 150)
 
-    exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
-    x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile)
-    
-    sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
-    x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
+    if args.sweepfile:
+        if len(args.sweepfile) and os.path.isdir(args.sweepfile):
+            exp_exp_outfile = os.path.join(args.sweepfile, 'ExpExpSimilarity.h5')
+            exp_pred_outfile = os.path.join(args.sweepfile, 'ExpPredSimilarity.h5')
+        else:
+            exp_exp_outfile = args.sweepfile.replace('.h5', '_ExpExpSimilarity.h5')
+            exp_pred_outfile = args.sweepfile.replace('.h5', '_ExpPredSimilarity.h5')
+            
+        x.save_exp_exp_similarity(args.sweepfile, exp_exp_outfile, 90, 150)
+        x.save_exp_pred_similarity(args.sweepfile, exp_pred_outfile)
+
+    if args.simpredfile:
+        # if args.simpredfile and os.path.isdir(args.simpredfile):
+        #     sim_pred_outfile = os.path.join(args.simpredfile, 'SimPredSimilarity.h5')
+        # else:
+        #     sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
+        sim_pred_outfile = 'sim_pred_hh4par.h5'
+        x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
 
     
 if __name__ == '__main__':
@@ -194,8 +216,8 @@ if __name__ == '__main__':
 
 
     parser.add_argument('--model', choices=MODELS_BY_NAME.keys(), default='izhi')
-    parser.add_argument('--sweepfile', type=str, required=True)
-    parser.add_argument('--simpredfile', type=str, required=True)
+    parser.add_argument('--sweepfile', type=str, nargs='+', required=False, default=None)
+    parser.add_argument('--simpredfile', type=str, nargs='+', required=False, default=None)
     # parser.add_argument('--outfile', type=str, required=False, default=None)
     
     parser.add_argument('--dist', choices=['isi'], default='isi')
