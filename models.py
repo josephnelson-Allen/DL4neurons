@@ -10,6 +10,7 @@ import numpy as np
 
 from neuron import h, gui
 
+
 class BaseModel(object):
     def __init__(self, *args, **kwargs):
         h.celsius = kwargs.pop('celsius', 33)
@@ -23,6 +24,9 @@ class BaseModel(object):
     @property
     def stim_variable_str(self):
         return "clamp.amp"
+
+    def param_dict(self):
+        return {name: getattr(self, name) for name in self.PARAM_NAMES}
 
     def init_hoc(self, dt, tstop):
         h.tstop = tstop
@@ -278,8 +282,6 @@ class HHBallStick7Param(BaseModel):
         
         return hoc_vectors
 
-class HHBallStick4ParamEasy(HHBallStick7Param):
-    pass
 
 class HHBallStick9Param(HHBallStick7Param):
     PARAM_NAMES = (
@@ -365,13 +367,76 @@ class HHTwoDend13Param(HHBallStick9Param):
             
         return self.soma
 
+    
+def _mask_in_args(defaults, mask, args):
+    i = 0
+    for src, default in zip(mask, defaults):
+        if src:
+            yield args[i]
+            i += 1
+        else:
+            yield default
+            
+def mask_in_args(*args, **kwargs):
+    return list(_mask_in_args(*args, **kwargs))
+
+
+class HHBallStick4ParamEasy(HHBallStick9Param):
+
+    def __init__(self, *args, **kwargs):
+        mask = [1, 0, 0, 1, 1, 0, 0, 1, 0] # 1 = get from these args, 0 = get from superclass
+        newargs = mask_in_args(HHBallStick9Param.DEFAULT_PARAMS, mask, args)
+        super(HHBallStick4ParamEasy, self).__init__(*newargs, **kwargs)
+
+
+class HHBallStick4ParamHard(HHBallStick9Param):
+    
+    def __init__(self, *args, **kwargs):
+        mask = [1, 1, 1, 1, 0, 0, 0, 0, 0] # 1 = get from these args, 0 = get from superclass
+        newargs = mask_in_args(HHBallStick9Param.DEFAULT_PARAMS, mask, args)
+        super(HHBallStick4ParamHard, self).__init__(*newargs, **kwargs)
+
+class HHBallStick7ParamLatched(HHBallStick9Param):
+    PARAM_NAMES = (
+        'gnabar_soma',
+        'gnabar_dend',
+        'gkbar_soma',
+        'gkbar_dend',
+        'gcabar_soma',
+        'gcabar_dend',
+        'gl_soma',
+        'gl_dend',
+        'cm'
+    )
+    
+    """ Latch g_l soma and dend """
+    def __init__(self, *args, **kwargs):
+        # args = list(args)
+        # args.append(args[-1]) # use gl_soma as gl_dend
+        # args.append(self.DEFAULT_PARAMS[-1]) # default cm
+        mask = [1, 1, 1, 1, 1, 1, 1, 0, 0] # 1 = get from these args, 0 = get from superclass
+        newargs = mask_in_args(HHBallStick9Param.DEFAULT_PARAMS, mask, args)
+        super(HHBallStick7ParamLatched, self).__init__(*newargs, **kwargs)
+        self.gl_dend = self.gl_soma
+
+class HHTwoDend10ParamLatched(HHTwoDend13Param):
+    def __init__(self, *args, **kwargs):
+        mask = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+        newargs = mask_in_args(HHTwoDend13Param.DEFAULT_PARAMS, mask, args)
+        super(HHTwoDend10ParamLatched, self).__init__(*newargs, **kwargs)
+        self.gl_apic = self.gl_basal = self.gl_soma
+
 
 MODELS_BY_NAME = {
     'izhi': Izhi,
     'hh_point_5param': HHPoint5Param,
     'hh_ball_stick_7param': HHBallStick7Param,
+    'hh_ball_stick_7param_latched': HHBallStick7ParamLatched,
+    'hh_ball_stick_4param_easy': HHBallStick4ParamEasy,
+    'hh_ball_stick_4param_hard': HHBallStick4ParamHard,
     'hh_ball_stick_9param': HHBallStick9Param,
     'hh_two_dend_13param': HHTwoDend13Param,
+    'hh_two_dend_10param': HHTwoDend10ParamLatched,
     'mainen': Mainen,
 }
 

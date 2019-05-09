@@ -29,7 +29,9 @@ log.addHandler(ch)
 BLOCKS = {
     '041019A_1-ML203b_izhi_4pv6c.mpred.h5': [(0, 40), (44, 84), (90, 150), (187, 230), (231, 251)],
 }
-FULL_TIME_AXIS = np.arange(0, .02*9000, .02) # Time axis of traces
+TIME = np.arange(0, .02*9000, .02) # Time axis of traces
+EFEL_FEATURES = ['mean_frequency', 'time_to_first_spike', 'mean_AP_amplitude']
+
 
 class Similarity(object):
     def __init__(self, modelname, stimfile, *args, **kwargs):
@@ -47,15 +49,17 @@ class Similarity(object):
         """
         stim = stim or self.stim
         phys_params = self._rangeify(params) if unit else params
-        return self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)['v'][5500:14500]
 
-    def _make_efel_trace(v):
-        import ipdb; ipdb.set_trace()
+        x = self.model_cls(*phys_params, log=log, celsius=celsius).simulate(stim, dt=dt)
+        x = x['v'][5500:14500]
+        return x
+
+    def _make_efel_trace(self, v):
         return {
             'T': TIME,
             'V': v,
-            'stim_start': [0],
-            'stim_end': [180],
+            'stim_start': [1],
+            'stim_end': [179],
         }
 
     def _similarity(self, v1, v2, method='isi', **kwargs):
@@ -78,12 +82,32 @@ class Similarity(object):
 
             return np.abs(pyspike.isi_distance(spike_train_1, spike_train_2))
         elif method == 'efel':
-            trace1 = _make_efel_trace(v1)
-            trace2 = _make_efel_trace(v2)
-            x = efel.getFeatureValues([trace1, trace2], EFEL_FEATURES)
-            import ipdb; ipdb.set_trace()
+            trace1 = self._make_efel_trace(v1)
+            trace2 = self._make_efel_trace(v2)
+            efel1, efel2 = efel.getFeatureValues([trace1, trace2], EFEL_FEATURES)
+
+            try:
+                y = np.abs([efel1[feat] - efel2[feat] for feat in EFEL_FEATURES])
+            except:
+                import matplotlib.pyplot as plt
+                plt.plot(v1)
+                plt.plot(v2)
+                plt.show()
+            return y
         else:
             raise ValueError("unknown similarity metric")
+
+    def _similarities(self, v1, v2, methods=['efel', 'isi'], **kwargs):
+        if 'efel' in methods:
+            s = list(self._similarity(v1, v2, 'efel', **kwargs))
+        else:
+            s = []
+
+        for method in methods:
+            if method == 'efel':
+                continue
+            s.append(self._similarity(v1, v2, method, **kwargs))
+        return s
 
     def iter_exp_block(self, sweepfile, block_start, block_end):
         """
@@ -178,13 +202,21 @@ class Similarity(object):
         Compute the trace from predicted params
         Yield similarity between trace from predicted vs true params
         """
+        failures = 0
         log.info('Starting sim/pred similarity computation')
         
         for phys_pred, unit_pred, unit_truth, v_truth in self.iter_sim_predictions(predfile):
             # phys_truth = self._rangeify(unit_truth)
             # v_truth2 = self._data_for(*unit_truth, unit=True)
             v_pred = self._data_for(*phys_pred)
-            yield self._similarity(v_truth, v_pred)
+            try:
+                yield self._similarities(v_truth, v_pred)
+            except:
+                print("failed")
+                failures += 1
+                continue
+
+        print("{} failures".format(failures))
 
     def save_sim_pred_similarity(self, predfile, outfilename):
         # TODO: save params too, direct from other h5 file
@@ -194,7 +226,7 @@ class Similarity(object):
                 outfile.create_dataset('similarity', data=data)
             outfile['similarity'].attrs['modelname'] = self.modelname
 
-            with h5py.File(predfile, 'r') as infile:
+            with h5py.File(predfile, 'w') as infile:
                 outfile.create_dataset('physPred2D', data=infile['physPred2D'])
                 outfile.create_dataset('unitPred2D', data=infile['unitPred2D'])
                 outfile.create_dataset('unitTruth2D', data=infile['unitTruth2D'])
@@ -220,7 +252,8 @@ def main(args):
         #     sim_pred_outfile = os.path.join(args.simpredfile, 'SimPredSimilarity.h5')
         # else:
         #     sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
-        sim_pred_outfile = 'sim_pred_hh4par.h5'
+        # sim_pred_outfile = 'sim_pred_hh4par.h5'
+        sim_pred_outfile = '/data/izhi/hh_ballstick_7pv3-ML693-hh_ballstick_7pv3/SimPredSimilarity.h5'
         x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
 
     

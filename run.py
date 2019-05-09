@@ -219,6 +219,7 @@ def add_qa(args):
 
 
 def lock_params(args, paramsets):
+    # DEPRECATED. Create/use Latched model sublcasses (see HHBallStick7ParamLatched)
     assert len(args.locked_params) % 2 == 0
     
     paramnames = MODELS_BY_NAME[args.model].PARAM_NAMES
