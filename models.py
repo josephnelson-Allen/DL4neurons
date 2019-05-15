@@ -13,7 +13,7 @@ from neuron import h, gui
 
 class BaseModel(object):
     def __init__(self, *args, **kwargs):
-        h.celsius = kwargs.pop('celsius', 33)
+        h.celsius = kwargs.pop('celsius', 37)
         self.log = kwargs.pop('log', print)
         params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
 
