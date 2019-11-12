@@ -12,9 +12,9 @@ Compile modfiles: `$ nrnivmodl modfiles/*.mod` (all the ones you need are includ
 
 Obtain cell models from https://bbp.epfl.ch/nmc-portal/web/guest/downloads
 
-They will arrive as a zip file called models.py, which you should save into a directory called hoc_templates alongside run.py
+They will arrive as a zip file called models.zip, which you should save into a directory called hoc_templates alongside run.py
 
-Then enter hoc_templates and unzip models.py, and all the individual cells:
+Then enter hoc_templates and unzip models.zip, and all the individual cells zipped within:
 
 ```
 $ cd hoc_templates
