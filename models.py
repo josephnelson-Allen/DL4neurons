@@ -10,7 +10,6 @@ import numpy as np
 
 from neuron import h, gui
 
-
 class BaseModel(object):
     def __init__(self, *args, **kwargs):
         h.celsius = kwargs.pop('celsius', 37)
@@ -94,15 +93,21 @@ class BBP(BaseModel):
         self.cell_i = cell_i
         self.cell_kwargs = cells[m_type][e_type][cell_i]
 
+        super(BBP, self).__init__(*args, **kwargs)
 
-    def create_cell(self)
+
+    def create_cell(self):
         cell_dir = self.cell_kwargs['model_directory']
-        template_name = self.cell_kwargs['model_template'].split(:, 1)[-1]
+        template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
         templates_dir = '../cortical-column/components/hoc_templates'
         h.load_file(os.path.join(templates_dir, cell_dir, 'morphology.hoc'))
+        self.log.debug('1')
         h.load_file(os.path.join(templates_dir, cell_dir, 'biophysics.hoc'))
+        self.log.debug('2')
         h.load_file(os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc'))
+        self.log.debug('3')
         h.load_file(os.path.join(templates_dir, cell_dir, 'template.hoc'))
+        self.log.debug('4')
 
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
