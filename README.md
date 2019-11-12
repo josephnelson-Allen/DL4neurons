@@ -39,3 +39,7 @@ $ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --num 10 --outfile
 ```
 
 These commands should generate 10 test traces and put them in the file test.h5
+
+A programmatically-accessible list of all m_types and e_types can be found in cells.json
+
+Also consider playing around with the `--stim-multiplier` option to run.py (I found a multiplier of 2.0 worked well-ish for the L5_TTPC1 cell), and the `--cell-i <integer>` option which allows you to select a morphology clone (currently cells.json only knows about 2 clones, so your only options are `--cell-i 0` (default) and `--cell-i 1`).
