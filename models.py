@@ -78,6 +78,8 @@ class BaseModel(object):
         self.attach_stim(stim)
         hoc_vectors = self.attach_recordings(ntimepts)
 
+        self.init_hoc(dt, tstop)
+
         self.log.debug("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
         self.log.debug("({} total timesteps)".format(ntimepts))
 
@@ -119,9 +121,9 @@ class BBP(BaseModel):
 
         super(BBP, self).__init__(*args, **kwargs)
 
-    PARAM_NAMES = ()
-    PARAM_RANGES = ()
-    DEFAULT_PARAMS = ()
+    PARAM_NAMES = ('dummy',)
+    PARAM_RANGES = ((0, 10),)
+    DEFAULT_PARAMS = (5,)
 
     # @property
     # def PARAM_NAMES(self):
@@ -138,6 +140,7 @@ class BBP(BaseModel):
     STIM_MULTIPLIER = 1.0
 
     def create_cell(self):
+        h.load_file('stdrun.hoc')
         h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
@@ -145,6 +148,8 @@ class BBP(BaseModel):
         
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
+
+        h.load_file('constants.hoc')
 
         morpho_template = os.path.join(templates_dir, cell_dir, 'morphology.hoc')
         log.debug(morpho_template)
@@ -154,23 +159,24 @@ class BBP(BaseModel):
         log.debug(biophys_template)
         h.load_file('biophysics.hoc')
         
-        synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
-        log.debug(synapse_template)
-        h.load_file('synapses/synapses.hoc')
+        # synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
+        # log.debug(synapse_template)
+        # h.load_file('synapses/synapses.hoc')
         
         cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
         log.debug(cell_template)
         h.load_file('template.hoc')
         
-        self.log.debug('asdf1')
         hobj = getattr(h, template_name)(0)
-        self.log.debug('asdf2')
 
         os.chdir(cwd)
 
         # TODO: change biophysics parameters
-        
-        return hobj
+
+        # do not garbage collect
+        self.entire_cell = hobj
+
+        return hobj.soma[0]
 
 
 
