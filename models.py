@@ -1,6 +1,8 @@
 from __future__ import print_function
 
+import os
 import sys
+import json
 import logging as log
 from datetime import datetime
 from argparse import ArgumentParser
@@ -85,9 +87,31 @@ class BaseModel(object):
 
         return {k: np.array(v) for (k, v) in hoc_vectors.items()}
 
+# import glob
+# def load_BBP_templates(templates_dir):
+#     morphology_templates = glob.glob(os.path.join(templates_dir, '*/morphology.hoc'))
+#     biophys_templates = glob.glob(os.path.join(templates_dir, '*/biophysics.hoc'))
+#     syn_templates = glob.glob(os.path.join(templates_dir, '*/synapses/synapses.hoc'))
+#     hoc_templates = glob.glob(os.path.join(templates_dir, '*/template.hoc'))
 
+#     for i, template in enumerate(morphology_templates + biophys_templates + syn_templates + hoc_templates):
+#         # if 'L5_BP_dSTUT214_5/biophysics.hoc' in template:
+#         # if 'L5_LBC_dNAC222_4/biophysics.hoc' in template:
+#         # if 'morpho' not in template:
+#         #     import ipdb; print ipdb.__file__; ipdb.set_trace()
+#         #     exit()
+#         try:
+#             h.load_file(template)
+#             # if i == 500:
+#             #     break
+#         except RuntimeError:
+#             io.log_info("Tried to redefine template, ignoring")
+            
 class BBP(BaseModel):
-    def __init__(self, e_type, m_type, cell_i, *args, **kwargs):
+    def __init__(self, m_type, e_type, cell_i, *args, **kwargs):
+        with open('cells.json') as infile:
+            cells = json.load(infile)
+        
         self.e_type = e_type
         self.m_type = m_type
         self.cell_i = cell_i
@@ -95,24 +119,52 @@ class BBP(BaseModel):
 
         super(BBP, self).__init__(*args, **kwargs)
 
+    PARAM_NAMES = ()
+    PARAM_RANGES = ()
+    DEFAULT_PARAMS = ()
+
+    # @property
+    # def PARAM_NAMES(self):
+    #     return tuple()
+
+    # @property
+    # def PARAM_RANGES(self):
+    #     return tuple()
+
+    # @property
+    # def DEFAULT_PARAMS(self):
+    #     return tuple()
+
+    STIM_MULTIPLIER = 1.0
 
     def create_cell(self):
+        h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
         templates_dir = '../cortical-column/components/hoc_templates'
-        h.load_file(os.path.join(templates_dir, cell_dir, 'morphology.hoc'))
-        self.log.debug('1')
-        h.load_file(os.path.join(templates_dir, cell_dir, 'biophysics.hoc'))
-        self.log.debug('2')
-        h.load_file(os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc'))
-        self.log.debug('3')
-        h.load_file(os.path.join(templates_dir, cell_dir, 'template.hoc'))
-        self.log.debug('4')
-
+        
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
 
+        morpho_template = os.path.join(templates_dir, cell_dir, 'morphology.hoc')
+        log.debug(morpho_template)
+        h.load_file('morphology.hoc')
+        
+        biophys_template = os.path.join(templates_dir, cell_dir, 'biophysics.hoc')
+        log.debug(biophys_template)
+        h.load_file('biophysics.hoc')
+        
+        synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
+        log.debug(synapse_template)
+        h.load_file('synapses/synapses.hoc')
+        
+        cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
+        log.debug(cell_template)
+        h.load_file('template.hoc')
+        
+        self.log.debug('asdf1')
         hobj = getattr(h, template_name)(0)
+        self.log.debug('asdf2')
 
         os.chdir(cwd)
 
@@ -120,9 +172,6 @@ class BBP(BaseModel):
         
         return hobj
 
-    @property
-    def PARAM_NAMES(self):
-        return ()
 
 
 class Mainen(BaseModel):
@@ -476,6 +525,7 @@ MODELS_BY_NAME = {
     'hh_two_dend_13param': HHTwoDend13Param,
     'hh_two_dend_10param': HHTwoDend10ParamLatched,
     'mainen': Mainen,
+    'BBP': BBP,
 }
 
 

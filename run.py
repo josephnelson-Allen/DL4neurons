@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import json
+import itertools
 import logging as log
 from argparse import ArgumentParser
 from datetime import datetime
@@ -12,6 +13,7 @@ import h5py
 
 from stimulus import stims, add_stims
 import models
+
 
 try:
     from mpi4py import MPI
@@ -234,13 +236,13 @@ def lock_params(args, paramsets):
         paramsets[:, target_i] = paramsets[:, source_i]
 
 
-def get_model(model, m_type=None, e_type=None, cell_i=0):
+def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
     if model != 'BBP':
-        return MODELS_BY_NAME[model]
+        return MODELS_BY_NAME[model](*params, log=log)
     else:
         if m_type is None or e_type is None:
             log.error('Must specify --m-type and --e-type when using BBP')
-        return models.BBP(m_type, e_type, cell_i)
+        return models.BBP(m_type, e_type, cell_i, *params, log=log)
 
 def main(args):
     if (not args.outfile) and (not args.force) and (args.plot is None):
@@ -293,9 +295,8 @@ def main(args):
         log.debug("About to run with params = {}".format(params))
 
         # model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
-        model = get_model(args.model, args.m_type, args.e_type, args.cell_i)
-        cell = model(*params, log=log)
-        data = cell.simulate(stim, args.dt)
+        model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i, *params)
+        data = model.simulate(stim, args.dt)
         buf[i, :] = data['v'][:-1]
         qa[i] = _qa(args, data['v'])
 
