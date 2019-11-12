@@ -234,6 +234,14 @@ def lock_params(args, paramsets):
         paramsets[:, target_i] = paramsets[:, source_i]
 
 
+def get_model(model, m_type=None, e_type=None, cell_i=0):
+    if model != 'BBP':
+        return MODELS_BY_NAME[model]
+    else:
+        if m_type is None or e_type is None:
+            log.error('Must specify --m-type and --e-type when using BBP')
+        return models.BBP(m_type, e_type, cell_i)
+
 def main(args):
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
@@ -284,8 +292,10 @@ def main(args):
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
 
-        model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
-        data = model.simulate(stim, args.dt)
+        # model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
+        model = get_model(args.model, args.m_type, args.e_type, args.cell_i)
+        cell = model(*params, log=log)
+        data = cell.simulate(stim, args.dt)
         buf[i, :] = data['v'][:-1]
         qa[i] = _qa(args, data['v'])
 
@@ -299,8 +309,16 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
 
+    with open('cells.json') as infile:
+        cells = json.load(infile)
+        ALL_MTYPES = cells.keys()
+        ALL_ETYPES = list(set(itertools.chain.from_iterable(mtype.keys() for mtype in cells.values())))
+
     parser.add_argument('--model', choices=MODELS_BY_NAME.keys(),
                         default='hh_ball_stick_7param')
+    parser.add_argument('--m-type', choices=ALL_MTYPES, required=False, default=None)
+    parser.add_argument('--e-type', choices=ALL_ETYPES, required=False, default=None)
+    parser.add_argument('--cell-i', type=int, required=False, default=0)
     parser.add_argument('--celsius', type=float, default=37)
     parser.add_argument('--dt', type=float, default=.02)
 

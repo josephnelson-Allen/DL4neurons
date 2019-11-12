@@ -87,6 +87,39 @@ class BaseModel(object):
         return {k: np.array(v) for (k, v) in hoc_vectors.items()}
 
 
+class BBP(BaseModel):
+    def __init__(self, e_type, m_type, cell_i, *args, **kwargs):
+        self.e_type = e_type
+        self.m_type = m_type
+        self.cell_i = cell_i
+        self.cell_kwargs = cells[m_type][e_type][cell_i]
+
+
+    def create_cell(self)
+        cell_dir = self.cell_kwargs['model_directory']
+        template_name = self.cell_kwargs['model_template'].split(:, 1)[-1]
+        templates_dir = '../cortical-column/components/hoc_templates'
+        h.load_file(os.path.join(templates_dir, cell_dir, 'morphology.hoc'))
+        h.load_file(os.path.join(templates_dir, cell_dir, 'biophysics.hoc'))
+        h.load_file(os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc'))
+        h.load_file(os.path.join(templates_dir, cell_dir, 'template.hoc'))
+
+        cwd = os.getcwd()
+        os.chdir(os.path.join(templates_dir, cell_dir))
+
+        hobj = getattr(h, template_name)(0)
+
+        os.chdir(cwd)
+
+        # TODO: change biophysics parameters
+        
+        return hobj
+
+    @property
+    def PARAM_NAMES(self):
+        return ()
+
+
 class Mainen(BaseModel):
     PARAM_NAMES = (
         'gna_dend',
