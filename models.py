@@ -93,32 +93,12 @@ class BaseModel(object):
 
         return {k: np.array(v) for (k, v) in hoc_vectors.items()}
 
-# import glob
-# def load_BBP_templates(templates_dir):
-#     morphology_templates = glob.glob(os.path.join(templates_dir, '*/morphology.hoc'))
-#     biophys_templates = glob.glob(os.path.join(templates_dir, '*/biophysics.hoc'))
-#     syn_templates = glob.glob(os.path.join(templates_dir, '*/synapses/synapses.hoc'))
-#     hoc_templates = glob.glob(os.path.join(templates_dir, '*/template.hoc'))
-
-#     for i, template in enumerate(morphology_templates + biophys_templates + syn_templates + hoc_templates):
-#         # if 'L5_BP_dSTUT214_5/biophysics.hoc' in template:
-#         # if 'L5_LBC_dNAC222_4/biophysics.hoc' in template:
-#         # if 'morpho' not in template:
-#         #     import ipdb; print ipdb.__file__; ipdb.set_trace()
-#         #     exit()
-#         try:
-#             h.load_file(template)
-#             # if i == 500:
-#             #     break
-#         except RuntimeError:
-#             io.log_info("Tried to redefine template, ignoring")
-
 
 BBP_PARAMS_BY_ETYPE = {
     'cADpyr': (
-        ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'), 
-        ((.0000143, .00143), (0.000008, 0.0008), (0.000008, 0.0008)),
-        (0.000143, 0.00008, 0.00008),
+        ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'), # <NRN variable>_<section>
+        ((.0000143, .00143), (0.000008, 0.0008), (0.000008, 0.0008)), # param range
+        (0.000143, 0.00008, 0.00008), # default vals in biophysics.hoc
     ),
 }
 
@@ -136,19 +116,6 @@ class BBP(BaseModel):
 
         super(BBP, self).__init__(*args, **kwargs)
 
-
-    # @property
-    # def PARAM_NAMES(self):
-    #     return tuple()
-
-    # @property
-    # def PARAM_RANGES(self):
-    #     return tuple()
-
-    # @property
-    # def DEFAULT_PARAMS(self):
-    #     return tuple()
-
     STIM_MULTIPLIER = 1.0
 
     def create_cell(self):
@@ -156,7 +123,7 @@ class BBP(BaseModel):
         h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
-        templates_dir = '../cortical-column/components/hoc_templates'
+        templates_dir = 'hoc_templates'
         
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
@@ -188,15 +155,15 @@ class BBP(BaseModel):
         for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
             if sec == 'apical':
                 for sec in hobj.apical:
-                    log.debug('setting {} apical to {}'.format(name, getattr(self, param_name)))
+                    # log.debug('setting {} apical to {}'.format(name, getattr(self, param_name)))
                     setattr(sec, name, getattr(self, param_name))
             elif sec == 'basal':
                 for sec in hobj.basal:
-                    log.debug('setting {} basal to {}'.format(name, getattr(self, param_name)))
+                    # log.debug('setting {} basal to {}'.format(name, getattr(self, param_name)))
                     setattr(sec, name, getattr(self, param_name))
             elif sec == 'somatic':
                 for sec in hobj.somatic:
-                    log.debug('setting {} somatic to {}'.format(name, getattr(self, param_name)))
+                    # log.debug('setting {} somatic to {}'.format(name, getattr(self, param_name)))
                     setattr(sec, name, getattr(self, param_name))
 
         # do not garbage collect
