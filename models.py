@@ -97,6 +97,7 @@ class BaseModel(object):
 BBP_PARAMS_BY_ETYPE = {
     # <NRN variable>_<section>
     'cADpyr': ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'),
+    'cIR': ('gIhbar_Ih_basal', 'gImbar_Im_somatic'),
 }
 
 class BBP(BaseModel):
