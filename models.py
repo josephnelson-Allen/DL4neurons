@@ -16,8 +16,12 @@ class BaseModel(object):
     def __init__(self, *args, **kwargs):
         h.celsius = kwargs.pop('celsius', 37)
         self.log = kwargs.pop('log', print)
-        params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
+        self._set_self_params(*args)
 
+    def _set_self_params(self, *args):
+        if len(args) == 0:
+            args = self.DEFAULT_PARAMS
+        params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
         # Model params
         for (var, val) in params.items():
             setattr(self, var, val)
@@ -108,7 +112,16 @@ class BaseModel(object):
 #             #     break
 #         except RuntimeError:
 #             io.log_info("Tried to redefine template, ignoring")
-            
+
+
+BBP_PARAMS_BY_ETYPE = {
+    'cADpyr': (
+        ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'), 
+        ((.0000143, .00143), (0.000008, 0.0008), (0.000008, 0.0008)),
+        (0.000143, 0.00008, 0.00008),
+    ),
+}
+
 class BBP(BaseModel):
     def __init__(self, m_type, e_type, cell_i, *args, **kwargs):
         with open('cells.json') as infile:
@@ -119,11 +132,10 @@ class BBP(BaseModel):
         self.cell_i = cell_i
         self.cell_kwargs = cells[m_type][e_type][cell_i]
 
+        self.PARAM_NAMES, self.PARAM_RANGES, self.DEFAULT_PARAMS = BBP_PARAMS_BY_ETYPE[self.e_type]
+
         super(BBP, self).__init__(*args, **kwargs)
 
-    PARAM_NAMES = ('dummy',)
-    PARAM_RANGES = ((0, 10),)
-    DEFAULT_PARAMS = (5,)
 
     # @property
     # def PARAM_NAMES(self):
@@ -171,7 +183,21 @@ class BBP(BaseModel):
 
         os.chdir(cwd)
 
-        # TODO: change biophysics parameters
+        # change biophysics parameters
+        name_sec = [p.rsplit('_', 1) for p in self.PARAM_NAMES]
+        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
+            if sec == 'apical':
+                for sec in hobj.apical:
+                    log.debug('setting {} apical to {}'.format(name, getattr(self, param_name)))
+                    setattr(sec, name, getattr(self, param_name))
+            elif sec == 'basal':
+                for sec in hobj.basal:
+                    log.debug('setting {} basal to {}'.format(name, getattr(self, param_name)))
+                    setattr(sec, name, getattr(self, param_name))
+            elif sec == 'somatic':
+                for sec in hobj.somatic:
+                    log.debug('setting {} somatic to {}'.format(name, getattr(self, param_name)))
+                    setattr(sec, name, getattr(self, param_name))
 
         # do not garbage collect
         self.entire_cell = hobj

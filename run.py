@@ -39,7 +39,8 @@ def clean_params(args):
     """
     convert to float, use defaults where requested
     """
-    defaults = MODELS_BY_NAME[args.model].DEFAULT_PARAMS
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    defaults = model.DEFAULT_PARAMS
     if args.params:
         assert len(args.params) == len(defaults)
         return [float(x if x != 'rand' else 'inf') if x != 'def' else default
@@ -49,14 +50,16 @@ def clean_params(args):
 
 
 def report_random_params(args, params):
-    param_names = MODELS_BY_NAME[args.model].PARAM_NAMES
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    param_names = model.PARAM_NAMES
     for param, name in zip(params, param_names):
         if param == float('inf'):
             log.info("Using random values for '{}'".format(name))
 
     
 def get_random_params(args, n=1):
-    ranges = MODELS_BY_NAME[args.model].PARAM_RANGES
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    ranges = model.PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
     params = clean_params(args)
@@ -84,7 +87,8 @@ def get_mpi_idx(args, nsamples):
 
 def get_stim(args, mult=None):
     stim_fn = os.path.basename(args.stim_file)
-    multiplier = mult or args.stim_multiplier or MODELS_BY_NAME[args.model].STIM_MULTIPLIER
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    multiplier = mult or args.stim_multiplier or model.STIM_MULTIPLIER
     log.debug("Stim multiplier = {}".format(multiplier))
     return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
 
@@ -113,14 +117,15 @@ def create_h5(args, nsamples):
     Run in serial mode
     """
     log.info("Creating h5 file {}".format(args.outfile))
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
     with h5py.File(args.outfile, 'w') as f:
         # write params
-        ndim = len(MODELS_BY_NAME[args.model].PARAM_RANGES)
+        ndim = len(model.PARAM_RANGES)
         f.create_dataset('phys_par', shape=(nsamples, ndim), dtype=np.float64)
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
         # write param range
-        phys_par_range = np.stack(MODELS_BY_NAME[args.model].PARAM_RANGES)
+        phys_par_range = np.stack(model.PARAM_RANGES)
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float64)
 
         # create stim, qa, and voltage datasets
@@ -133,10 +138,11 @@ def create_h5(args, nsamples):
 
 
 def _normalize(args, data, minmax=1):
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
     nsamples = data.shape[0]
-    mins = np.array([tup[0] for tup in MODELS_BY_NAME[args.model].PARAM_RANGES])
+    mins = np.array([tup[0] for tup in model.PARAM_RANGES])
     mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
-    ranges = np.array([_max - _min for (_min, _max) in MODELS_BY_NAME[args.model].PARAM_RANGES])
+    ranges = np.array([_max - _min for (_min, _max) in model.PARAM_RANGES])
     ranges = np.tile(ranges, (nsamples, 1))
 
     return 2*minmax * ( (data - mins)/ranges ) - minmax
@@ -223,8 +229,9 @@ def add_qa(args):
 def lock_params(args, paramsets):
     # DEPRECATED. Create/use Latched model sublcasses (see HHBallStick7ParamLatched)
     assert len(args.locked_params) % 2 == 0
-    
-    paramnames = MODELS_BY_NAME[args.model].PARAM_NAMES
+
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    paramnames = model.PARAM_NAMES
     nsets = len(args.locked_params)//2
     
     targets = [args.locked_params[i*2] for i in range(nsets)]
@@ -280,7 +287,8 @@ def main(args):
         start, stop = 0, 1
     else:
         log.info("Cell parameters not specified, running with default parameters")
-        paramsets = np.atleast_2d(MODELS_BY_NAME[args.model].DEFAULT_PARAMS)
+        model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+        paramsets = np.atleast_2d(model.DEFAULT_PARAMS)
         start, stop = 0, 1
 
     lock_params(args, paramsets)
