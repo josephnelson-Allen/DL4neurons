@@ -19,7 +19,7 @@ class BaseModel(object):
         self._set_self_params(*args)
 
     def _set_self_params(self, *args):
-        if len(args) == 0:
+        if len(args) == 0 and hasattr(self, 'DEFAULT_PARAMS'):
             args = self.DEFAULT_PARAMS
         params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
         # Model params
@@ -95,11 +95,8 @@ class BaseModel(object):
 
 
 BBP_PARAMS_BY_ETYPE = {
-    'cADpyr': (
-        ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'), # <NRN variable>_<section>
-        ((.0000143, .00143), (0.000008, 0.0008), (0.000008, 0.0008)), # param range
-        (0.000143, 0.00008, 0.00008), # default vals in biophysics.hoc
-    ),
+    # <NRN variable>_<section>
+    'cADpyr': ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'),
 }
 
 class BBP(BaseModel):
@@ -112,7 +109,11 @@ class BBP(BaseModel):
         self.cell_i = cell_i
         self.cell_kwargs = cells[m_type][e_type][cell_i]
 
-        self.PARAM_NAMES, self.PARAM_RANGES, self.DEFAULT_PARAMS = BBP_PARAMS_BY_ETYPE[self.e_type]
+        self.PARAM_NAMES = BBP_PARAMS_BY_ETYPE[self.e_type]
+        # if args are not passed in, self variables will not be
+        # set. This is different from other models where default
+        # params would be taken. Here self.DEFAULT_PARAMS isn't set
+        # until create_cell() is called
 
         super(BBP, self).__init__(*args, **kwargs)
 
@@ -145,26 +146,48 @@ class BBP(BaseModel):
         cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
         log.debug(cell_template)
         h.load_file('template.hoc')
-        
-        hobj = getattr(h, template_name)(0)
+
+        SYNAPSES, NO_SYNAPSES = 1, 0
+        hobj = getattr(h, template_name)(NO_SYNAPSES)
 
         os.chdir(cwd)
 
-        # change biophysics parameters
+        # assign self.PARAM_RANGES and self.DEFAULT_PARAMS
+        self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []
         name_sec = [p.rsplit('_', 1) for p in self.PARAM_NAMES]
         for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
             if sec == 'apical':
-                for sec in hobj.apical:
-                    # log.debug('setting {} apical to {}'.format(name, getattr(self, param_name)))
-                    setattr(sec, name, getattr(self, param_name))
+                default = getattr(list(hobj.apical)[0], name)
             elif sec == 'basal':
-                for sec in hobj.basal:
-                    # log.debug('setting {} basal to {}'.format(name, getattr(self, param_name)))
-                    setattr(sec, name, getattr(self, param_name))
+                default = getattr(list(hobj.basal)[0], name)
             elif sec == 'somatic':
-                for sec in hobj.somatic:
-                    # log.debug('setting {} somatic to {}'.format(name, getattr(self, param_name)))
-                    setattr(sec, name, getattr(self, param_name))
+                default = getattr(list(hobj.somatic)[0], name)
+            self.DEFAULT_PARAMS.append(default)
+            self.PARAM_RANGES.append((default/10.0, default*10.0))
+        self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
+        self.PARAM_RANGES = tuple(self.PARAM_RANGES)
+
+        # change biophysics parameters        
+        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
+            if hasattr(self, param_name):
+                # this would not be the case if no parameters were
+                # passed in to the constructor, in which case we
+                # should use defaults, already set
+                if sec == 'apical':
+                    for sec in hobj.apical:
+                        # log.debug('setting {} apical to {}'.format(
+                        # name, getattr(self, param_name)))
+                        setattr(sec, name, getattr(self, param_name))
+                elif sec == 'basal':
+                    for sec in hobj.basal:
+                        # log.debug('setting {} basal to {}'.format(
+                        # name, getattr(self, param_name)))
+                        setattr(sec, name, getattr(self, param_name))
+                elif sec == 'somatic':
+                    for sec in hobj.somatic:
+                        # log.debug('setting {} somatic to {}'.format(
+                        # name, getattr(self, param_name)))
+                        setattr(sec, name, getattr(self, param_name))
 
         # do not garbage collect
         self.entire_cell = hobj

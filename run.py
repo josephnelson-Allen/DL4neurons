@@ -40,6 +40,7 @@ def clean_params(args):
     convert to float, use defaults where requested
     """
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    model.create_cell()
     defaults = model.DEFAULT_PARAMS
     if args.params:
         assert len(args.params) == len(defaults)
@@ -59,6 +60,7 @@ def report_random_params(args, params):
     
 def get_random_params(args, n=1):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    model.create_cell()
     ranges = model.PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
@@ -118,9 +120,10 @@ def create_h5(args, nsamples):
     """
     log.info("Creating h5 file {}".format(args.outfile))
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    model.create_cell() # needed to assign model.PARAM_RANGES
     with h5py.File(args.outfile, 'w') as f:
         # write params
-        ndim = len(model.PARAM_RANGES)
+        ndim = len(model.PARAM_NAMES)
         f.create_dataset('phys_par', shape=(nsamples, ndim), dtype=np.float64)
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
 
@@ -139,6 +142,7 @@ def create_h5(args, nsamples):
 
 def _normalize(args, data, minmax=1):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    model.create_cell()
     nsamples = data.shape[0]
     mins = np.array([tup[0] for tup in model.PARAM_RANGES])
     mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
@@ -288,6 +292,7 @@ def main(args):
     else:
         log.info("Cell parameters not specified, running with default parameters")
         model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+        model.create_cell()
         paramsets = np.atleast_2d(model.DEFAULT_PARAMS)
         start, stop = 0, 1
 
