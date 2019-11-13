@@ -35,6 +35,9 @@ Basically, you want the following structure:
 
 ```
 DL4neurons/
+   run.py
+   models.py
+   [...]
    hoc_templates/
        L1_DAC_cNAC187_1/
        L1_DAC_cNAC187_2/
