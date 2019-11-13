@@ -31,6 +31,19 @@ $ ls
 L1_DAC_cNAC187_1	L1_DAC_cNAC187_2	L1_DAC_cNAC187_3	L1_DAC_cNAC187_4	L1_DAC_cNAC187_5
 ```
 
+Basically, you want the following structure:
+
+```
+DL4neurons/
+   hoc_templates/
+       L1_DAC_cNAC187_1/
+       L1_DAC_cNAC187_2/
+       L1_DAC_cNAC187_3/
+       [...]
+       L6_UTPC_cADpyr231_1/
+       L6_UTPC_cADpyr231_2/
+```
+
 Currently you have to run a separate command to create the output file (this helps when generating data from multiple threads):
 
 ```
