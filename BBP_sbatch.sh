@@ -13,11 +13,6 @@
 
 cd /global/cscratch1/sd/vbaratha/izhi
 
-# nrnivmodl modfiles/*.mod
-
-# srun --label -n 64 python run.py --add-qa --outfile generated_data/hh_ball_stick_9param_v1_${SLURM_ARRAY_TASK_ID}_chirp_damp_16k_v1_qa.h5 --num 500000
-
-RUNDIR=runs/${SLURM_JOB_ID}
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir $RUNDIR
 
@@ -37,7 +32,6 @@ args="--outfile $OUTFILE --stim-file ${stimfile} \
       --num $NSAMPLES --print-every 10"
 
 srun -n 1 python run.py $args --create # create output file
-stripe_medium $OUTFILE
 srun --label -n 5 python run.py $args 
 
 chmod -R a+r $RUNDIR
