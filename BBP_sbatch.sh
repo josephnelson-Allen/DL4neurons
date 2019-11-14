@@ -27,7 +27,7 @@ stimfile=stims/${stimname}.csv
 OUTFILE=$RUNDIR/${DSET_NAME}_${SLURM_ARRAY_TASK_ID}_${stimname}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
-args="--outfile $OUTFILE --stim-file ${stimfile} \
+args="--outfile $OUTFILE --stim-file ${stimfile} --stim-multiplier 2.0 \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} \
       --num $NSAMPLES --print-every 10"
 

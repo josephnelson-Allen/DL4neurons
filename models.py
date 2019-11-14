@@ -164,7 +164,7 @@ class BBP(BaseModel):
             elif sec == 'somatic':
                 default = getattr(list(hobj.somatic)[0], name)
             self.DEFAULT_PARAMS.append(default)
-            self.PARAM_RANGES.append((default/3.0, default*3.0))
+            self.PARAM_RANGES.append((default/10.0, default*10.0))
         self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
         self.PARAM_RANGES = tuple(self.PARAM_RANGES)
 
