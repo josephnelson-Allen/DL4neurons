@@ -16,8 +16,12 @@ class BaseModel(object):
     def __init__(self, *args, **kwargs):
         h.celsius = kwargs.pop('celsius', 37)
         self.log = kwargs.pop('log', print)
-        params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
+        self._set_self_params(*args)
 
+    def _set_self_params(self, *args):
+        if len(args) == 0 and hasattr(self, 'DEFAULT_PARAMS'):
+            args = self.DEFAULT_PARAMS
+        params = {name: arg for name, arg in zip(self.PARAM_NAMES, args)}
         # Model params
         for (var, val) in params.items():
             setattr(self, var, val)
@@ -78,6 +82,8 @@ class BaseModel(object):
         self.attach_stim(stim)
         hoc_vectors = self.attach_recordings(ntimepts)
 
+        self.init_hoc(dt, tstop)
+
         self.log.debug("Running simulation for {} ms with dt = {}".format(h.tstop, h.dt))
         self.log.debug("({} total timesteps)".format(ntimepts))
 
@@ -87,26 +93,13 @@ class BaseModel(object):
 
         return {k: np.array(v) for (k, v) in hoc_vectors.items()}
 
-# import glob
-# def load_BBP_templates(templates_dir):
-#     morphology_templates = glob.glob(os.path.join(templates_dir, '*/morphology.hoc'))
-#     biophys_templates = glob.glob(os.path.join(templates_dir, '*/biophysics.hoc'))
-#     syn_templates = glob.glob(os.path.join(templates_dir, '*/synapses/synapses.hoc'))
-#     hoc_templates = glob.glob(os.path.join(templates_dir, '*/template.hoc'))
 
-#     for i, template in enumerate(morphology_templates + biophys_templates + syn_templates + hoc_templates):
-#         # if 'L5_BP_dSTUT214_5/biophysics.hoc' in template:
-#         # if 'L5_LBC_dNAC222_4/biophysics.hoc' in template:
-#         # if 'morpho' not in template:
-#         #     import ipdb; print ipdb.__file__; ipdb.set_trace()
-#         #     exit()
-#         try:
-#             h.load_file(template)
-#             # if i == 500:
-#             #     break
-#         except RuntimeError:
-#             io.log_info("Tried to redefine template, ignoring")
-            
+BBP_PARAMS_BY_ETYPE = {
+    # <NRN variable>_<section>
+    'cADpyr': ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'),
+    'cIR': ('gIhbar_Ih_basal', 'gImbar_Im_somatic'),
+}
+
 class BBP(BaseModel):
     def __init__(self, m_type, e_type, cell_i, *args, **kwargs):
         with open('cells.json') as infile:
@@ -117,34 +110,27 @@ class BBP(BaseModel):
         self.cell_i = cell_i
         self.cell_kwargs = cells[m_type][e_type][cell_i]
 
+        self.PARAM_NAMES = BBP_PARAMS_BY_ETYPE[self.e_type]
+        # if args are not passed in, self variables will not be
+        # set. This is different from other models where default
+        # params would be taken. Here self.DEFAULT_PARAMS isn't set
+        # until create_cell() is called
+
         super(BBP, self).__init__(*args, **kwargs)
-
-    PARAM_NAMES = ()
-    PARAM_RANGES = ()
-    DEFAULT_PARAMS = ()
-
-    # @property
-    # def PARAM_NAMES(self):
-    #     return tuple()
-
-    # @property
-    # def PARAM_RANGES(self):
-    #     return tuple()
-
-    # @property
-    # def DEFAULT_PARAMS(self):
-    #     return tuple()
 
     STIM_MULTIPLIER = 1.0
 
     def create_cell(self):
+        h.load_file('stdrun.hoc')
         h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
-        templates_dir = '../cortical-column/components/hoc_templates'
+        templates_dir = 'hoc_templates'
         
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
+
+        h.load_file('constants.hoc')
 
         morpho_template = os.path.join(templates_dir, cell_dir, 'morphology.hoc')
         log.debug(morpho_template)
@@ -154,23 +140,60 @@ class BBP(BaseModel):
         log.debug(biophys_template)
         h.load_file('biophysics.hoc')
         
-        synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
-        log.debug(synapse_template)
-        h.load_file('synapses/synapses.hoc')
+        # synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
+        # log.debug(synapse_template)
+        # h.load_file('synapses/synapses.hoc')
         
         cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
         log.debug(cell_template)
         h.load_file('template.hoc')
-        
-        self.log.debug('asdf1')
-        hobj = getattr(h, template_name)(0)
-        self.log.debug('asdf2')
+
+        SYNAPSES, NO_SYNAPSES = 1, 0
+        hobj = getattr(h, template_name)(NO_SYNAPSES)
 
         os.chdir(cwd)
 
-        # TODO: change biophysics parameters
-        
-        return hobj
+        # assign self.PARAM_RANGES and self.DEFAULT_PARAMS
+        self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []
+        name_sec = [p.rsplit('_', 1) for p in self.PARAM_NAMES]
+        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
+            if sec == 'apical':
+                default = getattr(list(hobj.apical)[0], name)
+            elif sec == 'basal':
+                default = getattr(list(hobj.basal)[0], name)
+            elif sec == 'somatic':
+                default = getattr(list(hobj.somatic)[0], name)
+            self.DEFAULT_PARAMS.append(default)
+            self.PARAM_RANGES.append((default/10.0, default*10.0))
+        self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
+        self.PARAM_RANGES = tuple(self.PARAM_RANGES)
+
+        # change biophysics parameters        
+        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
+            if hasattr(self, param_name):
+                # this would not be the case if no parameters were
+                # passed in to the constructor, in which case we
+                # should use defaults, already set
+                if sec == 'apical':
+                    for sec in hobj.apical:
+                        # log.debug('setting {} apical to {}'.format(
+                        # name, getattr(self, param_name)))
+                        setattr(sec, name, getattr(self, param_name))
+                elif sec == 'basal':
+                    for sec in hobj.basal:
+                        # log.debug('setting {} basal to {}'.format(
+                        # name, getattr(self, param_name)))
+                        setattr(sec, name, getattr(self, param_name))
+                elif sec == 'somatic':
+                    for sec in hobj.somatic:
+                        # log.debug('setting {} somatic to {}'.format(
+                        # name, getattr(self, param_name)))
+                        setattr(sec, name, getattr(self, param_name))
+
+        # do not garbage collect
+        self.entire_cell = hobj
+
+        return hobj.soma[0]
 
 
 
