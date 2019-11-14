@@ -94,11 +94,10 @@ class BaseModel(object):
         return {k: np.array(v) for (k, v) in hoc_vectors.items()}
 
 
-BBP_PARAMS_BY_ETYPE = {
-    # <NRN variable>_<section>
-    'cADpyr': ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic'),
-    'cIR': ('gIhbar_Ih_basal', 'gImbar_Im_somatic'),
-}
+from collections import defaultdict
+BBP_PARAMS_BY_ETYPE = defaultdict(tuple)
+BBP_PARAMS_BY_ETYPE['cADpyr'] = ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic')
+BBP_PARAMS_BY_ETYPE['cIR'] = ('gIhbar_Ih_basal', 'gImbar_Im_somatic')
 
 class BBP(BaseModel):
     def __init__(self, m_type, e_type, cell_i, *args, **kwargs):
