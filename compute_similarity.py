@@ -84,7 +84,9 @@ class Similarity(object):
         elif method == 'efel':
             trace1 = self._make_efel_trace(v1)
             trace2 = self._make_efel_trace(v2)
-            efel1, efel2 = efel.getFeatureValues([trace1, trace2], EFEL_FEATURES)
+            efel1, efel2 = efel.getFeatureValues([trace1, trace2], ['mean_frequency'])
+
+            return np.abs(efel1['mean_frequency'] - efel2['mean_frequency'])[0]
 
             try:
                 y = np.abs([efel1[feat] - efel2[feat] for feat in EFEL_FEATURES])
@@ -209,6 +211,7 @@ class Similarity(object):
             # phys_truth = self._rangeify(unit_truth)
             # v_truth2 = self._data_for(*unit_truth, unit=True)
             v_pred = self._data_for(*phys_pred)
+            import ipdb; ipdb.set_trace()
             try:
                 yield self._similarities(v_truth, v_pred)
             except:
@@ -253,7 +256,8 @@ def main(args):
         # else:
         #     sim_pred_outfile = args.simpredfile.replace('.h5', '_SimPredSimilarity.h5')
         # sim_pred_outfile = 'sim_pred_hh4par.h5'
-        sim_pred_outfile = '/data/izhi/hh_ballstick_7pv3-ML693-hh_ballstick_7pv3/SimPredSimilarity.h5'
+        # sim_pred_outfile = '/data/izhi/hh_ballstick_7pv3-ML693-hh_ballstick_7pv3/SimPredSimilarity.h5'
+        sim_pred_outfile = '/data/izhi/izhi_4pv6c-ML693-izhi_4pv6c/SimPredSimilarity.h5'
         x.save_sim_pred_similarity(args.simpredfile, sim_pred_outfile)
 
     
