@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q regular
+#SBATCH -q debug
 #SBATCH -N 1
-#SBATCH --array 1-50
+#SBATCH --array 1-2
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -21,11 +21,12 @@ RUNDIR=runs/${SLURM_JOB_ID}
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir $RUNDIR
 
-M_TYPE="L5_TTPC"
+M_TYPE="L5_TTPC1"
 E_TYPE="cADpyr"
 DSET_NAME=${M_TYPE}_${E_TYPE}
-NSAMPLES=1024
-stimname=chirp23a.csv
+NSAMPLES=500
+stimname=chirp23a
+stimfile=stims/${stimname}.csv
 
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 OUTFILE=$RUNDIR/${DSET_NAME}_${SLURM_ARRAY_TASK_ID}_${stimname}.h5
@@ -33,7 +34,7 @@ echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 args="--outfile $OUTFILE --stim-file ${stimfile} \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} \
-      --num $NSAMPLES --print-every 100"
+      --num $NSAMPLES --print-every 10"
 
 srun -n 1 python run.py $args --create # create output file
 stripe_medium $OUTFILE

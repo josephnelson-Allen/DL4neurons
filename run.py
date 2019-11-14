@@ -92,7 +92,7 @@ def get_stim(args, mult=None):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
     multiplier = mult or args.stim_multiplier or model.STIM_MULTIPLIER
     log.debug("Stim multiplier = {}".format(multiplier))
-    return (np.genfromtxt(args.stim_file, dtype=np.float64) * multiplier) + args.stim_dc_offset
+    return (np.genfromtxt(args.stim_file, dtype=np.float32) * multiplier) + args.stim_dc_offset
 
 
 def _qa(args, trace, thresh=20):
@@ -124,18 +124,18 @@ def create_h5(args, nsamples):
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = len(model.PARAM_NAMES)
-        f.create_dataset('phys_par', shape=(nsamples, ndim), dtype=np.float64)
-        f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float64)
+        f.create_dataset('phys_par', shape=(nsamples, ndim), dtype=np.float32)
+        f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float32)
 
         # write param range
         phys_par_range = np.stack(model.PARAM_RANGES)
-        f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float64)
+        f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float32)
 
         # create stim, qa, and voltage datasets
         stim = get_stim(args)
         ntimepts = len(stim)
-        f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float64)
-        f.create_dataset('binQA', shape=(nsamples,), dtype=np.float64)
+        f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float32)
+        f.create_dataset('binQA', shape=(nsamples,), dtype=np.float32)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
 
@@ -278,7 +278,7 @@ def main(args):
         raise ValueError("Must pass --param-file with --blind")
 
     if args.param_file:
-        all_paramsets = np.genfromtxt(args.param_file, dtype=np.float64)
+        all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
         start, stop = get_mpi_idx(args, len(all_paramsets))
         if args.num and start > args.num:
             return
@@ -299,7 +299,7 @@ def main(args):
     lock_params(args, paramsets)
 
     stim = get_stim(args)
-    buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float64)
+    buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float32)
     qa = np.zeros(stop-start)
 
     for i, params in enumerate(paramsets):
