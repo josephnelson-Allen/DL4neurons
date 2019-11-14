@@ -76,6 +76,8 @@ def get_random_params(args, n=1):
 
         
 def get_mpi_idx(args, nsamples):
+    if args.trivial_parallel:
+        return 0, args.num
     params_per_task = (nsamples // n_tasks) + 1
     start = params_per_task * rank
     stop = min(params_per_task * (rank + 1), nsamples)
@@ -256,9 +258,16 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
         return models.BBP(m_type, e_type, cell_i, *params, log=log)
 
 def main(args):
+    log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
+    log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
+    
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
+
+    if args.trivial_parallel:
+        # filename lacks .h5 extension and needs procid appended
+        args.outfile = "{}_{}.h5".format(args.outfile, os.environ['SLURM_PROCID'])
 
     if args.create:
         if not args.num:
@@ -367,6 +376,10 @@ if __name__ == '__main__':
         '--num', type=int, default=None,
         help="number of param values to choose. Will choose randomly. " + \
         "See --params. When multithreaded, this is the total number over all ranks"
+    )
+    parser.add_argument(
+        '--trivial-parallel', action='store_true', default=False, required=False,
+        help='each process runs all --num samples, outputting to a file by procid'
     )
     parser.add_argument(
         '--params', type=str, nargs='+', default=None,

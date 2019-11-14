@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -q debug
-#SBATCH -N 1
+#SBATCH -N 100
 #SBATCH --array 1-2
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
@@ -19,20 +19,22 @@ mkdir $RUNDIR
 M_TYPE="L5_TTPC1"
 E_TYPE="cADpyr"
 DSET_NAME=${M_TYPE}_${E_TYPE}
-NSAMPLES=500
+NSAMPLES=50
 stimname=chirp23a
 stimfile=stims/${stimname}.csv
 
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
-OUTFILE=$RUNDIR/${DSET_NAME}_${SLURM_ARRAY_TASK_ID}_${stimname}.h5
+OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
+echo "SLURM_NODEID" ${SLURM_NODEID}
+echo "SLURM_PROCID" ${SLURM_PROCID}
 args="--outfile $OUTFILE --stim-file ${stimfile} --stim-multiplier 2.0 \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} \
-      --num $NSAMPLES --print-every 10"
+      --num $NSAMPLES --trivial-parallel --print-every 10"
 
-srun -n 1 python run.py $args --create # create output file
-srun --label -n 5 python run.py $args 
+srun -n 6400 --ntasks-per-node 64 python run.py $args --create # create output file
+srun --label -n 6400 --ntasks-per-node 64 python run.py $args 
 
 chmod -R a+r $RUNDIR
 
