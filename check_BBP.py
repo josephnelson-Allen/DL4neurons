@@ -18,6 +18,10 @@ with open('problematic_cells.txt', 'w') as outfile:
     for m_type, etypes in cells.items():
         for e_type, clones in etypes.items():
             for i in range(len(clones)):
-                import ipdb; ipdb.set_trace()
-                cell = BBP(m_type, e_type, i+1)
+                print()
+                print(m_type, e_type, i)
+                print(clones[i])
+                cell = BBP(m_type, e_type, i)
                 cell.create_cell()
+
+

@@ -126,26 +126,29 @@ class BBP(BaseModel):
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
         templates_dir = 'hoc_templates'
         
-        cwd = os.getcwd()
-        os.chdir(os.path.join(templates_dir, cell_dir))
-
-        h.load_file('constants.hoc')
+        constants = os.path.join(templates_dir, cell_dir, 'constants.hoc')
+        log.debug(constants)
+        h.load_file(constants)
 
         morpho_template = os.path.join(templates_dir, cell_dir, 'morphology.hoc')
         log.debug(morpho_template)
-        h.load_file('morphology.hoc')
+        h.load_file(morpho_template)
         
         biophys_template = os.path.join(templates_dir, cell_dir, 'biophysics.hoc')
         log.debug(biophys_template)
-        h.load_file('biophysics.hoc')
+        h.load_file(biophys_template)
         
-        # synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
-        # log.debug(synapse_template)
-        # h.load_file('synapses/synapses.hoc')
+        synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
+        log.debug(synapse_template)
+        h.load_file(synapse_template)
         
         cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
         log.debug(cell_template)
-        h.load_file('template.hoc')
+        h.load_file(cell_template)
+
+        # For some reason, need to instantiate cell from within the templates directory?
+        cwd = os.getcwd()
+        os.chdir(os.path.join(templates_dir, cell_dir))
 
         SYNAPSES, NO_SYNAPSES = 1, 0
         hobj = getattr(h, template_name)(NO_SYNAPSES)
