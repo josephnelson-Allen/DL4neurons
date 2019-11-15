@@ -119,7 +119,7 @@ class BBP(BaseModel):
 
     STIM_MULTIPLIER = 1.0
 
-    def create_cell(self):
+    def create_cell(self, no_biophys=False):
         h.load_file('stdrun.hoc')
         h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
@@ -145,7 +145,7 @@ class BBP(BaseModel):
         cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
         log.debug(cell_template)
         h.load_file(cell_template)
-
+        
         # For some reason, need to instantiate cell from within the templates directory?
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
@@ -154,6 +154,10 @@ class BBP(BaseModel):
         hobj = getattr(h, template_name)(NO_SYNAPSES)
 
         os.chdir(cwd)
+
+        if no_biophys:
+            self.entire_cell = hobj
+            return hobj.soma[0]
 
         # assign self.PARAM_RANGES and self.DEFAULT_PARAMS
         self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []

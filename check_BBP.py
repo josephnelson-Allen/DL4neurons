@@ -22,6 +22,7 @@ with open('problematic_cells.txt', 'w') as outfile:
                 print(m_type, e_type, i)
                 print(clones[i])
                 cell = BBP(m_type, e_type, i)
-                cell.create_cell()
+                cell.create_cell(no_biophys=True)
+
 
 

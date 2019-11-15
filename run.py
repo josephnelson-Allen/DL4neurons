@@ -258,8 +258,8 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
         return models.BBP(m_type, e_type, cell_i, *params, log=log)
 
 def main(args):
-    log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
-    log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
+    # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
+    # log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
     
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
