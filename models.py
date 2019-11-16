@@ -6,6 +6,7 @@ import json
 import logging as log
 from datetime import datetime
 from argparse import ArgumentParser
+from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -118,6 +119,18 @@ class BBP(BaseModel):
         super(BBP, self).__init__(*args, **kwargs)
 
     STIM_MULTIPLIER = 1.0
+
+    def _get_rec_pts(self, n=20):
+        # TODO: Use Roy's code
+        return np.random.choice(list(self.entire_cell.all), n, replace=False)
+
+    def attach_recordings(self, ntimepts):
+        hoc_vectors = OrderedDict()
+        for sec in self._get_rec_pts():
+            hoc_vectors[sec.hname] = h.Vector(ntimepts)
+            hoc_vectors[sec.hname].record(sec(0.5)._ref_v)
+
+        return hoc_vectors
 
     def create_cell(self, no_biophys=False):
         h.load_file('stdrun.hoc')

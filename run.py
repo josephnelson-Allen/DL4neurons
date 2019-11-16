@@ -31,6 +31,8 @@ from neuron import h, gui
 
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
+N_REC_PTS = 20
+
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
@@ -136,7 +138,10 @@ def create_h5(args, nsamples):
         # create stim, qa, and voltage datasets
         stim = get_stim(args)
         ntimepts = len(stim)
-        f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float32)
+        if args.model == 'BBP':
+            f.create_dataset('voltages', shape=(nsamples, ntimepts, N_REC_PTS), dtype=np.float32)
+        else:
+            f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float32)
         f.create_dataset('binQA', shape=(nsamples,), dtype=np.float32)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
@@ -165,7 +170,7 @@ def save_h5(args, buf, qa, params, start, stop):
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.debug("opened h5")
         log.debug(str(params))
-        f['voltages'][start:stop, :] = buf
+        f['voltages'][start:stop, ...] = buf
         f['binQA'][start:stop] = qa
         if not args.blind:
             f['phys_par'][start:stop, :] = params
@@ -308,7 +313,10 @@ def main(args):
     lock_params(args, paramsets)
 
     stim = get_stim(args)
-    buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float32)
+    if args.model == 'BBP':
+        buf = np.zeros(shape=(stop-start, len(stim), N_REC_PTS), dtype=np.float32)
+    else:
+        buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float32)
     qa = np.zeros(stop-start)
 
     for i, params in enumerate(paramsets):
@@ -319,7 +327,9 @@ def main(args):
         # model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
         model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i, *params)
         data = model.simulate(stim, args.dt)
-        buf[i, :] = data['v'][:-1]
+        if args.model == 'BBP':
+            data['v'] = np.stack(data.values(), axis=-1)
+        buf[i, ...] = data['v'][:-1]
         qa[i] = _qa(args, data['v'])
 
         plot(args, data, stim)

@@ -128,7 +128,7 @@ if __name__ == '__main__':
             ax.axis('off')
             
             ax.plot(t_axis, v_truth, color='k', linewidth=0.5, label='True')
-            ax.plot(t_axis, v_pred, color='red', linewidth=0.5, label='Predicted', linestyle='--')
+            # ax.plot(t_axis, v_pred, color='red', linewidth=0.5, label='Predicted', linestyle='--')
 
             # ax.text(80, 0, "trace #{}".format(trace_i))
 
