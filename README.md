@@ -10,6 +10,10 @@ Quickstart:
 
 Compile modfiles: `$ nrnivmodl modfiles/*.mod` (all the ones you need are included in this repo)
 
+#### Optional: Obtain cell models
+
+The repo contains 5 example cells of m-type L5_TTPC1, e-type cADpyr. If you don't do these optional steps, you will only be able to run with these 5 cells.
+
 Obtain cell models from https://bbp.epfl.ch/nmc-portal/web/guest/downloads
 
 They will arrive as a zip file called models.zip, which you should save into a directory called hoc_templates alongside run.py
@@ -46,6 +50,8 @@ DL4neurons/
        L6_UTPC_cADpyr231_1/
        L6_UTPC_cADpyr231_2/
 ```
+
+## Run the simulations
 
 Currently you have to run a separate command to create the output file (this helps when generating data from multiple threads):
 
