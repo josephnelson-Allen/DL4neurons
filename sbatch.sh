@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -q regular
+#SBATCH -q debug
 #SBATCH -N 1
-#SBATCH --array 0-9
+#SBATCH --array 1-2
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -15,14 +15,18 @@ cd /global/cscratch1/sd/vbaratha/izhi
 
 # nrnivmodl modfiles/*.mod
 
-MODELNAME=hh_two_dend_13param
-VERSION=1
+MODELNAME=hh_ball_stick_9param
+VERSION=2
 
-# RUNDIR=runs/${SLURM_JOB_ID}
+
+# srun --label -n 64 python run.py --add-qa --outfile generated_data/hh_ball_stick_9param_v1_${SLURM_ARRAY_TASK_ID}_chirp_damp_16k_v1_qa.h5 --num 500000
+
+
+RUNDIR=runs/${SLURM_JOB_ID}
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir $RUNDIR
 DSET_NAME=${MODELNAME}_v$VERSION
-NSAMPLES=300000
+NSAMPLES=500000
 
 stimname=chirp16a
 stimfile=stims/${stimname}.csv
@@ -39,6 +43,8 @@ srun -n 1 python run.py $args --create # create output file
 srun --label -n 64 python run.py $args 
 
 chmod -R a+r $RUNDIR
+
+
 
 # for stim in $(ls stims)
 # do
