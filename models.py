@@ -124,6 +124,9 @@ class BBP(BaseModel):
         # TODO: Use Roy's code
         return np.random.choice(list(self.entire_cell.all), n, replace=False)
 
+    def _n_rec_pts(self):
+        return len(self._get_rec_pts())
+
     def attach_recordings(self, ntimepts):
         hoc_vectors = OrderedDict()
         for sec in self._get_rec_pts():
