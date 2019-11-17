@@ -400,7 +400,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--node-parallel', action='store_true', default=False, required=False,
-        help-'each node runs --num samples over 64 processes. One output file per node'
+        help='each node runs --num samples over 64 processes. One output file per node'
     )
     parser.add_argument(
         '--params', type=str, nargs='+', default=None,
@@ -427,6 +427,18 @@ if __name__ == '__main__':
         '--stim-multiplier', type=float, default=None,
         help="scale the stimulus amplitude by this factor. Happens before --stim-dc-offset"
     )
+
+    parser.add_argument(
+        '--tstart', type=int, default=None, required=False,
+        help='when to start the recording'
+    )
+    parser.add_argument(
+        '--tstop', type=int, default=None, required=False,
+        help='when to stop the recording'
+    )
+
+    if args.tstart or args.tstop:
+        raise ValueError('--tstart and --tstop not yet implemented')
 
     parser.add_argument('--print-every', type=int, default=1000)
     parser.add_argument('--debug', action='store_true', default=False)
