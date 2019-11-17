@@ -167,6 +167,10 @@ def save_h5(args, buf, qa, params, start, stop):
     else:
         log.debug("using serial")
         kwargs = {}
+
+    if not os.path.exists(args.outfile):
+        create_h5(args, stop-start)
+    
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.debug("opened h5")
         log.debug(str(params))
