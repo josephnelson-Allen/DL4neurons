@@ -263,7 +263,7 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
         return MODELS_BY_NAME[model](*params, log=log)
     else:
         if m_type is None or e_type is None:
-            log.error('Must specify --m-type and --e-type when using BBP')
+            raise ValueError('Must specify --m-type and --e-type when using BBP')
         return models.BBP(m_type, e_type, cell_i, *params, log=log)
 
 def main(args):
@@ -389,11 +389,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--num', type=int, default=None,
         help="number of param values to choose. Will choose randomly. " + \
-        "See --params. When multithreaded, this is the total number over all ranks"
+        "See --params. When multithreaded, this is the total number over all ranks, " + \
+        "except when using --trivial-parallel"
     )
     parser.add_argument(
         '--trivial-parallel', action='store_true', default=False, required=False,
-        help='each process runs all --num samples, outputting to a file by procid'
+        help='each process runs all --num samples, with each rank writing output to a ' + \
+        'separate file. With this option, the string "_<proc_id>.h5", where <proc_id> is ' + \
+        'the MPI id of each rank, will be appended to the filename passed via --output'
     )
     parser.add_argument(
         '--params', type=str, nargs='+', default=None,
