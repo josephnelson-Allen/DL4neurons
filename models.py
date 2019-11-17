@@ -139,23 +139,23 @@ class BBP(BaseModel):
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
         templates_dir = 'hoc_templates'
         
-        constants = '/'.join(templates_dir, cell_dir, 'constants.hoc')
+        constants = '/'.join([templates_dir, cell_dir, 'constants.hoc'])
         log.debug(constants)
         h.load_file(constants)
 
-        morpho_template = '/'.join(templates_dir, cell_dir, 'morphology.hoc')
+        morpho_template = '/'.join([templates_dir, cell_dir, 'morphology.hoc'])
         log.debug(morpho_template)
         h.load_file(morpho_template)
         
-        biophys_template = '/'.join(templates_dir, cell_dir, 'biophysics.hoc')
+        biophys_template = '/'.join([templates_dir, cell_dir, 'biophysics.hoc'])
         log.debug(biophys_template)
         h.load_file(biophys_template)
         
-        synapse_template = '/'.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
+        synapse_template = '/'.join([templates_dir, cell_dir, 'synapses/synapses.hoc'])
         log.debug(synapse_template)
         h.load_file(synapse_template)
         
-        cell_template = '/'.join(templates_dir, cell_dir, 'template.hoc')
+        cell_template = '/'.join([templates_dir, cell_dir, 'template.hoc'])
         log.debug(cell_template)
         h.load_file(cell_template)
         
