@@ -55,4 +55,6 @@ DL4neurons/
        L6_UTPC_cADpyr231_2/
 ```
 
+Then, add a list of parameters for the e-type such as the ones at [line 100 of models.py](https://github.com/VBaratham/DL4neurons/blob/master/models.py#L100)
+
 Now you can use any m-type and e-type in the BBP model. A programmatically-accessible list of all m_types and e_types can be found in cells.json
