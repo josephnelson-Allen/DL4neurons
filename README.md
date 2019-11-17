@@ -18,28 +18,28 @@ If you want to run on cells other than L5_TTPC1, see below
 
 The repo contains 5 example cells of m-type L5_TTPC1, e-type cADpyr. If you don't do the following optional steps, you will only be able to run with these 5 cells.
 
-Obtain cell models from https://bbp.epfl.ch/nmc-portal/web/guest/downloads
+Obtain cell models from https://bbp.epfl.ch/nmc-portal/web/guest/downloads (Use the link where it says "The complete set of neuron models is available here")
 
-They will arrive as a zip file called models.zip, which you should save into a directory called hoc_templates alongside run.py
+They will arrive as a zip file called hoc_combos_syn.1_0_10.allzips.tar, which you should save into a directory called hoc_templates alongside run.py
 
-Then enter hoc_templates and unzip models.zip, and all the individual cells zipped within:
+Then enter hoc_templates and untar/unzip everything:
 
 ```
+$ ls
+run.py  models.py  hoc_templates  [...]  hoc_combos_syn.1_0_10.allzips.tar
+$ tar -xvf hoc_combos_syn.1_0_10.allzips.tar --directory hoc_templates
 $ cd hoc_templates
-$ unzip models.zip
-$ rm models.zip
+$ unzip 'hoc_combos_syn.1_0_10.allzips/*.zip' # quotes are necessary!!
 $ ls
-L1_DAC_cNAC187_1.zip	L1_DAC_cNAC187_2.zip	L1_DAC_cNAC187_3.zip	L1_DAC_cNAC187_4.zip	L1_DAC_cNAC187_5.zip [...]
-$ unzip '*.zip' # quotes are necessary!!
-$ ls
-L1_DAC_cNAC187_1	L1_DAC_cNAC187_2	L1_DAC_cNAC187_3	L1_DAC_cNAC187_4	L1_DAC_cNAC187_5
-L1_DAC_cNAC187_1.zip	L1_DAC_cNAC187_2.zip	L1_DAC_cNAC187_3.zip	L1_DAC_cNAC187_4.zip	L1_DAC_cNAC187_5.zip
-$ rm *.zip
-$ ls
-L1_DAC_cNAC187_1	L1_DAC_cNAC187_2	L1_DAC_cNAC187_3	L1_DAC_cNAC187_4	L1_DAC_cNAC187_5
+L1_DAC_cNAC187_1	L1_DAC_cNAC187_2	L1_DAC_cNAC187_3	L1_DAC_cNAC187_4	L1_DAC_cNAC187_5 [...] hoc_combos_syn.1_0_10.allzips
+
+## Cleanup
+$ rm -r hoc_combos_syn.1_0_10.allzips
+$ cd ..
+$ rm hoc_combos_syn.1_0_10.allzips.tar
 ```
 
-Basically, you want the following structure:
+You should have the following structure:
 
 ```
 DL4neurons/
@@ -55,6 +55,6 @@ DL4neurons/
        L6_UTPC_cADpyr231_2/
 ```
 
-Then, add a list of parameters for the e-type such as the ones at [line 100 of models.py](https://github.com/VBaratham/DL4neurons/blob/master/models.py#L100)
+Now you can use any m-type and e-type in the BBP model. Just add a list of parameters for the e-type you want to run, such as the ones at [line 100 of models.py](https://github.com/VBaratham/DL4neurons/blob/master/models.py#L100)
 
-Now you can use any m-type and e-type in the BBP model. A programmatically-accessible list of all m_types and e_types can be found in cells.json
+A programmatically-accessible list of all m_types and e_types can be found in cells.json
