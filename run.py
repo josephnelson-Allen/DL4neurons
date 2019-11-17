@@ -80,9 +80,14 @@ def get_random_params(args, n=1):
 def get_mpi_idx(args, nsamples):
     if args.trivial_parallel:
         return 0, args.num
-    params_per_task = (nsamples // n_tasks) + 1
-    start = params_per_task * rank
-    stop = min(params_per_task * (rank + 1), nsamples)
+    elif args.node_parallel:
+        params_per_task = (nsamples // 64) + 1
+        task_i = rank % 64
+    else:
+        params_per_task = (nsamples // n_tasks) + 1
+        task_i = rank
+    start = params_per_task * task_i
+    stop = min(params_per_task * (task_i + 1), nsamples)
     if args.num:
         stop = min(stop, args.num)
     log.info("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
@@ -274,10 +279,6 @@ def main(args):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
-    if args.trivial_parallel:
-        # filename lacks .h5 extension and needs procid appended
-        args.outfile = "{}_{}.h5".format(args.outfile, os.environ['SLURM_PROCID'])
-
     if args.create:
         if not args.num:
             raise ValueError("Must pass --num when creating h5 file")
@@ -332,7 +333,7 @@ def main(args):
         model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i, *params)
         data = model.simulate(stim, args.dt)
         if args.model == 'BBP':
-            data['v'] = np.stack(data.values(), axis=-1)
+            data['v'] = np.stack(list(data.values()), axis=-1)
         buf[i, ...] = data['v'][:-1]
         qa[i] = _qa(args, data['v'])
 
@@ -395,8 +396,11 @@ if __name__ == '__main__':
     parser.add_argument(
         '--trivial-parallel', action='store_true', default=False, required=False,
         help='each process runs all --num samples, with each rank writing output to a ' + \
-        'separate file. With this option, the string "_<proc_id>.h5", where <proc_id> is ' + \
-        'the MPI id of each rank, will be appended to the filename passed via --output'
+        'separate file.'
+    )
+    parser.add_argument(
+        '--node-parallel', action='store_true', default=False, required=False,
+        help-'each node runs --num samples over 64 processes. One output file per node'
     )
     parser.add_argument(
         '--params', type=str, nargs='+', default=None,
