@@ -139,23 +139,23 @@ class BBP(BaseModel):
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
         templates_dir = 'hoc_templates'
         
-        constants = os.path.join(templates_dir, cell_dir, 'constants.hoc')
+        constants = '/'.join(templates_dir, cell_dir, 'constants.hoc')
         log.debug(constants)
         h.load_file(constants)
 
-        morpho_template = os.path.join(templates_dir, cell_dir, 'morphology.hoc')
+        morpho_template = '/'.join(templates_dir, cell_dir, 'morphology.hoc')
         log.debug(morpho_template)
         h.load_file(morpho_template)
         
-        biophys_template = os.path.join(templates_dir, cell_dir, 'biophysics.hoc')
+        biophys_template = '/'.join(templates_dir, cell_dir, 'biophysics.hoc')
         log.debug(biophys_template)
         h.load_file(biophys_template)
         
-        synapse_template = os.path.join(templates_dir, cell_dir, os.path.join('synapses', 'synapses.hoc'))
+        synapse_template = '/'.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
         log.debug(synapse_template)
         h.load_file(synapse_template)
         
-        cell_template = os.path.join(templates_dir, cell_dir, 'template.hoc')
+        cell_template = '/'.join(templates_dir, cell_dir, 'template.hoc')
         log.debug(cell_template)
         h.load_file(cell_template)
         
@@ -279,7 +279,7 @@ class Mainen(BaseModel):
         h.rm = self.rm
         h.c_m = self.c_m
         
-        h.load_3dcell(os.path.join('cells', 'j7.hoc'))
+        h.load_3dcell('cells/j7.hoc')
         return h.soma
 
     def attach_clamp(self):
