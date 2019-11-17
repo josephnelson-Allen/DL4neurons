@@ -436,15 +436,15 @@ if __name__ == '__main__':
         help='when to stop the recording'
     )
 
-    if args.tstart or args.tstop:
-        raise ValueError('--tstart and --tstop not yet implemented')
-
     parser.add_argument('--print-every', type=int, default=1000)
     parser.add_argument('--debug', action='store_true', default=False)
 
     parser.add_argument('--locked-params', '--lock-params', type=str, nargs='+', default=[])
     
     args = parser.parse_args()
+
+    if args.tstart or args.tstop:
+        raise ValueError('--tstart and --tstop not yet implemented')
 
     log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG if args.debug else log.INFO)
 

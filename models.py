@@ -92,7 +92,7 @@ class BaseModel(object):
 
         self.log.debug("Time to simulate: {}".format(datetime.now() - _start))
 
-        return {k: np.array(v) for (k, v) in hoc_vectors.items()}
+        return OrderedDict([(k, np.array(v)) for (k, v) in hoc_vectors.items()])
 
 
 from collections import defaultdict
