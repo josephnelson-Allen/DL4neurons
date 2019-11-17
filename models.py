@@ -151,7 +151,7 @@ class BBP(BaseModel):
         log.debug(biophys_template)
         h.load_file(biophys_template)
         
-        synapse_template = os.path.join(templates_dir, cell_dir, 'synapses/synapses.hoc')
+        synapse_template = os.path.join(templates_dir, cell_dir, os.path.join('synapses', 'synapses.hoc'))
         log.debug(synapse_template)
         h.load_file(synapse_template)
         
