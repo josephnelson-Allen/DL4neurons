@@ -1,6 +1,6 @@
 #!/bin/bash -l
-#SBATCH -q premium
-#SBATCH -N 100
+#SBATCH -q debug
+#SBATCH -N 64
 #SBATCH --array 1-2
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
@@ -23,7 +23,7 @@ E_TYPE="cADpyr"
 # M_TYPE="L1_HAC"
 # E_TYPE=cIR
 DSET_NAME=${M_TYPE}_${E_TYPE}
-NSAMPLES=500
+NSAMPLES=41
 stimname=chirp23a
 stimfile=stims/${stimname}.csv
 
@@ -37,8 +37,8 @@ args="--outfile $OUTFILE --stim-file ${stimfile} --stim-multiplier 2.0 \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} --cell-i 2 \
       --num $NSAMPLES --trivial-parallel --print-every 10"
 
-srun --label -n 6400 --ntasks-per-node 64 python run.py $args --create # create output file
-srun --label -n 6400 --ntasks-per-node 64 python run.py $args 
+srun --label -n 4096 --ntasks-per-node 64 python run.py $args --create # create output file
+srun --label -n 4096 --ntasks-per-node 64 python run.py $args 
 
 chmod -R a+r $RUNDIR
 

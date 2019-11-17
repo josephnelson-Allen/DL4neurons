@@ -31,8 +31,6 @@ from neuron import h, gui
 
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
-N_REC_PTS = 20
-
 def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
@@ -144,7 +142,7 @@ def create_h5(args, nsamples):
         stim = get_stim(args)
         ntimepts = len(stim)
         if args.model == 'BBP':
-            f.create_dataset('voltages', shape=(nsamples, ntimepts, N_REC_PTS), dtype=np.float32)
+            f.create_dataset('voltages', shape=(nsamples, ntimepts, model._n_rec_pts()), dtype=np.float32)
         else:
             f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float32)
         f.create_dataset('binQA', shape=(nsamples,), dtype=np.float32)
@@ -296,6 +294,9 @@ def main(args):
     if args.blind and not args.param_file:
         raise ValueError("Must pass --param-file with --blind")
 
+    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+    model.create_cell()
+    
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
         start, stop = get_mpi_idx(args, len(all_paramsets))
@@ -310,8 +311,6 @@ def main(args):
         start, stop = 0, 1
     else:
         log.info("Cell parameters not specified, running with default parameters")
-        model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-        model.create_cell()
         paramsets = np.atleast_2d(model.DEFAULT_PARAMS)
         start, stop = 0, 1
 
@@ -319,7 +318,7 @@ def main(args):
 
     stim = get_stim(args)
     if args.model == 'BBP':
-        buf = np.zeros(shape=(stop-start, len(stim), N_REC_PTS), dtype=np.float32)
+        buf = np.zeros(shape=(stop-start, len(stim), model._n_rec_pts()), dtype=np.float32)
     else:
         buf = np.zeros(shape=(stop-start, len(stim)), dtype=np.float32)
     qa = np.zeros(stop-start)
