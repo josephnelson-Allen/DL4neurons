@@ -279,7 +279,7 @@ class Mainen(BaseModel):
         h.rm = self.rm
         h.c_m = self.c_m
         
-        h.load_3dcell('cells/j7.hoc')
+        h.load_3dcell(os.path.join('cells', 'j7.hoc'))
         return h.soma
 
     def attach_clamp(self):

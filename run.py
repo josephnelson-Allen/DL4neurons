@@ -410,7 +410,7 @@ if __name__ == '__main__':
 
     # CHOOSE STIMULUS
     parser.add_argument(
-        '--stim-file', type=str, default='stims/chirp23a.csv',
+        '--stim-file', type=str, default=os.path.join('stims', 'chirp23a.csv'),
         help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
     parser.add_argument(
         '--stim-dc-offset', type=float, default=0.0,
