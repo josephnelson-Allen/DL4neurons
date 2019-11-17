@@ -10,9 +10,23 @@ Quickstart:
 
 Compile modfiles: `$ nrnivmodl modfiles/*.mod` (all the ones you need are included in this repo)
 
+Currently you have to run a separate command to create the output file (this helps when generating data from multiple threads):
+
+```
+$ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --num 10 --outfile test.h5 --debug --create
+$ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --num 10 --outfile test.h5 --debug
+```
+
+These commands should generate 10 test traces and put them in the file test.h5
+
+A programmatically-accessible list of all m_types and e_types can be found in cells.json
+
+Also consider playing around with the `--stim-multiplier` option to run.py (I found a multiplier of 2.0 worked well-ish for the L5_TTPC1 cell), and the `--cell-i <integer>` option which allows you to select a morphology clone (currently cells.json only knows about 2 clones, so your only options are `--cell-i 0` (default) and `--cell-i 1`).
+
+
 #### Optional: Obtain cell models
 
-The repo contains 5 example cells of m-type L5_TTPC1, e-type cADpyr. If you don't do these optional steps, you will only be able to run with these 5 cells.
+The repo contains 5 example cells of m-type L5_TTPC1, e-type cADpyr. If you don't do the following optional steps, you will only be able to run with these 5 cells.
 
 Obtain cell models from https://bbp.epfl.ch/nmc-portal/web/guest/downloads
 
@@ -51,17 +65,4 @@ DL4neurons/
        L6_UTPC_cADpyr231_2/
 ```
 
-## Run the simulations
-
-Currently you have to run a separate command to create the output file (this helps when generating data from multiple threads):
-
-```
-$ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --num 10 --outfile test.h5 --debug --create
-$ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --num 10 --outfile test.h5 --debug
-```
-
-These commands should generate 10 test traces and put them in the file test.h5
-
-A programmatically-accessible list of all m_types and e_types can be found in cells.json
-
-Also consider playing around with the `--stim-multiplier` option to run.py (I found a multiplier of 2.0 worked well-ish for the L5_TTPC1 cell), and the `--cell-i <integer>` option which allows you to select a morphology clone (currently cells.json only knows about 2 clones, so your only options are `--cell-i 0` (default) and `--cell-i 1`).
+Now you can use any m-type and e-type in the BBP model.
