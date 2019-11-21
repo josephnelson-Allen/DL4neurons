@@ -122,9 +122,6 @@ def _qa(args, trace, thresh=20):
 
 
 def create_h5(args, nsamples):
-    """
-    Run in serial mode
-    """
     log.info("Creating h5 file {}".format(args.outfile))
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
     model.create_cell() # needed to assign model.PARAM_RANGES
@@ -162,9 +159,9 @@ def _normalize(args, data, minmax=1):
     return 2*minmax * ( (data - mins)/ranges ) - minmax
 
     
-def save_h5(args, buf, qa, params, start, stop):
+def save_h5(args, buf, qa, params, start, stop, force_serial=False):
     log.info("saving into h5 file {}".format(args.outfile))
-    if comm and n_tasks > 1:
+    if (comm and n_tasks > 1) and not force_serial:
         log.debug("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
     else:
@@ -272,6 +269,9 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
 def main(args):
     # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
     # log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
+
+    if args.trivial_parallel and args.outfile and '{NODEID}' in args.outfile:
+        args.outfile = args.outfile.replace('{NODEID}', os.environ['SLURM_PROCID'])
     
     if (not args.outfile) and (not args.force) and (args.plot is None):
         raise ValueError("You didn't choose to plot or save anything. "
@@ -340,7 +340,7 @@ def main(args):
         
     # Save to disk
     if args.outfile:
-        save_h5(args, buf, qa, paramsets, start, stop)
+        save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel)
 
 
 if __name__ == '__main__':
