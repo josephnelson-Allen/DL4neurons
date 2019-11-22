@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q debug
 #SBATCH -N 64
-#SBATCH --array 1-2
+#SBATCH --array 1-1
 #SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
@@ -28,7 +28,7 @@ stimname=chirp23a
 stimfile=stims/${stimname}.csv
 
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
-OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}
+OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}_\{NODEID\}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 echo "SLURM_NODEID" ${SLURM_NODEID}
@@ -37,11 +37,7 @@ args="--outfile $OUTFILE --stim-file ${stimfile} --stim-multiplier 2.0 \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} --cell-i 2 \
       --num $NSAMPLES --trivial-parallel --print-every 10"
 
-srun --label -n 4096 --ntasks-per-node 64 python run.py $args --create # create output file
+# srun --label -n 64 --ntasks-per-node 1 python run.py $args --create # create output file
 srun --label -n 4096 --ntasks-per-node 64 python run.py $args 
 
 chmod -R a+r $RUNDIR
-
-
-
-# for stim in $(ls stims)
