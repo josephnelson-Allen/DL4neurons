@@ -145,7 +145,7 @@ def create_h5(args, nsamples):
             f.create_dataset('voltages', shape=(nsamples, ntimepts, model._n_rec_pts()), dtype=np.float32)
         else:
             f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float32)
-        f.create_dataset('binQA', shape=(nsamples,), dtype=np.float32)
+        f.create_dataset('binQA', shape=(nsamples,), dtype=np.int32)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
 
