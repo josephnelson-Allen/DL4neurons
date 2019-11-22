@@ -13,6 +13,8 @@ import numpy as np
 
 from neuron import h, gui
 
+from get_rec_pts import get_rec_points
+
 class BaseModel(object):
     def __init__(self, *args, **kwargs):
         h.celsius = kwargs.pop('celsius', 37)
@@ -121,9 +123,8 @@ class BBP(BaseModel):
     STIM_MULTIPLIER = 1.0
 
     def _get_rec_pts(self, n=20):
-        # TODO: Use Roy's code
-        return np.random.choice(list(self.entire_cell.all), n, replace=False)
-
+        return get_rec_points(self.entire_cell)
+        
     def _n_rec_pts(self):
         return len(self._get_rec_pts())
 
