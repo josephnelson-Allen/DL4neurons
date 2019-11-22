@@ -139,9 +139,9 @@ def create_h5(args, nsamples):
         stim = get_stim(args)
         ntimepts = len(stim)
         if args.model == 'BBP':
-            f.create_dataset('voltages', shape=(nsamples, ntimepts, model._n_rec_pts()), dtype=np.float32)
+            f.create_dataset('voltages', shape=(nsamples, ntimepts, model._n_rec_pts()), dtype=np.int16)
         else:
-            f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.float32)
+            f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.int16)
         f.create_dataset('binQA', shape=(nsamples,), dtype=np.int32)
         f.create_dataset('stim', data=stim)
     log.info("Done.")
@@ -174,7 +174,7 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False):
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.debug("opened h5")
         log.debug(str(params))
-        f['voltages'][start:stop, ...] = buf
+        f['voltages'][start:stop, ...] = (buf*300).clip(-32767,32767).astype(np.int16)
         f['binQA'][start:stop] = qa
         if not args.blind:
             f['phys_par'][start:stop, :] = params
