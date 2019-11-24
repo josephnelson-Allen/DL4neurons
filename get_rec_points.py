@@ -28,7 +28,6 @@ def get_sec_list():
     objref root
     root = new SectionRef()
     if (root.has_parent()){
-	print secname()
 	root = root.root()
 	}
     ''')
@@ -119,7 +118,7 @@ def get_rec_points(hobj):
             dist_list.append(axon_dist)
             rec_list.append(dend_sec)
             dist_list.append(dend_dist)
-    print_secs_dists(rec_list,dist_list)
+    # print_secs_dists(rec_list,dist_list)
     return rec_list
     
 def get_rec_list():
@@ -137,7 +136,7 @@ def get_rec_list():
         dist_list.append(dend_dist)
     rec_list = [sec_list[0]] + rec_list
     dist_list = [0] + dist_list
-    print_secs_dists(rec_list,dist_list)
+    # print_secs_dists(rec_list,dist_list)
     return rec_list
 
         
