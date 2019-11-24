@@ -273,7 +273,7 @@ def main(args):
     if args.trivial_parallel and args.outfile and '{NODEID}' in args.outfile:
         args.outfile = args.outfile.replace('{NODEID}', os.environ['SLURM_PROCID'])
     
-    if (not args.outfile) and (not args.force) and (args.plot is None):
+    if (not args.outfile) and (not args.force) and (args.plot is None) and (not args.create_params):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
@@ -296,7 +296,7 @@ def main(args):
 
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
     model.create_cell()
-    
+
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
         start, stop = get_mpi_idx(args, len(all_paramsets))
@@ -328,7 +328,6 @@ def main(args):
             log.info("Processed {} samples".format(i))
         log.debug("About to run with params = {}".format(params))
 
-        # model = MODELS_BY_NAME[args.model](*params, log=log, celsius=args.celsius)
         model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i, *params)
         data = model.simulate(stim, args.dt)
         if args.model == 'BBP':
@@ -417,7 +416,7 @@ if __name__ == '__main__':
     # CHOOSE STIMULUS
     parser.add_argument(
         '--stim-file', type=str, default=os.path.join('stims', 'chirp23a.csv'),
-        help="Use a csv for the stimulus file, overrides --stim-type and --stim-idx and --tstop")
+        help="csv to use as the stimulus")
     parser.add_argument(
         '--stim-dc-offset', type=float, default=0.0,
         help="apply a DC offset to the stimulus (shift it). Happens after --stim-multiplier"
