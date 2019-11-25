@@ -103,22 +103,9 @@ def get_stim(args, mult=None):
 
 
 def _qa(args, trace, thresh=20):
-    trace = trace[:-1]
-    # stim = get_stim(args, mult=1)
-    # hyp_trace = trace[stim == -1.0]
-    # main_trace = trace[(stim != -1) & (stim != 0)]
-    # hyp_trace = np.concatenate([trace[4000:5400], trace[20500:22000]])
-    hyp_trace = trace[4000:5400]
-    main_trace = trace[6001:16999]
-
-    hyp_crossings = np.diff( (hyp_trace > thresh).astype('int') )
-    main_crossings = np.diff( (main_trace > thresh).astype('int') )
-    num_hyp_crossings = np.sum(hyp_crossings == 1)
-    num_main_crossings = np.sum(main_crossings == 1)
-
-    # print(num_hyp_crossings, num_main_crossings)
-    
-    return (num_hyp_crossings == 0) and (num_main_crossings > 0) and (num_main_crossings <= 30)
+    trace = trace[:-1] # My setup runs one extra timepoint. Too lazy to figure out why...
+    num_aps = np.diff((trace > thresh).astype('int'))
+    return num_aps > 0
 
 
 def create_h5(args, nsamples):
