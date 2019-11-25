@@ -97,11 +97,6 @@ class BaseModel(object):
         return OrderedDict([(k, np.array(v)) for (k, v) in hoc_vectors.items()])
 
 
-from collections import defaultdict
-BBP_PARAMS_BY_ETYPE = defaultdict(tuple)
-BBP_PARAMS_BY_ETYPE['cADpyr'] = ('gImbar_Im_apical', 'gIhbar_Ih_basal', 'gIhbar_Ih_somatic')
-BBP_PARAMS_BY_ETYPE['cIR'] = ('gIhbar_Ih_basal', 'gImbar_Im_somatic')
-
 class BBP(BaseModel):
     def __init__(self, m_type, e_type, cell_i, *args, **kwargs):
         with open('cells.json') as infile:
@@ -112,15 +107,17 @@ class BBP(BaseModel):
         self.cell_i = cell_i
         self.cell_kwargs = cells[m_type][e_type][cell_i]
 
-        self.PARAM_NAMES = BBP_PARAMS_BY_ETYPE[self.e_type]
-        # if args are not passed in, self variables will not be
-        # set. This is different from other models where default
-        # params would be taken. Here self.DEFAULT_PARAMS isn't set
-        # until create_cell() is called
-
         super(BBP, self).__init__(*args, **kwargs)
 
     STIM_MULTIPLIER = 1.0
+
+    @property
+    def PARAM_RANGES(self):
+        if not self.DEFAULT_PARAMS:
+            raise NotImplementedError(
+                "Must call create_cell() before accessing PARAM_RANGES for BBP cell"
+            )
+        return [(x/10.0, x*10.0) for x in self.DEFAULT_PARAMS]
 
     def _get_rec_pts(self):
         return get_rec_points(self.entire_cell)
@@ -218,6 +215,39 @@ class BBP(BaseModel):
 
         return hobj.soma[0]
 
+class BBPInh(BBP):
+    PARAM_NAMES = (
+        'gNaTa_tbar_NaTa_t_axonal',
+        'gK_Tstbar_K_Tst_axonal',
+        'gNap_Et2bar_Nap_Et2_axonal',
+        'gCa_LVAstbar_Ca_LVAst_axonal',
+        'gSK_E2bar_SK_E2_axonal',
+        'gK_Pstbar_K_Pst_axonal',
+        'gSKv3_1bar_SKv3_1_axonal',
+        'g_pas_axonal',
+        'gImbar_Im_axonal',
+        'gCabar_Ca_axonal',
+        'gK_Tstbar_K_Tst_somatic',
+        'gNap_Et2bar_Nap_Et2_somatic',
+        'gCa_LVAstbar_Ca_LVAst_somatic',
+        'gSK_E2bar_SK_E2_somatic',
+        'gK_Pstbar_K_Pst_somatic',
+        'gSKv3_1bar_SKv3_1_somatic',
+        'g_pas_somatic',
+        'gImbar_Im_somatic',
+        'gNaTs2_tbar_NaTs2_t_somatic',
+        'gCabar_Ca_somatic',
+        'gK_Tstbar_K_Tst_dend',
+        'gSKv3_1bar_SKv3_1_dend',
+        'gNap_Et2bar_Nap_Et2_dend',
+        'gNaTs2_tbar_NaTs2_t_dend',
+        'gIhbar_Ih_dend',
+        'g_pas_dend',
+        'gImbar_Im_dend',
+    )
+    DEFAULT_PARAMS = (
+        
+    )
 
 
 class Mainen(BaseModel):
