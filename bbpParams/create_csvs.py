@@ -6,7 +6,7 @@ toExtract = 'distribute($o1.'
 for f in os.listdir('./'):
     if '.' in f:
         continue
-    saveTo = os.path.join('/global/cscratch1/sd/hdong/bbp/bbp_biophysics_web_data/', f)
+    saveTo = os.path.join('./', f)
     os.mkdir(saveTo)
     for folder in os.listdir(os.path.join('./', f)):
         if '.' not in folder and folder[-1] == '1':
