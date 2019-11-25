@@ -35,12 +35,10 @@ def _rangeify(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
 
-def clean_params(args):
+def clean_params(args, model):
     """
     convert to float, use defaults where requested
     """
-    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
     defaults = model.DEFAULT_PARAMS
     if args.params:
         assert len(args.params) == len(defaults)
@@ -50,8 +48,7 @@ def clean_params(args):
         return [float('inf')] * len(defaults)
 
 
-def report_random_params(args, params):
-    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+def report_random_params(args, params, model):
     param_names = model.PARAM_NAMES
     for param, name in zip(params, param_names):
         if param == float('inf'):
@@ -60,12 +57,11 @@ def report_random_params(args, params):
     
 def get_random_params(args, n=1):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
     ranges = model.PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
-    params = clean_params(args)
-    report_random_params(args, params)
+    params = clean_params(args, model)
+    report_random_params(args, params, model)
     for i, (_range, param) in enumerate(zip(ranges, params)):
         # Default params swapped in by clean_params()
         if param == float('inf'):
@@ -111,7 +107,6 @@ def _qa(args, trace, thresh=20):
 def create_h5(args, nsamples):
     log.info("Creating h5 file {}".format(args.outfile))
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell() # needed to assign model.PARAM_RANGES
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = len(model.PARAM_NAMES)
@@ -136,7 +131,6 @@ def create_h5(args, nsamples):
 
 def _normalize(args, data, minmax=1):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
     nsamples = data.shape[0]
     mins = np.array([tup[0] for tup in model.PARAM_RANGES])
     mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
@@ -251,7 +245,8 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
     else:
         if m_type is None or e_type is None:
             raise ValueError('Must specify --m-type and --e-type when using BBP')
-        return models.BBP(m_type, e_type, cell_i, *params, log=log)
+        model = models.BBP(m_type, e_type, cell_i, *params, log=log)
+        return model
 
 def main(args):
     # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
@@ -282,7 +277,6 @@ def main(args):
         raise ValueError("Must pass --param-file with --blind")
 
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
@@ -396,9 +390,16 @@ if __name__ == '__main__':
         'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
     )
     parser.add_argument('--param-file', '--params-file', type=str, default=None)
-    parser.add_argument('--blind', action='store_true', default=False,
-                        help='do not save parameter values in the output nwb. ' + \
-                        'You better have saved them using --param-file')
+    parser.add_argument(
+        '--blind', action='store_true', default=False,
+        help='do not save parameter values in the output nwb. ' + \
+        'You better have saved them using --param-file'
+    )
+    parser.add_argument(
+        '--linear', action='store_true', type=bool, default=False,
+        help='when selecting random params, distribute them uniformly' + \
+        'throughout the range, rather than exponentially'
+    )
 
     # CHOOSE STIMULUS
     parser.add_argument(
