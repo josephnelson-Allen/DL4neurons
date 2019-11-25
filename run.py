@@ -31,9 +31,13 @@ from neuron import h, gui
 
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
-def _rangeify(data, _range):
+def _rangeify_linear(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
+def _rangeify_exponential(data, _range):
+    return np.exp(
+        data * (np.log(_range[1]) - np.log(_range[0])) + np.log(_range[0])
+    )
 
 def clean_params(args, model):
     """
@@ -61,11 +65,12 @@ def get_random_params(args, n=1):
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
     params = clean_params(args, model)
+    rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
     for i, (_range, param) in enumerate(zip(ranges, params)):
         # Default params swapped in by clean_params()
         if param == float('inf'):
-            rand[:, i] = _rangeify(rand[:, i], _range)
+            rand[:, i] = rangeify(rand[:, i], _range)
         else:
             rand[:, i] = np.array([param] * n)
     return rand
@@ -246,6 +251,7 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
         if m_type is None or e_type is None:
             raise ValueError('Must specify --m-type and --e-type when using BBP')
         model = models.BBP(m_type, e_type, cell_i, *params, log=log)
+        model.create_cell()
         return model
 
 def main(args):
@@ -396,7 +402,7 @@ if __name__ == '__main__':
         'You better have saved them using --param-file'
     )
     parser.add_argument(
-        '--linear', action='store_true', type=bool, default=False,
+        '--linear', action='store_true', default=False,
         help='when selecting random params, distribute them uniformly' + \
         'throughout the range, rather than exponentially'
     )
