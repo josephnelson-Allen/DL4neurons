@@ -194,19 +194,18 @@ class BBP(BaseModel):
             # should use defaults, already set
             for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
                 if sec == 'apical':
-                    for sec in hobj.apical:
-                        # log.debug('setting {} apical to {}'.format(
-                        # name, getattr(self, param_name)))
-                        setattr(sec, name, getattr(self, param_name))
+                    seclist = hobj.apical
                 elif sec == 'basal':
-                    for sec in hobj.basal:
-                        # log.debug('setting {} basal to {}'.format(
-                        # name, getattr(self, param_name)))
-                        setattr(sec, name, getattr(self, param_name))
+                    seclist = hobj.basal
+                elif sec == 'dend':
+                    seclist = list(hobj.basal) + list(hobj.apical)
                 elif sec == 'somatic':
-                    for sec in hobj.somatic:
-                        # log.debug('setting {} somatic to {}'.format(
-                        # name, getattr(self, param_name)))
+                    seclist = hobj.somatic
+                elif sec == 'axonal':
+                    seclist = hobj.axonal
+
+                for sec in seclist:
+                    if hasattr(sec, name):
                         setattr(sec, name, getattr(self, param_name))
 
         # do not garbage collect
@@ -243,6 +242,10 @@ class BBPInh(BBP):
         'gIhbar_Ih_dend',
         'g_pas_dend',
         'gImbar_Im_dend',
+        'gkbar_StochKv_somatic',
+        'gkbar_KdShu2007_somatic',
+        'gkbar_StochKv_dend',
+        'gkbar_KdShu2007_dend',
     )
 
 class BBPExc(BBP):
