@@ -31,16 +31,18 @@ from neuron import h, gui
 
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
-def _rangeify(data, _range):
+def _rangeify_linear(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
+def _rangeify_exponential(data, _range):
+    return np.exp(
+        data * (np.log(_range[1]) - np.log(_range[0])) + np.log(_range[0])
+    )
 
-def clean_params(args):
+def clean_params(args, model):
     """
     convert to float, use defaults where requested
     """
-    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
     defaults = model.DEFAULT_PARAMS
     if args.params:
         assert len(args.params) == len(defaults)
@@ -50,8 +52,7 @@ def clean_params(args):
         return [float('inf')] * len(defaults)
 
 
-def report_random_params(args, params):
-    model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
+def report_random_params(args, params, model):
     param_names = model.PARAM_NAMES
     for param, name in zip(params, param_names):
         if param == float('inf'):
@@ -60,16 +61,16 @@ def report_random_params(args, params):
     
 def get_random_params(args, n=1):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
     ranges = model.PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
-    params = clean_params(args)
-    report_random_params(args, params)
+    params = clean_params(args, model)
+    rangeify = _rangeify_linear if args.linear else _rangeify_exponential
+    report_random_params(args, params, model)
     for i, (_range, param) in enumerate(zip(ranges, params)):
         # Default params swapped in by clean_params()
         if param == float('inf'):
-            rand[:, i] = _rangeify(rand[:, i], _range)
+            rand[:, i] = rangeify(rand[:, i], _range)
         else:
             rand[:, i] = np.array([param] * n)
     return rand
@@ -104,14 +105,14 @@ def get_stim(args, mult=None):
 
 def _qa(args, trace, thresh=20):
     trace = trace[:-1] # My setup runs one extra timepoint. Too lazy to figure out why...
-    num_aps = np.diff((trace > thresh).astype('int'))
+    thresh_crossings = np.diff((trace > thresh).astype('int'))
+    num_aps = np.sum(thresh_crossings == 1)
     return num_aps > 0
 
 
 def create_h5(args, nsamples):
     log.info("Creating h5 file {}".format(args.outfile))
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell() # needed to assign model.PARAM_RANGES
     with h5py.File(args.outfile, 'w') as f:
         # write params
         ndim = len(model.PARAM_NAMES)
@@ -138,7 +139,6 @@ def create_h5(args, nsamples):
 
 def _normalize(args, data, minmax=1):
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
     nsamples = data.shape[0]
     mins = np.array([tup[0] for tup in model.PARAM_RANGES])
     mins = np.tile(mins, (nsamples, 1)) # stacked to same shape as input
@@ -253,10 +253,14 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
     else:
         if m_type is None or e_type is None:
             raise ValueError('Must specify --m-type and --e-type when using BBP')
+        
         if e_type == 'cADpyr':
-            return models.BBPExc(m_type, e_type, cell_i, *params, log=log)
+            model = models.BBPExc(m_type, e_type, cell_i, *params, log=log)
         else:
-            return models.BBPInh(m_type, e_type, cell_i, *params, log=log)
+            model = models.BBPInh(m_type, e_type, cell_i, *params, log=log)
+            
+        model.create_cell()
+        return model
 
 def main(args):
     # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
@@ -287,7 +291,6 @@ def main(args):
         raise ValueError("Must pass --param-file with --blind")
 
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
-    model.create_cell()
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
@@ -401,13 +404,20 @@ if __name__ == '__main__':
         'and specific values 3.0 and 4.0 for the 3rd and 4th params, use "def inf 3.0 4.0"'
     )
     parser.add_argument('--param-file', '--params-file', type=str, default=None)
-    parser.add_argument('--blind', action='store_true', default=False,
-                        help='do not save parameter values in the output nwb. ' + \
-                        'You better have saved them using --param-file')
+    parser.add_argument(
+        '--blind', action='store_true', default=False,
+        help='do not save parameter values in the output nwb. ' + \
+        'You better have saved them using --param-file'
+    )
+    parser.add_argument(
+        '--linear', action='store_true', default=False,
+        help='when selecting random params, distribute them uniformly' + \
+        'throughout the range, rather than exponentially'
+    )
 
     # CHOOSE STIMULUS
     parser.add_argument(
-        '--stim-file', type=str, default=os.path.join('stims', 'chirp23a.csv'),
+        '--stim-file', type=str, default=os.path.join('stims', 'chaotic_1.csv'),
         help="csv to use as the stimulus")
     parser.add_argument(
         '--stim-dc-offset', type=float, default=0.0,
