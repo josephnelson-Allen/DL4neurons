@@ -107,6 +107,9 @@ class BBP(BaseModel):
         self.cell_i = cell_i
         self.cell_kwargs = cells[m_type][e_type][cell_i]
 
+        # If args are not passed in, we use default arguments. The value of self.use_defaults is checked in BBP.create_cell()
+        self.use_defaults = (len(args) == 0)
+
         super(BBP, self).__init__(*args, **kwargs)
 
     STIM_MULTIPLIER = 1.0
@@ -184,12 +187,12 @@ class BBP(BaseModel):
         self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
         self.PARAM_RANGES = tuple(self.PARAM_RANGES)
 
-        # change biophysics parameters        
-        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
-            if hasattr(self, param_name):
-                # this would not be the case if no parameters were
-                # passed in to the constructor, in which case we
-                # should use defaults, already set
+        # change biophysics parameters
+        if not self.use_defaults:
+            # this would not be the case if no parameters were
+            # passed in to the constructor, in which case we
+            # should use defaults, already set
+            for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
                 if sec == 'apical':
                     for sec in hobj.apical:
                         # log.debug('setting {} apical to {}'.format(
