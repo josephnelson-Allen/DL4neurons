@@ -111,14 +111,6 @@ class BBP(BaseModel):
 
     STIM_MULTIPLIER = 1.0
 
-    @property
-    def PARAM_RANGES(self):
-        if not self.DEFAULT_PARAMS:
-            raise NotImplementedError(
-                "Must call create_cell() before accessing PARAM_RANGES for BBP cell"
-            )
-        return [(x/10.0, x*10.0) for x in self.DEFAULT_PARAMS]
-
     def _get_rec_pts(self):
         return get_rec_points(self.entire_cell)
         
@@ -177,12 +169,16 @@ class BBP(BaseModel):
         self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []
         name_sec = [p.rsplit('_', 1) for p in self.PARAM_NAMES]
         for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
-            if sec == 'apical':
+            if sec == 'apical' or sec == 'dend':
                 default = getattr(list(hobj.apical)[0], name)
             elif sec == 'basal':
                 default = getattr(list(hobj.basal)[0], name)
             elif sec == 'somatic':
                 default = getattr(list(hobj.somatic)[0], name)
+            elif sec == 'axonal':
+                default = getattr(list(hobj.axonal)[0], name)
+            else:
+                raise NotImplementedError("Unrecognized section identifier: {}".format(sec))
             self.DEFAULT_PARAMS.append(default)
             self.PARAM_RANGES.append((default/10.0, default*10.0))
         self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
@@ -245,8 +241,27 @@ class BBPInh(BBP):
         'g_pas_dend',
         'gImbar_Im_dend',
     )
-    DEFAULT_PARAMS = (
-        
+
+class BBPExc(BBP):
+    PARAM_NAMES = (
+        'gNaTs2_tbar_NaTs2_t_apical',
+        'gSKv3_1bar_SKv3_1_apical',
+        'gImbar_Im_apical',
+        'gNaTa_tbar_NaTa_t_axonal',
+        'gK_Tstbar_K_Tst_axonal',
+        'gNap_Et2bar_Nap_Et2_axonal',
+        'gSK_E2bar_SK_E2_axonal',
+        'gCa_HVAbar_Ca_HVA_axonal',
+        'gK_Pstbar_K_Pst_axonal',
+        'gSKv3_1bar_SKv3_1_axonal',
+        'gCa_LVAstbar_Ca_LVAst_axonal',
+        'gSKv3_1bar_SKv3_1_somatic',
+        'gSK_E2bar_SK_E2_somatic',
+        'gCa_HVAbar_Ca_HVA_somatic',
+        'gNaTs2_tbar_NaTs2_t_somatic',
+        'gIhbar_Ih_somatic',
+        'gCa_LVAstbar_Ca_LVAst_somatic',
+        'gIhbar_Ih_dend',
     )
 
 

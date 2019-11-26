@@ -253,7 +253,10 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
     else:
         if m_type is None or e_type is None:
             raise ValueError('Must specify --m-type and --e-type when using BBP')
-        return models.BBP(m_type, e_type, cell_i, *params, log=log)
+        if e_type == 'cADpyr':
+            return models.BBPExc(m_type, e_type, cell_i, *params, log=log)
+        else:
+            return models.BBPInh(m_type, e_type, cell_i, *params, log=log)
 
 def main(args):
     # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
