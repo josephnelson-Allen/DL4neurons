@@ -170,8 +170,7 @@ class BBP(BaseModel):
 
         # assign self.PARAM_RANGES and self.DEFAULT_PARAMS
         self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []
-        name_sec = [p.rsplit('_', 1) for p in self.PARAM_NAMES]
-        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
+        for name, sec, param_name in self.iter_name_sec_param_name():
             if sec == 'apical' or sec == 'dend':
                 default = getattr(list(hobj.apical)[0], name)
             elif sec == 'basal':
@@ -189,21 +188,7 @@ class BBP(BaseModel):
 
         # change biophysics parameters
         if not self.use_defaults:
-            # this would not be the case if no parameters were
-            # passed in to the constructor, in which case we
-            # should use defaults, already set
-            for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
-                if sec == 'apical':
-                    seclist = hobj.apical
-                elif sec == 'basal':
-                    seclist = hobj.basal
-                elif sec == 'dend':
-                    seclist = list(hobj.basal) + list(hobj.apical)
-                elif sec == 'somatic':
-                    seclist = hobj.somatic
-                elif sec == 'axonal':
-                    seclist = hobj.axonal
-
+            for name, sec, param_name, seclist in self.iter_name_sec_param_name_seclist():
                 for sec in seclist:
                     if hasattr(sec, name):
                         setattr(sec, name, getattr(self, param_name))
@@ -212,6 +197,45 @@ class BBP(BaseModel):
         self.entire_cell = hobj
 
         return hobj.soma[0]
+
+    def iter_name_sec_param_name(self):
+        """
+        The param_names for the BBP model are <parameter>_<section>
+        This yields (<parameter>, <section>, <parameter>_<section>) for each
+        """
+        name_sec = [p.rsplit('_', 1) for p in self.PARAM_NAMES]
+        for (name, sec), param_name in zip(name_sec, self.PARAM_NAMES):
+            yield name, sec, param_name
+
+    def iter_name_sec_param_name_seclist(self):
+        """
+        The param_names for the BBP model are <parameter>_<section>
+        This yields (<parameter>, <section>, <parameter>_<section>, seclist) for each
+        where seclist is a list of the Neuron segments in that section
+        """
+        for name, sec, param_name in self.iter_name_sec_param_name():
+            if sec == 'apical':
+                seclist = hobj.apical
+            elif sec == 'basal':
+                seclist = hobj.basal
+            elif sec == 'dend':
+                seclist = list(hobj.basal) + list(hobj.apical)
+            elif sec == 'somatic':
+                seclist = hobj.somatic
+            elif sec == 'axonal':
+                seclist = hobj.axonal
+
+            yield name, sec, param_name, seclist
+            
+    def get_varied_params(self, param_names):
+        """
+        Get a list of booleans denoting whether each parameter is present in this cell or not
+        """
+        boolarray = []
+        for name, sec, param_name, seclist in self.iter_name_sec_param_name_seclist():
+            boolarray.append(hasattr(seclist[0], name))
+        return boolarray
+        
 
 class BBPInh(BBP):
     PARAM_NAMES = (
