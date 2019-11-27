@@ -89,7 +89,7 @@ def print_secs_dists(sec_names,sec_dists):
         print(dist)
   
 def get_rec_points(hobj):
-    smap = list(create_sampling_map(7))
+    smap = list(create_sampling_map(6))
     sec_list = hobj.all
     sec_dends = hobj.apical
     sec_basal = hobj.basal
@@ -118,6 +118,7 @@ def get_rec_points(hobj):
             dist_list.append(axon_dist)
             rec_list.append(dend_sec)
             dist_list.append(dend_dist)
+	smap=[]
     # print_secs_dists(rec_list,dist_list)
     return rec_list
     
