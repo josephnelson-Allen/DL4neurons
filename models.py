@@ -123,8 +123,8 @@ class BBP(BaseModel):
     def attach_recordings(self, ntimepts):
         hoc_vectors = OrderedDict()
         for sec in self._get_rec_pts():
-            hoc_vectors[sec.hname] = h.Vector(ntimepts)
-            hoc_vectors[sec.hname].record(sec(0.5)._ref_v)
+            hoc_vectors[sec.hname()] = h.Vector(ntimepts)
+            hoc_vectors[sec.hname()].record(sec(0.5)._ref_v)
 
         return hoc_vectors
 
@@ -217,7 +217,7 @@ class BBP(BaseModel):
 
             yield name, sec, param_name, seclist
             
-    def get_varied_params(self, param_names):
+    def get_varied_params(self):
         """
         Get a list of booleans denoting whether each parameter is varied in this cell or not
         A parameter is varied if 1.) it is present in the section, and 2.) its value is nonzero
@@ -227,15 +227,22 @@ class BBP(BaseModel):
             boolarray.append(getattr(seclist[0], name, 0) != 0)
         return boolarray
 
-    def write_metadata(self, filename):
-        with open(filename, 'w') as outfile:
-            pass
+    def get_metadata(self):
+        """return metadata as a dict"""
+        params = [('skip_' if not present else '') + param
+                  for param, present
+                  in zip(self.PARAM_NAMES, self.get_varied_params())]
+
+        return {
+            'varParL': params,
+            'probeName': self.get_probe_names(),
+        }
 
     def get_probe_names(self):
         return ['soma'] + \
             [
-                sec.hname.rsplit('_')[-1].replace('[', '_').replace(']', '_')
-                for sec in self._get_rec_points()[1:]
+                sec.hname().rsplit('.')[-1].replace('[', '_').replace(']', '')
+                for sec in self._get_rec_pts()[1:]
             ]
         
 

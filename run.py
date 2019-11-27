@@ -10,6 +10,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+import yaml
 
 from stimulus import stims, add_stims
 import models
@@ -29,6 +30,8 @@ except:
     
 from neuron import h, gui
 
+VOLTS_SCALE = 300
+
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
 def _rangeify_linear(data, _range):
@@ -38,6 +41,21 @@ def _rangeify_exponential(data, _range):
     return np.exp(
         data * (np.log(_range[1]) - np.log(_range[0])) + np.log(_range[0])
     )
+
+def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
+    if model != 'BBP':
+        return MODELS_BY_NAME[model](*params, log=log)
+    else:
+        if m_type is None or e_type is None:
+            raise ValueError('Must specify --m-type and --e-type when using BBP')
+        
+        if e_type == 'cADpyr':
+            model = models.BBPExc(m_type, e_type, cell_i, *params, log=log)
+        else:
+            model = models.BBPInh(m_type, e_type, cell_i, *params, log=log)
+            
+        model.create_cell()
+        return model
 
 def clean_params(args, model):
     """
@@ -164,7 +182,7 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False):
     with h5py.File(args.outfile, 'a', **kwargs) as f:
         log.debug("opened h5")
         log.debug(str(params))
-        f['voltages'][start:stop, ...] = (buf*300).clip(-32767,32767).astype(np.int16)
+        f['voltages'][start:stop, ...] = (buf*VOLTS_SCALE).clip(-32767,32767).astype(np.int16)
         f['binQA'][start:stop] = qa
         if not args.blind:
             f['phys_par'][start:stop, :] = params
@@ -172,6 +190,27 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False):
         log.info("saved h5")
     log.info("closed h5")
 
+
+def write_metadata(args, model):
+    log.info("writing metadata")
+    if args.model != 'BBP' or not args.metadata_file:
+        return
+    def serialize(val):
+        if isinstance(val, list):
+            body = ', '.join(val)
+            return '[' + body + ']'
+        if isinstance(val, dict):
+            body = ', '.join('{}: {}'.format(k, v) for k, v in val.items())
+            return '{' + body + '}'
+        return val
+    metadata = model.get_metadata()
+    metadata['timeAxis'] = {'step': args.dt, 'unit': "(ms)"}
+    metadata['voltsScale'] = VOLTS_SCALE
+    with open(args.metadata_file, 'w') as outfile:
+        for k,v in metadata.items():
+            print('{}: {}'.format(k, serialize(v)), file=outfile)
+    log.info("wrote metadata")
+        
 
 def plot(args, data, stim):
     if args.plot is not None:
@@ -248,21 +287,6 @@ def lock_params(args, paramsets):
         paramsets[:, target_i] = paramsets[:, source_i]
 
 
-def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
-    if model != 'BBP':
-        return MODELS_BY_NAME[model](*params, log=log)
-    else:
-        if m_type is None or e_type is None:
-            raise ValueError('Must specify --m-type and --e-type when using BBP')
-        
-        if e_type == 'cADpyr':
-            model = models.BBPExc(m_type, e_type, cell_i, *params, log=log)
-        else:
-            model = models.BBPInh(m_type, e_type, cell_i, *params, log=log)
-            
-        model.create_cell()
-        return model
-
 def main(args):
     # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
     # log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
@@ -336,6 +360,7 @@ def main(args):
     # Save to disk
     if args.outfile:
         save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel)
+        write_metadata(args, model)
 
 
 if __name__ == '__main__':
@@ -356,6 +381,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to')
+    parser.add_argument('--metadata-file', type=str, required=False, default=None,
+                        help='for BBP only')
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit " \
                         + "(useful for writing to the file from multiple ranks)"
