@@ -128,7 +128,7 @@ class BBP(BaseModel):
 
         return hoc_vectors
 
-    def create_cell(self, no_biophys=False):
+    def create_cell(self):
         h.load_file('stdrun.hoc')
         h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
@@ -164,9 +164,6 @@ class BBP(BaseModel):
         self.entire_cell = hobj # do not garbage collect
 
         os.chdir(cwd)
-
-        if no_biophys:
-            return hobj.soma[0]
 
         # assign self.PARAM_RANGES and self.DEFAULT_PARAMS
         self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []
@@ -228,6 +225,17 @@ class BBP(BaseModel):
         for name, sec, param_name, seclist in self.iter_name_sec_param_name_seclist():
             boolarray.append(hasattr(seclist[0], name))
         return boolarray
+
+    def write_metadata(self, filename):
+        with open(filename, 'w') as outfile:
+            pass
+
+    def get_probe_names(self):
+        return ['soma'] + \
+            [
+                sec.hname.rsplit('_')[-1].replace('[', '_').replace(']', '_')
+                for sec in self.get_rec_points()[1:]
+            ]
         
 
 class BBPInh(BBP):
