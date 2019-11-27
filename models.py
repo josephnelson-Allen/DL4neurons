@@ -235,7 +235,7 @@ class BBP(BaseModel):
         return ['soma'] + \
             [
                 sec.hname.rsplit('_')[-1].replace('[', '_').replace(']', '_')
-                for sec in self.get_rec_points()[1:]
+                for sec in self._get_rec_points()[1:]
             ]
         
 
