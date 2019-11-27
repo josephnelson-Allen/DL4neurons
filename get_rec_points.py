@@ -118,7 +118,7 @@ def get_rec_points(hobj):
             dist_list.append(axon_dist)
             rec_list.append(dend_sec)
             dist_list.append(dend_dist)
-	smap=[]
+    smap=[]
     # print_secs_dists(rec_list,dist_list)
     return rec_list
     
