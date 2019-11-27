@@ -219,11 +219,12 @@ class BBP(BaseModel):
             
     def get_varied_params(self, param_names):
         """
-        Get a list of booleans denoting whether each parameter is present in this cell or not
+        Get a list of booleans denoting whether each parameter is varied in this cell or not
+        A parameter is varied if 1.) it is present in the section, and 2.) its value is nonzero
         """
         boolarray = []
         for name, sec, param_name, seclist in self.iter_name_sec_param_name_seclist():
-            boolarray.append(hasattr(seclist[0], name))
+            boolarray.append(getattr(seclist[0], name, 0) != 0)
         return boolarray
 
     def write_metadata(self, filename):
