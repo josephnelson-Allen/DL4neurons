@@ -355,7 +355,7 @@ if __name__ == '__main__':
     parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
-                        help='nwb file to save to. Must exist unless --create is passed')
+                        help='nwb file to save to')
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit " \
                         + "(useful for writing to the file from multiple ranks)"

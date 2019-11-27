@@ -158,7 +158,7 @@ class BBP(BaseModel):
         # For some reason, need to instantiate cell from within the templates directory?
         cwd = os.getcwd()
         os.chdir(os.path.join(templates_dir, cell_dir))
-
+        
         SYNAPSES, NO_SYNAPSES = 1, 0
         hobj = getattr(h, template_name)(NO_SYNAPSES)
         self.entire_cell = hobj # do not garbage collect
@@ -199,19 +199,19 @@ class BBP(BaseModel):
         """
         The param_names for the BBP model are <parameter>_<section>
         This yields (<parameter>, <section>, <parameter>_<section>, seclist) for each
-        where seclist is a list of the Neuron segments in that section
+        where seclist is a Python list of the Neuron segments in that section
         """
         for name, sec, param_name in self.iter_name_sec_param_name():
             if sec == 'apical':
-                seclist = self.entire_cell.apical
+                seclist = list(self.entire_cell.apical)
             elif sec == 'basal':
-                seclist = self.entire_cell.basal
+                seclist = list(self.entire_cell.basal)
             elif sec == 'dend':
                 seclist = list(self.entire_cell.basal) + list(self.entire_cell.apical)
             elif sec == 'somatic':
-                seclist = self.entire_cell.somatic
+                seclist = list(self.entire_cell.somatic)
             elif sec == 'axonal':
-                seclist = self.entire_cell.axonal
+                seclist = list(self.entire_cell.axonal)
             else:
                 raise NotImplementedError("Unrecognized section identifier: {}".format(sec))
 
