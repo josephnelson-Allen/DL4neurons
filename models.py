@@ -161,26 +161,17 @@ class BBP(BaseModel):
 
         SYNAPSES, NO_SYNAPSES = 1, 0
         hobj = getattr(h, template_name)(NO_SYNAPSES)
+        self.entire_cell = hobj # do not garbage collect
 
         os.chdir(cwd)
 
         if no_biophys:
-            self.entire_cell = hobj
             return hobj.soma[0]
 
         # assign self.PARAM_RANGES and self.DEFAULT_PARAMS
         self.PARAM_RANGES, self.DEFAULT_PARAMS = [], []
-        for name, sec, param_name in self.iter_name_sec_param_name():
-            if sec == 'apical' or sec == 'dend':
-                default = getattr(list(hobj.apical)[0], name)
-            elif sec == 'basal':
-                default = getattr(list(hobj.basal)[0], name)
-            elif sec == 'somatic':
-                default = getattr(list(hobj.somatic)[0], name)
-            elif sec == 'axonal':
-                default = getattr(list(hobj.axonal)[0], name)
-            else:
-                raise NotImplementedError("Unrecognized section identifier: {}".format(sec))
+        for name, sec, param_name, seclist in self.iter_name_sec_param_name_seclist():
+            default = getattr(seclist[0], name, -1)
             self.DEFAULT_PARAMS.append(default)
             self.PARAM_RANGES.append((default/10.0, default*10.0))
         self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
@@ -192,9 +183,9 @@ class BBP(BaseModel):
                 for sec in seclist:
                     if hasattr(sec, name):
                         setattr(sec, name, getattr(self, param_name))
-
-        # do not garbage collect
-        self.entire_cell = hobj
+                    else:
+                        log.debug("Not setting {} (absent from this cell)".format(param_name))
+                        continue
 
         return hobj.soma[0]
 
@@ -215,15 +206,17 @@ class BBP(BaseModel):
         """
         for name, sec, param_name in self.iter_name_sec_param_name():
             if sec == 'apical':
-                seclist = hobj.apical
+                seclist = self.entire_cell.apical
             elif sec == 'basal':
-                seclist = hobj.basal
+                seclist = self.entire_cell.basal
             elif sec == 'dend':
-                seclist = list(hobj.basal) + list(hobj.apical)
+                seclist = list(self.entire_cell.basal) + list(self.entire_cell.apical)
             elif sec == 'somatic':
-                seclist = hobj.somatic
+                seclist = self.entire_cell.somatic
             elif sec == 'axonal':
-                seclist = hobj.axonal
+                seclist = self.entire_cell.axonal
+            else:
+                raise NotImplementedError("Unrecognized section identifier: {}".format(sec))
 
             yield name, sec, param_name, seclist
             
