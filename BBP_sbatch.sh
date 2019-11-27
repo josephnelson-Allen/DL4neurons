@@ -27,7 +27,7 @@ NSAMPLES=5
 stimname=chaotic_1
 stimfile=stims/${stimname}.csv
 
-METADATA_FILE = $RUNDIR/meta.yaml
+METADATA_FILE=$RUNDIR/meta.yaml
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 FILENAME=${DSET_NAME}_${stimname}
 OUTFILE=$RUNDIR/$FILENAME_\{NODEID\}.h5

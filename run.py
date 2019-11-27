@@ -195,6 +195,17 @@ def write_metadata(args, model):
     log.info("writing metadata")
     if args.model != 'BBP' or not args.metadata_file:
         return
+    
+    params = [('skip_' if not present else '') + param
+              for param, present
+              in zip(model.PARAM_NAMES, model.get_varied_params())]
+    metadata = {
+        'timeAxis': {'step': args.dt, 'unit': "(ms)"},
+        'voltsScale': VOLTS_SCALE,
+        'varParL': params,
+        'probeName': model.get_probe_names(),
+    }
+
     def serialize(val):
         if isinstance(val, list):
             body = ', '.join(val)
@@ -203,9 +214,7 @@ def write_metadata(args, model):
             body = ', '.join('{}: {}'.format(k, v) for k, v in val.items())
             return '{' + body + '}'
         return val
-    metadata = model.get_metadata()
-    metadata['timeAxis'] = {'step': args.dt, 'unit': "(ms)"}
-    metadata['voltsScale'] = VOLTS_SCALE
+
     with open(args.metadata_file, 'w') as outfile:
         for k,v in metadata.items():
             print('{}: {}'.format(k, serialize(v)), file=outfile)

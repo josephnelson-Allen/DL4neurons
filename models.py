@@ -227,17 +227,6 @@ class BBP(BaseModel):
             boolarray.append(getattr(seclist[0], name, 0) != 0)
         return boolarray
 
-    def get_metadata(self):
-        """return metadata as a dict"""
-        params = [('skip_' if not present else '') + param
-                  for param, present
-                  in zip(self.PARAM_NAMES, self.get_varied_params())]
-
-        return {
-            'varParL': params,
-            'probeName': self.get_probe_names(),
-        }
-
     def get_probe_names(self):
         return ['soma'] + \
             [
