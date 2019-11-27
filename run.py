@@ -136,9 +136,9 @@ def create_h5(args, nsamples):
         ndim = len(model.PARAM_NAMES)
         f.create_dataset('phys_par', shape=(nsamples, ndim), dtype=np.float32)
         f.create_dataset('norm_par', shape=(nsamples, ndim), dtype=np.float32)
-        f.create_dataset('varParL', data=model.PARAM_NAMES)
+        f.create_dataset('varParL', data=np.string_(model.PARAM_NAMES))
         if args.model == 'BBP':
-            f.create_dataset('probeName', data=model.get_probe_names())
+            f.create_dataset('probeName', data=np.string_(model.get_probe_names()))
 
         # write param range
         phys_par_range = np.stack(model.PARAM_RANGES)
