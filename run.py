@@ -38,6 +38,8 @@ def _rangeify_linear(data, _range):
     return data * (_range[1] - _range[0]) + _range[0]
 
 def _rangeify_exponential(data, _range):
+    if tuple(_range) == (0, 0):
+        return 0
     return np.exp(
         data * (np.log(_range[1]) - np.log(_range[0])) + np.log(_range[0])
     )
@@ -385,7 +387,7 @@ if __name__ == '__main__':
     parser.add_argument('--m-type', choices=ALL_MTYPES, required=False, default=None)
     parser.add_argument('--e-type', choices=ALL_ETYPES, required=False, default=None)
     parser.add_argument('--cell-i', type=int, required=False, default=0)
-    parser.add_argument('--celsius', type=float, default=37)
+    parser.add_argument('--celsius', type=float, default=34)
     parser.add_argument('--dt', type=float, default=.02)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,

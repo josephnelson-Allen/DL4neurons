@@ -17,7 +17,7 @@ from get_rec_points import get_rec_points
 
 class BaseModel(object):
     def __init__(self, *args, **kwargs):
-        h.celsius = kwargs.pop('celsius', 37)
+        h.celsius = kwargs.pop('celsius', 34)
         self.log = kwargs.pop('log', print)
         self._set_self_params(*args)
 
@@ -132,6 +132,7 @@ class BBP(BaseModel):
         h.load_file('stdrun.hoc')
         h.load_file('import3d.hoc')
         cell_dir = self.cell_kwargs['model_directory']
+        log.debug("cell_dir = {}".format(cell_dir))
         template_name = self.cell_kwargs['model_template'].split(':', 1)[-1]
         templates_dir = 'hoc_templates'
         
@@ -183,6 +184,10 @@ class BBP(BaseModel):
                     else:
                         log.debug("Not setting {} (absent from this cell)".format(param_name))
                         continue
+
+        # Use -80 as initial membrane potential
+        for sec in hobj.all:
+            sec.v = -80
 
         return hobj.soma[0]
 
