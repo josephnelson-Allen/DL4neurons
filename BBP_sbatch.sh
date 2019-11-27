@@ -27,6 +27,8 @@ NSAMPLES=5
 stimname=chaotic_1
 stimfile=stims/${stimname}.csv
 
+env | grep SLURM
+
 METADATA_FILE=$RUNDIR/meta.yaml
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
 FILENAME=${DSET_NAME}_${stimname}
@@ -41,7 +43,7 @@ args="--outfile $OUTFILE --stim-file ${stimfile} --stim-multiplier 2.0 \
       --metadata-file ${METADATA_FILE}"
 
 # srun --label -n 64 --ntasks-per-node 1 python run.py $args --create # create output file
-srun --label -n 4096 --ntasks-per-node 64 python run.py $args
+srun --label -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
 
 
 echo "rawPath: $RUNDIR" >> $METADATA_FILE
