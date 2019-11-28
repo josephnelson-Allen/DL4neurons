@@ -97,6 +97,7 @@ def get_rec_points(hobj):
     sec_somatic = hobj.somatic
     for curr_sec in sec_basal :
         sec_dends.append(sec=curr_sec)
+    sec_dends.unique()
     [distances,axon_dists,dend_dists] = get_distance(sec_list,sec_dends,sec_axons)
     [axon_sampled,axon_sampled_dists] = get_recording_points(smap,sec_axons,axon_dists)
     [dend_sampled,dend_sampled_dists] = get_recording_points(smap,sec_dends,dend_dists)
