@@ -30,7 +30,7 @@ except:
     
 from neuron import h, gui
 
-VOLTS_SCALE = 300
+VOLTS_SCALE = 150
 
 MODELS_BY_NAME = models.MODELS_BY_NAME
 
@@ -84,16 +84,17 @@ def get_random_params(args, n=1):
     ranges = model.PARAM_RANGES
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
+    phys_rand = np.zeros(shape=rand.shape)
     params = clean_params(args, model)
     rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
     for i, (_range, param) in enumerate(zip(ranges, params)):
         # Default params swapped in by clean_params()
         if param == float('inf'):
-            rand[:, i] = rangeify(rand[:, i], _range)
+            phys_rand[:, i] = rangeify(rand[:, i], _range)
         else:
-            rand[:, i] = np.array([param] * n)
-    return rand
+            phys_rand[:, i] = np.array([param] * n)
+    return phys_rand, rand
 
         
 def get_mpi_idx(args, nsamples):
@@ -169,7 +170,7 @@ def _normalize(args, data, minmax=1):
     return 2*minmax * ( (data - mins)/ranges ) - minmax
 
     
-def save_h5(args, buf, qa, params, start, stop, force_serial=False):
+def save_h5(args, buf, qa, params, start, stop, force_serial=False, upar=None):
     log.info("saving into h5 file {}".format(args.outfile))
     if (comm and n_tasks > 1) and not force_serial:
         log.debug("using parallel")
@@ -188,7 +189,7 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False):
         f['binQA'][start:stop] = qa
         if not args.blind:
             f['phys_par'][start:stop, :] = params
-            f['norm_par'][start:stop, :] = _normalize(args, params)
+            f['norm_par'][start:stop, :] = upar or _normalize(args, params)
         log.info("saved h5")
     log.info("closed h5")
 
@@ -316,7 +317,7 @@ def main(args):
         exit()
 
     if args.create_params:
-        np.savetxt(args.param_file, get_random_params(args, n=args.num))
+        np.savetxt(args.param_file, get_random_params(args, n=args.num)[0])
         exit()
 
     if args.add_qa:
@@ -330,19 +331,22 @@ def main(args):
 
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
+        upar = None # TODO: save or generate unnormalized params when using --param-file
         start, stop = get_mpi_idx(args, len(all_paramsets))
         if args.num and start > args.num:
             return
         paramsets = all_paramsets[start:stop, :]
     elif args.num:
         start, stop = get_mpi_idx(args, args.num)
-        paramsets = get_random_params(args, n=stop-start)
+        paramsets, upar = get_random_params(args, n=stop-start)
     elif args.params not in (None, [None]):
         paramsets = np.atleast_2d(np.array(args.params))
+        upar = None
         start, stop = 0, 1
     else:
         log.info("Cell parameters not specified, running with default parameters")
         paramsets = np.atleast_2d(model.DEFAULT_PARAMS)
+        upar = None
         start, stop = 0, 1
 
     lock_params(args, paramsets)
@@ -370,7 +374,7 @@ def main(args):
         
     # Save to disk
     if args.outfile:
-        save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel)
+        save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel, upar=upar)
         write_metadata(args, model)
 
 
