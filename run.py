@@ -126,6 +126,8 @@ def get_stim(args, mult=None):
 
 def _qa(args, trace, thresh=20):
     trace = trace[:-1] # My setup runs one extra timepoint. Too lazy to figure out why...
+    if args.model == 'BBP':
+        trace = trace[:, 0] # Take soma potential only
     thresh_crossings = np.diff((trace > thresh).astype('int'))
     num_aps = np.sum(thresh_crossings == 1)
     return num_aps > 0
