@@ -115,7 +115,7 @@ class BBP(BaseModel):
     STIM_MULTIPLIER = 1.0
 
     def _get_rec_pts(self):
-        return get_rec_points(self.entire_cell)
+        return list(set(get_rec_points(self.entire_cell)))
         
     def _n_rec_pts(self):
         return len(self._get_rec_pts())
