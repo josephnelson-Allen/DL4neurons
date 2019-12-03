@@ -191,7 +191,7 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False, upar=None):
         f['binQA'][start:stop] = qa
         if not args.blind:
             f['phys_par'][start:stop, :] = params
-            f['norm_par'][start:stop, :] = upar if upar is not None else _normalize(args, params)
+            f['norm_par'][start:stop, :] = (upar*2 - 1) if upar is not None else _normalize(args, params)
         log.info("saved h5")
     log.info("closed h5")
 
