@@ -124,7 +124,7 @@ def get_stim(args, mult=None):
     return (np.genfromtxt(args.stim_file, dtype=np.float32) * multiplier) + args.stim_dc_offset
 
 
-def _qa(args, trace, thresh=20):
+def _qa(args, trace, thresh=0):
     trace = trace[:-1] # My setup runs one extra timepoint. Too lazy to figure out why...
     if args.model == 'BBP':
         trace = trace[:, 0] # Take soma potential only
