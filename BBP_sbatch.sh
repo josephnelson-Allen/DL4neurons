@@ -1,20 +1,20 @@
 #!/bin/bash -l
-#SBATCH -q premium
-#SBATCH -N 100
-#SBATCH --array 4-8
-#SBATCH -t 03:30:00
+#SBATCH -q debug
+#SBATCH -N 2
+#SBATCH --array 1-1
+#SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
-#SBATCH --mail-user vbaratham@berkeley.edu
+#SBATCH --mail-user vbaratham@berkeley.edu <CHANGE ME>
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.out"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.err"
+#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.out" <CHANGE ME> (any dir you have write access)
+#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.err" <CHANGE ME> (any dir you have write access)
 
 set -e
 
 # All paths relative to this, prepend this for full path name
-IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/izhi
+IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/izhi <CHANGE ME>
 cd $IZHI_WORKING_DIR
 
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
@@ -27,7 +27,7 @@ mkdir $RUNDIR
 M_TYPE=$(python cori_get_cell.py --m-type)
 E_TYPE=$(python cori_get_cell.py --e-type)
 DSET_NAME=${M_TYPE}_${E_TYPE}
-NSAMPLES=100
+NSAMPLES=10
 stimname=chaotic_1
 stimfile=stims/${stimname}.csv
 
