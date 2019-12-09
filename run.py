@@ -209,6 +209,7 @@ def write_metadata(args, model):
         'voltsScale': VOLTS_SCALE,
         'varParL': params,
         'probeName': model.get_probe_names(),
+        'bbpName': '{m}_{e}_{i}'.format(m=args.m_type, e=args.e_type, i=args.cell_i),
     }
 
     def serialize(val):
