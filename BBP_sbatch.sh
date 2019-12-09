@@ -51,7 +51,7 @@ args="--outfile $OUTFILE --stim-file ${stimfile} \
       --metadata-file ${METADATA_FILE}"
 
 # srun --label -n 64 --ntasks-per-node 1 python run.py $args --create # create output file
-srun --label -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
+srun -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
 
 
 echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
