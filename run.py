@@ -88,7 +88,9 @@ def get_random_params(args, n=1):
     params = clean_params(args, model)
     rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
-    for i, (_range, param) in enumerate(zip(ranges, params)):
+    for i, (_range, param, varied) in enumerate(zip(ranges, params, model.get_varied_params())):
+        if not varied:
+            rand[:, i] = 0.5
         # Default params swapped in by clean_params()
         if param == float('inf'):
             phys_rand[:, i] = rangeify(rand[:, i], _range)
