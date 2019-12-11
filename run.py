@@ -201,7 +201,7 @@ def write_metadata(args, model):
     if args.model != 'BBP' or not args.metadata_file:
         return
     
-    params = [('skip_' if not present else '') + param
+    params = [('const_' if not present else '') + param
               for param, present
               in zip(model.PARAM_NAMES, model.get_varied_params())]
     metadata = {
