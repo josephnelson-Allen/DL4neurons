@@ -2,7 +2,7 @@
 #SBATCH -q premium
 #SBATCH -N 100
 #SBATCH --array 4-8
-#SBATCH -t 03:30:00
+#SBATCH -t 04:00:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
@@ -18,7 +18,7 @@ IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/izhi
 cd $IZHI_WORKING_DIR
 
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
-mkdir $RUNDIR
+mkdir -p $RUNDIR
 
 # M_TYPE="L5_TTPC1"
 # E_TYPE="cADpyr"
@@ -52,6 +52,7 @@ args="--outfile $OUTFILE --stim-file ${stimfile} \
 
 # srun --label -n 64 --ntasks-per-node 1 python run.py $args --create # create output file
 srun -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
+wait
 
 
 echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
