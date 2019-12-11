@@ -24,8 +24,9 @@ mkdir $RUNDIR
 # E_TYPE="cADpyr"
 # M_TYPE="L1_HAC"
 # E_TYPE=cIR
-M_TYPE=$(python cori_get_cell.py --m-type)
-E_TYPE=$(python cori_get_cell.py --e-type)
+M_TYPE=$(python cori_get_cell_full.py --m-type)
+E_TYPE=$(python cori_get_cell_full.py --e-type)
+BBP_NAME=$(python cori_get_cell_full.py --bbp-name)
 DSET_NAME=${M_TYPE}_${E_TYPE}
 NSAMPLES=100
 stimname=chaotic_1
@@ -36,11 +37,12 @@ env | grep SLURM
 echo
 
 # OUTFILE=$RUNDIR/${DSET_NAME}_${stimname}.h5
-FILENAME=${DSET_NAME}_${stimname}
+FILENAME=${BBP_NAME}_${stimname}
 METADATA_FILE=$RUNDIR/${FILENAME}_meta.yaml
 OUTFILE=$RUNDIR/${FILENAME}_\{NODEID\}.h5
 echo "M-TYPE" ${M_TYPE}
 echo "E-TYPE" ${E_TYPE}
+echo "BBP NAME" ${BBP_NAME}
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 echo "SLURM_NODEID" ${SLURM_NODEID}
