@@ -40,6 +40,9 @@ def _rangeify_linear(data, _range):
 def _rangeify_exponential(data, _range):
     if tuple(_range) == (0, 0):
         return 0
+
+    # return np.float_power(_range[1], data) * np.float_power(_range[0], 1-data)
+
     return np.exp(
         data * (np.log(_range[1]) - np.log(_range[0])) + np.log(_range[0])
     )
