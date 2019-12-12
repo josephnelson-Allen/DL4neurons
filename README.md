@@ -55,6 +55,26 @@ DL4neurons/
        L6_UTPC_cADpyr231_2/
 ```
 
-Now you can use any m-type and e-type in the BBP model. Just add a list of parameters for the e-type you want to run, such as the ones at [line 100 of models.py](https://github.com/VBaratham/DL4neurons/blob/master/models.py#L100)
+Now you can use any m-type and e-type in the BBP model. 
 
 A programmatically-accessible list of all m_types and e_types can be found in cells.json
+
+## Some use cases
+
+### Running the same parameter set with different stimuli
+
+First, generate the parameter set csv:
+
+```
+python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --num 100 --param-file params.csv --create-params
+```
+(or you can create it by yourself, by hand, or whatever method you like. Run this code for an example of what it should look like)
+
+You must put the stimulus into a csv file. See the "stims" directory in this repo for examples.
+
+Then pass this params file along with the stimulus file to run.py:
+
+```
+python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --outfile results_stim1.h5 --param-file params.csv --stim-file stims/chaotic_1.csv
+python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --outfile results_stim2.h5 --param-file params.csv --stim-file stims/some_other_stim.csv
+```
