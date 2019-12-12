@@ -49,7 +49,7 @@ echo "SLURM_NODEID" ${SLURM_NODEID}
 echo "SLURM_PROCID" ${SLURM_PROCID}
 args="--outfile $OUTFILE --stim-file ${stimfile} \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} --cell-i 0 \
-      --num $NSAMPLES --trivial-parallel --print-every 5 \
+      --num $NSAMPLES --trivial-parallel --print-every 25 \
       --metadata-file ${METADATA_FILE}"
 
 # srun --label -n 64 --ntasks-per-node 1 python run.py $args --create # create output file

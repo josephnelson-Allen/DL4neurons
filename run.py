@@ -76,7 +76,7 @@ def report_random_params(args, params, model):
     param_names = model.PARAM_NAMES
     for param, name in zip(params, param_names):
         if param == float('inf'):
-            log.info("Using random values for '{}'".format(name))
+            log.debug("Using random values for '{}'".format(name))
 
     
 def get_random_params(args, n=1):
@@ -112,8 +112,8 @@ def get_mpi_idx(args, nsamples):
     stop = min(params_per_task * (task_i + 1), nsamples)
     if args.num:
         stop = min(stop, args.num)
-    log.info("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
-    log.info("This rank is processing param sets {} through {}".format(start, stop))
+    log.debug("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
+    log.debug("This rank is processing param sets {} through {}".format(start, stop))
 
     return start, stop
 
@@ -261,6 +261,7 @@ def plot(args, data, stim):
 
 
 def add_qa(args):
+    log.debug("adding qa")
     if comm and n_tasks > 1:
         log.debug("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
@@ -284,7 +285,7 @@ def add_qa(args):
         f.create_dataset('qa', shape=(args.num,))
         f['qa'][start:stop] = qa
 
-    log.info("done")
+    log.debug("done")
 
 
 def lock_params(args, paramsets):
@@ -305,9 +306,6 @@ def lock_params(args, paramsets):
 
 
 def main(args):
-    # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
-    # log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
-
     if args.trivial_parallel and args.outfile and '{NODEID}' in args.outfile:
         args.outfile = args.outfile.replace('{NODEID}', os.environ['SLURM_PROCID'])
     
