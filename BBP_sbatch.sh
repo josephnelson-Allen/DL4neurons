@@ -38,7 +38,7 @@ do
     stimname=chaotic_1
     stimfile=stims/${stimname}.csv
 
-    THREADS_PER_NDOE=64
+    THREADS_PER_NODE=64
 
     echo
     env | grep SLURM
