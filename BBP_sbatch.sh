@@ -17,10 +17,6 @@ set -e
 IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
-echo
-env | grep SLURM
-echo
-
 export CELLS_PER_JOB=5
 
 for i in $(seq 1 ${CELLS_PER_JOB});
