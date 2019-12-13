@@ -187,10 +187,6 @@ class BBP(BaseModel):
                         log.debug("Not setting {} (absent from this cell)".format(param_name))
                         continue
 
-        # Use -80 as initial membrane potential
-        for sec in hobj.all:
-            sec.v = -80
-
         return hobj.soma[0]
 
     def iter_name_sec_param_name(self):
