@@ -44,6 +44,8 @@ do
     BBP_NAME=$(python cori_get_cell_full.py $i --bbp-name)
     DSET_NAME=${M_TYPE}_${E_TYPE}
     NSAMPLES=100
+    NRUNS=1
+    NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
     stimname=chaotic_1
     stimfile=stims/${stimname}.csv
 
@@ -63,10 +65,13 @@ do
     echo "SLURM_PROCID" ${SLURM_PROCID}
     args="--outfile $OUTFILE --stim-file ${stimfile} \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} --cell-i 0 \
-      --num $NSAMPLES --trivial-parallel --print-every 25 \
+      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 25 \
       --metadata-file ${METADATA_FILE}"
 
-    srun -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
+    for j in $(seq 1 ${NRUNS});
+    do
+	srun -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
+    done
 
     echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
     echo "rawDataName: ${FILENAME}_*" >> $METADATA_FILE
