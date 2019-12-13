@@ -17,17 +17,6 @@ set -e
 IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
-RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
-mkdir -p $RUNDIR
-
-M_TYPE=$(python cori_get_cell_full.py --m-type)
-E_TYPE=$(python cori_get_cell_full.py --e-type)
-BBP_NAME=$(python cori_get_cell_full.py --bbp-name)
-DSET_NAME=${M_TYPE}_${E_TYPE}
-NSAMPLES=1
-stimname=chaotic_1
-stimfile=stims/${stimname}.csv
-
 echo
 env | grep SLURM
 echo
@@ -72,7 +61,9 @@ do
 
     for j in $(seq 1 ${NRUNS});
     do
-	srun -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) --ntasks-per-node ${THREADS_PER_NODE} python run.py $args
+	srun -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
+	     --ntasks-per-node ${THREADS_PER_NODE} \
+	     python run.py $args
     done
 
     echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
