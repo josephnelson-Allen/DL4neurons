@@ -3,7 +3,7 @@
 #SBATCH -N 4
 #SBATCH --array 1-1
 #SBATCH -t 00:30:00
-#SBATCH -J izhi
+#SBATCH -J DL4Neurons
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
 #SBATCH --mail-user vbaratham@berkeley.edu
@@ -49,6 +49,8 @@ do
     stimname=chaotic_1
     stimfile=stims/${stimname}.csv
 
+    THREADS_PER_NDOE=64
+
     echo
     env | grep SLURM
     echo
@@ -70,7 +72,7 @@ do
 
     for j in $(seq 1 ${NRUNS});
     do
-	srun -n $((${SLURM_NNODES}*64)) --ntasks-per-node 64 python run.py $args
+	srun -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) --ntasks-per-node ${THREADS_PER_NODE} python run.py $args
     done
 
     echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
