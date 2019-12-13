@@ -1,8 +1,8 @@
 #!/bin/bash -l
-#SBATCH -q premium
-#SBATCH -N 100
-#SBATCH --array 4-8
-#SBATCH -t 04:00:00
+#SBATCH -q debug
+#SBATCH -N 4
+#SBATCH --array 1-1
+#SBATCH -t 00:30:00
 #SBATCH -J izhi
 #SBATCH -L SCRATCH,project
 #SBATCH -C haswell
@@ -20,15 +20,11 @@ cd $IZHI_WORKING_DIR
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir -p $RUNDIR
 
-# M_TYPE="L5_TTPC1"
-# E_TYPE="cADpyr"
-# M_TYPE="L1_HAC"
-# E_TYPE=cIR
 M_TYPE=$(python cori_get_cell_full.py --m-type)
 E_TYPE=$(python cori_get_cell_full.py --e-type)
 BBP_NAME=$(python cori_get_cell_full.py --bbp-name)
 DSET_NAME=${M_TYPE}_${E_TYPE}
-NSAMPLES=100
+NSAMPLES=1
 stimname=chaotic_1
 stimfile=stims/${stimname}.csv
 
