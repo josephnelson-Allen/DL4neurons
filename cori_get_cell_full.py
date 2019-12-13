@@ -8,7 +8,10 @@ import json
 with open('cells.json') as infile:
     cells = json.load(infile)
 
-CELL_I = 1
+CELL_I = 1 # of the 5 BBP clones
+
+part_i = int(sys.argv[1]) # which cell in the current slurm job are we running?
+total_parts = int(os.environ['CELLS_PER_JOB']) # how many cells per slurm job?
 
 # Flatten cells.json
 all_celldata = []
@@ -51,7 +54,8 @@ def already_done(bbp_name):
 all_celldata = [(m, e, bbp) for (m, e, bbp) in all_celldata if not already_done(bbp)]
 
 # Select one
-i = int(os.environ['SLURM_ARRAY_TASK_ID'])
+array_i = int(os.environ['SLURM_ARRAY_TASK_ID'])
+i = array_i * total_parts + part_i
 selected_m, selected_e, selected_bbp_name = all_celldata[i]
 
 # Output
