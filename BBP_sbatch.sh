@@ -8,13 +8,13 @@
 #SBATCH -C haswell
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.out"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/izhi/runs/slurm/%A_%a.err"
+#SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.out"
+#SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.err"
 
 set -e
 
 # All paths relative to this, prepend this for full path name
-IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/izhi
+IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
 RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
