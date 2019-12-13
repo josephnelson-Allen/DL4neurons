@@ -5,12 +5,12 @@
 Compile modfiles: `$ nrnivmodl modfiles/*.mod` (all the ones you need are included in this repo)
 
 ```
-$ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --cell-i 0 --stim-multiplier 2.0 --num 10 --outfile test.h5 --debug
+$ python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --cell-i 0 --num 10 --outfile test.h5 --debug
 ```
 
 This command should generate 10 traces and put them in the file test.h5
 
-Also consider playing around with the `--stim-multiplier` option to run.py (I found a multiplier of 2.0 worked well-ish for the L5_TTPC1 cell), and the `--cell-i <integer>` option which allows you to select up to 5 different morphologies (`--cell-i 0` through `4`)).
+Also consider playing around with the `--stim-multiplier` option to run.py, and the `--cell-i <integer>` option which allows you to select up to 5 different morphologies (`--cell-i 0` through `4`)).
 
 If you want to run on cells other than L5_TTPC1, see below
 
