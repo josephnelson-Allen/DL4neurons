@@ -34,7 +34,8 @@ def get_volts(mtype,etype,param_ind,nsamples):
     my_model = get_model('BBP',log,m_type=mtype,e_type=etype,cell_i=0) 
     param_set = make_paramset(my_model,param_ind,nsamples)
     for i in range(nsamples):
-        my_model = get_model('BBP',log,mtype,etype,0,*param_set[i]) 
+        params = param_set[i]
+        my_model = get_model('BBP',log,mtype,etype,0,*params) 
         volts = my_model.simulate(stim,0.02)
         all_volts.append(volts)
     return all_volts
@@ -83,7 +84,7 @@ def check_param_sensitivity(all_volts,def_volts_probes,adjusted_param):
 
 def test_sensitivity(mtype,etype):
     my_model = get_model('BBP',log,m_type=mtype,e_type=etype,cell_i=0) 
-    def_volts = []#my_model.simulate(stim,0.02)
+    def_volts = my_model.simulate(stim,0.02)
     param_names = my_model.PARAM_NAMES
     for i in range(len(param_names)):
         adjusted_param = my_model.PARAM_NAMES[i]
