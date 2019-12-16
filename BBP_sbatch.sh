@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
 #SBATCH -N 10
-#SBATCH --array 1-1
+#SBATCH --array 11-15
 #SBATCH -t 04:00:00
 #SBATCH -J DL4N_100pct
 #SBATCH -L SCRATCH,project
