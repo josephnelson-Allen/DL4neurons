@@ -381,7 +381,8 @@ def main(args):
     # Save to disk
     if args.outfile:
         save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel, upar=upar)
-        write_metadata(args, model)
+        if rank == 0:
+            write_metadata(args, model)
 
 
 if __name__ == '__main__':

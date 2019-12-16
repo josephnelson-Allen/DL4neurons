@@ -17,7 +17,7 @@ total_parts = int(os.environ['CELLS_PER_JOB']) # how many cells per slurm job?
 all_celldata = []
 for m_type in sorted(cells.keys()):
     for e_type in sorted(cells[m_type].keys()):
-        bbp_name = cells[m_type][e_type][0]['model_directory'][:-1] + str(CELL_I) # This is so hack b/c they aren't in order in cells.json...
+        bbp_name = cells[m_type][e_type][0]['model_directory']
         all_celldata.append((m_type, e_type, bbp_name))
 
 # Remove cell data for the ones done in the 10% prod run
