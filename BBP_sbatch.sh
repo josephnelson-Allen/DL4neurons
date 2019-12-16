@@ -1,17 +1,21 @@
 #!/bin/bash -l
-#SBATCH -q debug
-#SBATCH -N 4
+#SBATCH -q premium
+#SBATCH -N 10
 #SBATCH --array 1-1
-#SBATCH -t 00:30:00
-#SBATCH -J DL4Neurons
+#SBATCH -t 04:00:00
+#SBATCH -J DL4N_100pct
 #SBATCH -L SCRATCH,project
-#SBATCH -C haswell
+#SBATCH -C knl
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
 #SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.out"
 #SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.err"
 
 set -e
+
+# Stuff for knl
+export OMP_NUM_THREADS=1
+module unload craype-hugepages2M
 
 # All paths relative to this, prepend this for full path name
 IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
@@ -22,19 +26,24 @@ export CELLS_PER_JOB=5
 for i in $(seq 1 ${CELLS_PER_JOB});
 do 
     RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_$i
-    mkdir $RUNDIR
+    mkdir -p $RUNDIR
+
+    echo "RUNNING CELL $i OF ${CELLS_PER_JOB}"
 
     M_TYPE=$(python cori_get_cell_full.py $i --m-type)
     E_TYPE=$(python cori_get_cell_full.py $i --e-type)
     BBP_NAME=$(python cori_get_cell_full.py $i --bbp-name)
+    # M_TYPE=L4_LBC
+    # E_TYPE=dSTUT
+    # BBP_NAME=L4_LBC_dSTUT214_1
     DSET_NAME=${M_TYPE}_${E_TYPE}
-    NSAMPLES=100
+    NSAMPLES=8
     NRUNS=1
     NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
     stimname=chaotic_1
     stimfile=stims/${stimname}.csv
 
-    THREADS_PER_NODE=64
+    THREADS_PER_NODE=128
 
     echo
     env | grep SLURM
