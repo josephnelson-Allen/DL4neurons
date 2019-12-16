@@ -1,5 +1,7 @@
 # DL4neurons
 
+Requires numpy >= 1.17
+
 ## Running BBP models:
 
 Compile modfiles: `$ nrnivmodl modfiles/*.mod` (all the ones you need are included in this repo)
