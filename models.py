@@ -77,7 +77,7 @@ class BaseModel(object):
         
         ntimepts = len(stim)
         tstop = ntimepts * dt
-        self.init_hoc(dt, tstop)
+        # self.init_hoc(dt, tstop)
 
         h('objref cell')
         h.cell = self.create_cell()
