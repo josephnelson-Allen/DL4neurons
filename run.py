@@ -79,7 +79,7 @@ def report_random_params(args, params, model):
     param_names = model.PARAM_NAMES
     for param, name in zip(params, param_names):
         if param == float('inf'):
-            log.info("Using random values for '{}'".format(name))
+            log.debug("Using random values for '{}'".format(name))
 
     
 def get_random_params(args, n=1):
@@ -91,7 +91,9 @@ def get_random_params(args, n=1):
     params = clean_params(args, model)
     rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
-    for i, (_range, param) in enumerate(zip(ranges, params)):
+    for i, (_range, param, varied) in enumerate(zip(ranges, params, model.get_varied_params())):
+        if not varied:
+            rand[:, i] = 0.5
         # Default params swapped in by clean_params()
         if param == float('inf'):
             phys_rand[:, i] = rangeify(rand[:, i], _range)
@@ -113,8 +115,8 @@ def get_mpi_idx(args, nsamples):
     stop = min(params_per_task * (task_i + 1), nsamples)
     if args.num:
         stop = min(stop, args.num)
-    log.info("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
-    log.info("This rank is processing param sets {} through {}".format(start, stop))
+    log.debug("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
+    log.debug("This rank is processing param sets {} through {}".format(start, stop))
 
     return start, stop
 
@@ -204,7 +206,7 @@ def write_metadata(args, model):
     if args.model != 'BBP' or not args.metadata_file:
         return
     
-    params = [('skip_' if not present else '') + param
+    params = [('const_' if not present else '') + param
               for param, present
               in zip(model.PARAM_NAMES, model.get_varied_params())]
     metadata = {
@@ -212,7 +214,7 @@ def write_metadata(args, model):
         'voltsScale': VOLTS_SCALE,
         'varParL': params,
         'probeName': model.get_probe_names(),
-        'bbpName': '{m}_{e}_{i}'.format(m=args.m_type, e=args.e_type, i=args.cell_i),
+        'bbpName': model.cell_kwargs['model_directory'],
     }
 
     def serialize(val):
@@ -262,6 +264,7 @@ def plot(args, data, stim):
 
 
 def add_qa(args):
+    log.debug("adding qa")
     if comm and n_tasks > 1:
         log.debug("using parallel")
         kwargs = {'driver': 'mpio', 'comm': comm}
@@ -285,7 +288,7 @@ def add_qa(args):
         f.create_dataset('qa', shape=(args.num,))
         f['qa'][start:stop] = qa
 
-    log.info("done")
+    log.debug("done")
 
 
 def lock_params(args, paramsets):
@@ -306,9 +309,6 @@ def lock_params(args, paramsets):
 
 
 def main(args):
-    # log.info("PROCID = {}".format(os.environ['SLURM_PROCID']))
-    # log.info("NODEID = {}".format(os.environ['SLURM_NODEID']))
-
     if args.trivial_parallel and args.outfile and '{NODEID}' in args.outfile:
         args.outfile = args.outfile.replace('{NODEID}', os.environ['SLURM_PROCID'])
     
@@ -381,7 +381,8 @@ def main(args):
     # Save to disk
     if args.outfile:
         save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel, upar=upar)
-        write_metadata(args, model)
+        if rank == 0:
+            write_metadata(args, model)
 
 
 if __name__ == '__main__':
