@@ -92,13 +92,14 @@ def get_random_params(args, n=1):
     rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
     for i, (_range, param, varied) in enumerate(zip(ranges, params, model.get_varied_params())):
-        if not varied:
-            rand[:, i] = 0.5
         # Default params swapped in by clean_params()
+        if not varied:
+            rand[:, i] = 0.5 # so it gets set to 0 when writen to disk (see upar in save_h5())
         if param == float('inf'):
             phys_rand[:, i] = rangeify(rand[:, i], _range)
         else:
             phys_rand[:, i] = np.array([param] * n)
+    phys_rand[np.isnan(phys_rand)] = 0
     return phys_rand, rand
 
         
