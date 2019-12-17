@@ -1,8 +1,8 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 10
-#SBATCH --array 11-15
-#SBATCH -t 04:00:00
+#SBATCH -N 100
+#SBATCH --array 16-16
+#SBATCH -t 08:00:00
 #SBATCH -J DL4N_100pct
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
@@ -21,11 +21,12 @@ module unload craype-hugepages2M
 IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
-export CELLS_PER_JOB=5
+export CELLS_PER_JOB=10
 
 for i in $(seq 1 ${CELLS_PER_JOB});
-do 
-    RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_$i
+do
+    TOP_RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
+    RUNDIR=$TOP_RUNDIR/$i
     mkdir -p $RUNDIR
 
     echo "RUNNING CELL $i OF ${CELLS_PER_JOB}"
@@ -75,6 +76,7 @@ do
     echo "rawDataName: ${FILENAME}_*" >> $METADATA_FILE
     echo "stimName: $stimname" >> $METADATA_FILE
 
+    chmod a+rx ${TOP_RUNDIR}
     chmod a+rx $RUNDIR
     chmod -R a+r $RUNDIR/*
 done
