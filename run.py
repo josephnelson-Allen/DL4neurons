@@ -99,7 +99,7 @@ def get_random_params(args, n=1):
             phys_rand[:, i] = rangeify(rand[:, i], _range)
         else:
             phys_rand[:, i] = np.array([param] * n)
-    phys_rand[np.isnan(phys_rand)] = 0
+    phys_rand[np.isnan(phys_rand)] = 9e9
     return phys_rand, rand
 
         
