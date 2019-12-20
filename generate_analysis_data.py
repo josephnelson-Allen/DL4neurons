@@ -19,8 +19,6 @@ stimfn = './stims/chaotic_1.csv'
 stim =  np.genfromtxt(stimfn, dtype=np.float32) 
 plt.subplots_adjust(hspace=0.3)
 times = [0.02*i for i in range(len(stim))]
-m_type = 'L1_DAC'
-e_type ='bNAC'
 
 def make_paramset(my_model,param_ind,nsamples):
     def_param_vals = my_model.DEFAULT_PARAMS
@@ -92,12 +90,12 @@ def check_param_sensitivity(all_volts,def_volts_probes,adjusted_param):
 #        ALL_MTYPES = cells.keys()
 #        ALL_ETYPES = list(set(itertools.chain.from_iterable(mtype.keys() for mtype in cells.values())))
 
-def main():
+def main(m_type,e_type):
     nsamples = 2
     try:
         procid = int(os.environ['SLURM_PROCID'])
         print("in cori")
-        nsamples = 2
+        nsamples = 20
     except:
         print("not in cori")
         procid = 0
