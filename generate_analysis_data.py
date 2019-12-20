@@ -37,7 +37,7 @@ def get_volts(mtype,etype,param_ind,nsamples):
     param_set = make_paramset(my_model,param_ind,nsamples)
     #param_name = my_model.PARAM_NAMES[param_ind]
     for i in range(nsamples):
-        print("working on param_ind" + int(param_ind) + " sample" + int(i))
+        print("working on param_ind" + str(param_ind) + " sample" + str(i))
         params = param_set[i]
         my_model = get_model('BBP',log,mtype,etype,1,*params)
         my_model.DEFAULT_PARAMS = False
