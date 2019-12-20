@@ -37,6 +37,7 @@ def get_volts(mtype,etype,param_ind,nsamples):
     param_set = make_paramset(my_model,param_ind,nsamples)
     #param_name = my_model.PARAM_NAMES[param_ind]
     for i in range(nsamples):
+        print("working on param_ind" + int(param_ind) + " sample" + int(i))
         params = param_set[i]
         my_model = get_model('BBP',log,mtype,etype,1,*params)
         my_model.DEFAULT_PARAMS = False
@@ -92,10 +93,19 @@ def check_param_sensitivity(all_volts,def_volts_probes,adjusted_param):
 #        ALL_ETYPES = list(set(itertools.chain.from_iterable(mtype.keys() for mtype in cells.values())))
 
 def main():
-    procid = os.environ['SLURM_PROCID']
+    nsamples = 2
+    try:
+        procid = int(os.environ['SLURM_PROCID'])
+        print("in cori")
+        nsamples = 2
+    except:
+        print("not in cori")
+        procid = 0
+        nsamples = 2        
     my_model = get_model('BBP',log,m_type=m_type,e_type=e_type,cell_i=1) 
     adjusted_param = my_model.PARAM_NAMES[procid]
-    all_volts = get_volts(m_type,e_type,procid,2)
+    print("working on " + adjusted_param)
+    all_volts = get_volts(m_type,e_type,procid,nsamples)
     pkl_fn=m_type + e_type + adjusted_param +'.pkl'
     with open(pkl_fn, 'wb') as output:
         pkl.dump(all_volts,output)
