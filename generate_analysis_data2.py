@@ -56,7 +56,7 @@ def get_rec_sec(def_volts,adjusted_param):
     dot_ind = rec_sec.find('.')+1
     return rec_sec[dot_ind:],rec_sec[:dot_ind]
     
-def check_param_sensitivity(all_volts,def_volts_probes,adjusted_param):
+def check_param_sensitivity(all_volts,def_volts_probes,adjusted_param,m_type,e_type):
     fig, (ax1,ax2,ax3)= plt.subplots(3,figsize=(15,15))
     fig.suptitle(adjusted_param)
     def_rec_sec,prefix = get_rec_sec(def_volts_probes,adjusted_param)
@@ -78,6 +78,7 @@ def check_param_sensitivity(all_volts,def_volts_probes,adjusted_param):
         ax2.plot(times,err[:-1])
         ax3.plot(times,cum_sum_err[:-1])
         cum_sum_errs.append(cum_sum_err)
+    fig.suptitle('m_type + e_type + adjusted_param')
     ax1.title.set_text('Volts')
     ax2.title.set_text('error')
     ax3.title.set_text('cum_sum_error')
@@ -99,12 +100,17 @@ def main(m_type,e_type):
     except:
         print("not in cori")
         procid = 0
-        nsamples = 2        
+        nsamples = 2   
+    if procid == 0:
+        try:
+            os.mkdir(m_type+e_type)
+        except:
+            print('couldnt make dir' + m_type+e_type )
     my_model = get_model('BBP',log,m_type=m_type,e_type=e_type,cell_i=1) 
     adjusted_param = my_model.PARAM_NAMES[procid]
     print("working on " + adjusted_param)
     all_volts = get_volts(m_type,e_type,procid,nsamples)
-    pkl_fn=m_type + e_type + adjusted_param +'.pkl'
+    pkl_fn='./' +m_type+e_type +'/' + m_type + e_type + adjusted_param +'.pkl'
     with open(pkl_fn, 'wb') as output:
         pkl.dump(all_volts,output)
 main()
