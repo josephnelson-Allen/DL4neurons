@@ -1,14 +1,14 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 10
+#SBATCH -N 2
 #SBATCH -t 00:30:00
 #SBATCH -J DL4N_9cells
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.out"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.err"
+#SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.out"
+#SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.err"
 
 set -e
 
@@ -26,9 +26,6 @@ i=0
 while read line;
 do
     i=$((i+1))
-    TOP_RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
-    RUNDIR=$TOP_RUNDIR/$i
-    mkdir -p $RUNDIR
 
     echo "RUNNING CELL $i OF $(wc -l < ${CELLS_FILE})"
 
@@ -40,6 +37,10 @@ do
     E_TYPE=$(echo $line | awk -F "," '{print $3}')
     # NSAMPLES=$(echo $line | awk -F "," '{print $4}')
 
+    TOP_RUNDIR=runs/${SLURM_JOBID}
+    RUNDIR=$TOP_RUNDIR/${BBP_NAME}
+    mkdir -p $RUNDIR
+    
     echo $BBP_NAME $M_TYPE $E_TYPE
 
     DSET_NAME=${M_TYPE}_${E_TYPE}
