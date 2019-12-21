@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
 #SBATCH -N 2
-#SBATCH -t 00:30:00
+#SBATCH -t 01:00:00
 #SBATCH -J DL4N_9cells
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
