@@ -10,8 +10,6 @@
 #SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.out"
 #SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.err"
 
-set -e
-
 # Stuff for knl
 export OMP_NUM_THREADS=1
 module unload craype-hugepages2M
@@ -20,7 +18,7 @@ module unload craype-hugepages2M
 IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
-CELLS_FILE='9cells.txt'
+CELLS_FILE='9cells.csv'
 
 i=0
 while read line;
