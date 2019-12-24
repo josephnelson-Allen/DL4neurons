@@ -1,17 +1,14 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 100
-#SBATCH --array 16-16
-#SBATCH -t 08:00:00
-#SBATCH -J DL4N_100pct
+#SBATCH -N 2
+#SBATCH -t 01:00:00
+#SBATCH -J DL4N_9cells
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.out"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A_%a.err"
-
-set -e
+#SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.out"
+#SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.err"
 
 # Stuff for knl
 export OMP_NUM_THREADS=1
@@ -21,22 +18,29 @@ module unload craype-hugepages2M
 IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
-export CELLS_PER_JOB=10
+CELLS_FILE='9cells.csv'
 
-for i in $(seq 1 ${CELLS_PER_JOB});
+i=0
+while read line;
 do
-    TOP_RUNDIR=runs/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
-    RUNDIR=$TOP_RUNDIR/$i
+    i=$((i+1))
+
+    echo "RUNNING CELL $i OF $(wc -l < ${CELLS_FILE})"
+
+    # M_TYPE=$(python cori_get_cell_full.py $i --m-type)
+    # E_TYPE=$(python cori_get_cell_full.py $i --e-type)
+    # BBP_NAME=$(python cori_get_cell_full.py $i --bbp-name) 
+    BBP_NAME=$(echo $line | awk -F "," '{print $1}')
+    M_TYPE=$(echo $line | awk -F "," '{print $2}')
+    E_TYPE=$(echo $line | awk -F "," '{print $3}')
+    # NSAMPLES=$(echo $line | awk -F "," '{print $4}')
+
+    TOP_RUNDIR=runs/${SLURM_JOBID}
+    RUNDIR=$TOP_RUNDIR/${BBP_NAME}
     mkdir -p $RUNDIR
+    
+    echo $BBP_NAME $M_TYPE $E_TYPE
 
-    echo "RUNNING CELL $i OF ${CELLS_PER_JOB}"
-
-    M_TYPE=$(python cori_get_cell_full.py $i --m-type)
-    E_TYPE=$(python cori_get_cell_full.py $i --e-type)
-    BBP_NAME=$(python cori_get_cell_full.py $i --bbp-name)
-    # M_TYPE=L4_LBC
-    # E_TYPE=dSTUT
-    # BBP_NAME=L4_LBC_dSTUT214_1
     DSET_NAME=${M_TYPE}_${E_TYPE}
     NSAMPLES=8
     NRUNS=1
@@ -79,4 +83,4 @@ do
     chmod a+rx ${TOP_RUNDIR}
     chmod a+rx $RUNDIR
     chmod -R a+r $RUNDIR/*
-done
+done < ${CELLS_FILE}
