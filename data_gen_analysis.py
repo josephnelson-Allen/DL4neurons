@@ -63,7 +63,7 @@ def main():
     NTHREADS = 128
     m_type = sys.argv[1]
     e_type = sys.argv[2]
-    nsamples = sys.argv[3]
+    nsamples = int(sys.argv[3])
     
     try:
         procid = int(os.environ['SLURM_PROCID'])
