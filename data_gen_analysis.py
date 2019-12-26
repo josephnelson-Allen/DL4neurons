@@ -80,7 +80,7 @@ def main():
     samples_per_thread = int(nsamples/threads_per_param)+1
     p_ind = procid%(len(pnames))
     adjusted_param = my_model.PARAM_NAMES[p_ind]
-    print("working on " + adjusted_param)
+    print("working on " + adjusted_param + "will be sampled " + str(samples_per_thread*threads_per_param) )
     all_volts = get_volts(m_type,e_type,p_ind,samples_per_thread)
     pkl_fn=m_type + e_type + adjusted_param + '_' + procid + '.pkl'
     with open(pkl_fn, 'wb') as output:
