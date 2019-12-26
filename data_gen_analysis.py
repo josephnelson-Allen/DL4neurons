@@ -75,8 +75,7 @@ def main():
     my_model = get_model('BBP',log,m_type=m_type,e_type=e_type,cell_i=1)
     
     def_vals = my_model.DEFAULT_PARAMS
-    included = [i for i in def_vals if i>0]
-    pnames = my_model.PARAM_NAMES[included]
+    pnames = [my_model.PARAM_NAMES[i] for i in range(len(def_vals)) if def_vals[i]>0]
     threads_per_param = int(NTHREADS/len(pnames))
     samples_per_thread = int(nsamples/threads_per_param)+1
     p_ind = procid%(len(pnames))
