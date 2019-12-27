@@ -85,4 +85,6 @@ def main():
     pkl_fn=m_type + '_' + e_type + adjusted_param + '_' + str(procid) + '.pkl'
     with open(pkl_fn, 'wb') as output:
         pkl.dump(all_volts,output)
+
+log.basicConfig(format='%(asctime)s %(message)s', level=log.DEBUG)
 main()
