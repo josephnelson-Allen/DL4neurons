@@ -16,10 +16,10 @@ import pickle as pkl
 import random
 import time
 import sys
-stimfn = './stims/chaotic_1.csv'
+stimfn = './stims/chaotic_2.csv'
 stim =  np.genfromtxt(stimfn, dtype=np.float32)
 plt.subplots_adjust(hspace=0.3)
-times = [0.02*i for i in range(len(stim))]
+times = [0.025*i for i in range(len(stim))]
 def make_paramset(my_model,param_ind,nsamples):
     def_param_vals = my_model.DEFAULT_PARAMS
     param_set = np.array([def_param_vals]*nsamples)
@@ -38,7 +38,7 @@ def get_volts(mtype,etype,param_ind,nsamples):
         params = param_set[i]
         my_model = get_model('BBP',log,mtype,etype,1,*params)
         my_model.DEFAULT_PARAMS = False
-        volts = my_model.simulate(stim,0.02)
+        volts = my_model.simulate(stim,0.025)
         all_volts.append(volts)
         end_time = time.time()
         etime = end_time-s_time
@@ -57,8 +57,6 @@ def get_rec_sec(def_volts,adjusted_param):
         rec_sec = res[2]
     dot_ind = rec_sec.find('.')+1
     return rec_sec[dot_ind:],rec_sec[:dot_ind]
-m_type = 'L1_DAC'
-e_type ='bNAC'
 def main():
     NTHREADS = 128
     m_type = sys.argv[1]
