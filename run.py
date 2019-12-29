@@ -400,7 +400,7 @@ if __name__ == '__main__':
     parser.add_argument('--e-type', choices=ALL_ETYPES, required=False, default=None)
     parser.add_argument('--cell-i', type=int, required=False, default=0)
     parser.add_argument('--celsius', type=float, default=34)
-    parser.add_argument('--dt', type=float, default=.02)
+    parser.add_argument('--dt', type=float, default=.025)
 
     parser.add_argument('--outfile', type=str, required=False, default=None,
                         help='nwb file to save to')
@@ -468,7 +468,7 @@ if __name__ == '__main__':
 
     # CHOOSE STIMULUS
     parser.add_argument(
-        '--stim-file', type=str, default=os.path.join('stims', 'chaotic_1.csv'),
+        '--stim-file', type=str, default=os.path.join('stims', 'chaotic_2.csv'),
         help="csv to use as the stimulus")
     parser.add_argument(
         '--stim-dc-offset', type=float, default=0.0,

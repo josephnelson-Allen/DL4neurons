@@ -72,7 +72,7 @@ class BaseModel(object):
 
         return hoc_vectors
 
-    def simulate(self, stim, dt=0.02):
+    def simulate(self, stim, dt=0.025):
         _start = datetime.now()
         
         ntimepts = len(stim)
