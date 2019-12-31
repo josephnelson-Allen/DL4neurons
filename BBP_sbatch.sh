@@ -66,9 +66,9 @@ do
 
     echo "Using" $PYTHON
 
-    FILENAME=${BBP_NAME}_${stimname}
-    METADATA_FILE=$RUNDIR/${FILENAME}_meta.yaml
-    OUTFILE=$RUNDIR/${FILENAME}_\{NODEID\}.h5
+    FILENAME=${BBP_NAME}-${stimname}
+    METADATA_FILE=$RUNDIR/${FILENAME}-meta.yaml
+    OUTFILE=$RUNDIR/${FILENAME}-\{NODEID\}.h5
     echo "M-TYPE" ${M_TYPE}
     echo "E-TYPE" ${E_TYPE}
     echo "BBP NAME" ${BBP_NAME}
