@@ -173,7 +173,7 @@ class BBP(BaseModel):
         for name, sec, param_name, seclist in self.iter_name_sec_param_name_seclist():
             default = getattr(seclist[0], name, -1)
             self.DEFAULT_PARAMS.append(default)
-            self.PARAM_RANGES.append((default/10.0, default*10.0))
+            self.PARAM_RANGES.append((default/10.0, default*10.0) if default != -1 else (0, 0))
         self.DEFAULT_PARAMS = tuple(self.DEFAULT_PARAMS)
         self.PARAM_RANGES = tuple(self.PARAM_RANGES)
 
