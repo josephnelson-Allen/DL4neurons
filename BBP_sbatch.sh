@@ -1,14 +1,16 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 2
-#SBATCH -t 01:00:00
-#SBATCH -J DL4N_9cells
+#SBATCH -N 600
+#SBATCH -t 08:00:00
+#SBATCH -J DL4N_shifter_test
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
 #SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.out"
 #SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.err"
+#SBATCH --image=balewski/ubu18-py3-mpich:v2
+
 
 # Stuff for knl
 export OMP_NUM_THREADS=1
@@ -19,6 +21,14 @@ IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $IZHI_WORKING_DIR
 
 CELLS_FILE='9cells.csv'
+
+# prep for shifter
+if [ -f ./shifter_env.sh ]; then
+    source ./shifter_env.sh
+    PYTHON="shifter python3"
+else
+    PYTHON=python
+fi
 
 i=0
 while read line;
@@ -45,7 +55,7 @@ do
     NSAMPLES=8
     NRUNS=1
     NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
-    stimname=chaotic_1
+    stimname=chaotic_2
     stimfile=stims/${stimname}.csv
 
     THREADS_PER_NODE=128
@@ -53,6 +63,8 @@ do
     echo
     env | grep SLURM
     echo
+
+    echo "Using" $PYTHON
 
     FILENAME=${BBP_NAME}_${stimname}
     METADATA_FILE=$RUNDIR/${FILENAME}_meta.yaml
@@ -66,14 +78,14 @@ do
     echo "SLURM_PROCID" ${SLURM_PROCID}
     args="--outfile $OUTFILE --stim-file ${stimfile} \
       --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} --cell-i 0 \
-      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 25 \
+      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 1 \
       --metadata-file ${METADATA_FILE}"
 
     for j in $(seq 1 ${NRUNS});
     do
-	srun -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
+	srun --input none -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	     --ntasks-per-node ${THREADS_PER_NODE} \
-	     python run.py $args
+	     $PYTHON run.py $args
     done
 
     echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE

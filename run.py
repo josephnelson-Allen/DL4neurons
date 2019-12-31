@@ -10,7 +10,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
-import yaml
+import ruamel.yaml as yaml
 
 from stimulus import stims, add_stims
 import models
