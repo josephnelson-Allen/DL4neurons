@@ -416,7 +416,7 @@ if __name__ == '__main__':
     parser.add_argument('--cell-i', type=int, required=False, default=0)
     parser.add_argument('--cori-start', type=int, required=False, default=None, help='start cell')
     parser.add_argument('--cori-end', type=int, required=False, default=None, help='end cell')
-    parser.add_argument('--cori-csv', type=bool, action=store_true, required=False default=False,
+    parser.add_argument('--cori-csv', type=bool, action=store_true, required=False, default=False,
                         help='When running BBP on cori, use SLURM_PROCID to compute m-type and e-type from the given cells csv')
     
     parser.add_argument('--celsius', type=float, default=34)
