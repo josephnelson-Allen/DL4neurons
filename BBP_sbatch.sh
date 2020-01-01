@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 2000
-#SBATCH -t 02:00:00
+#SBATCH -N 10
+#SBATCH -t 01:00:00
 #SBATCH -J DL4N_shifter_test
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
@@ -39,7 +39,6 @@ else
 fi
 mkdir -p $RUNDIR
 
-DSET_NAME=${M_TYPE}_${E_TYPE}
 stimname=chaotic_2
 stimfile=stims/${stimname}.csv
 
@@ -57,7 +56,7 @@ echo "OUTFILE" $OUTFILE
 echo "SLURM_NODEID" ${SLURM_NODEID}
 echo "SLURM_PROCID" ${SLURM_PROCID}
 args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \ 
-      --cori-start ${START_CELL} --cori-end ${END_CELL} \
+      --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
       --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
       --metadata-file ${METADATA_FILE}"
 
@@ -72,6 +71,7 @@ echo "rawPath: ${WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
 echo "rawDataName: ${FILENAME}_*" >> $METADATA_FILE
 echo "stimName: $stimname" >> $METADATA_FILE
 
+chmod a+rx $RUNDIR
 chmod a+rx $RUNDIR/*
 chmod a+r $RUNDIR/*/*.h5
 chmod a+r $RUNDIR/*/*.yaml
