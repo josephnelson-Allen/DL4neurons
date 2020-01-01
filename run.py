@@ -312,11 +312,26 @@ def lock_params(args, paramsets):
 def main(args):
     if args.trivial_parallel and args.outfile and '{NODEID}' in args.outfile:
         args.outfile = args.outfile.replace('{NODEID}', os.environ['SLURM_PROCID'])
-    
+
     if (not args.outfile) and (not args.force) and (args.plot is None) and (not args.create_params):
         raise ValueError("You didn't choose to plot or save anything. "
                          + "Pass --force to continue anyways")
 
+    if args.cori_csv:
+        cori_i = os.environ.get('SLURM_PROCID') % (args.cori_end - args.cori_start)
+        with open(args.cori_csv, 'r') as infile:
+            allcells = csv.reader(infile, delimiter=',')
+            for i, row in enumerate(allcells):
+                if i == args.cori_i:
+                    bbp_name = row[0]
+                    args.m_type = row[1]
+                    args.e_type = row[2]
+                    break
+
+    if '{BBP_NAME}' in args.outfile:
+        args.outfile = args.outfile.replace('{BBP_NAME}', bbp_name)
+        args.metadata_file = args.metadata_file.replace('{BBP_NAME}', bbp_name)
+    
     if args.create:
         if not args.num:
             raise ValueError("Must pass --num when creating h5 file")
@@ -399,6 +414,11 @@ if __name__ == '__main__':
     parser.add_argument('--m-type', choices=ALL_MTYPES, required=False, default=None)
     parser.add_argument('--e-type', choices=ALL_ETYPES, required=False, default=None)
     parser.add_argument('--cell-i', type=int, required=False, default=0)
+    parser.add_argument('--cori-start', type=int, required=False, default=None, help='start cell')
+    parser.add_argument('--cori-end', type=int, required=False, default=None, help='end cell')
+    parser.add_argument('--cori-csv', type=bool, action=store_true, required=False default=False,
+                        help='When running BBP on cori, use SLURM_PROCID to compute m-type and e-type from the given cells csv')
+    
     parser.add_argument('--celsius', type=float, default=34)
     parser.add_argument('--dt', type=float, default=.025)
 

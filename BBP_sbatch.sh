@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 600
-#SBATCH -t 08:00:00
+#SBATCH -N 10
+#SBATCH -t 01:00:00
 #SBATCH -J DL4N_shifter_test
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
@@ -17,10 +17,18 @@ export OMP_NUM_THREADS=1
 module unload craype-hugepages2M
 
 # All paths relative to this, prepend this for full path name
-IZHI_WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
-cd $IZHI_WORKING_DIR
+WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
+cd $WORKING_DIR
 
-CELLS_FILE='9cells.csv'
+CELLS_FILE='allcells.csv'
+START_CELL=85
+NCELLS=48
+END_CELL=$((${START_CELL}+${NCELLS}))
+NSAMPLES=16
+NRUNS=2
+NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
+
+export THREADS_PER_NODE=128
 
 # prep for shifter
 if [ -f ./shifter_env.sh ]; then
@@ -29,70 +37,42 @@ if [ -f ./shifter_env.sh ]; then
 else
     PYTHON=python
 fi
+mkdir -p $RUNDIR
 
-i=0
-while read line;
-do
-    i=$((i+1))
+stimname=chaotic_2
+stimfile=stims/${stimname}.csv
 
-    echo "RUNNING CELL $i OF $(wc -l < ${CELLS_FILE})"
+echo
+env | grep SLURM
+echo
 
-    # M_TYPE=$(python cori_get_cell_full.py $i --m-type)
-    # E_TYPE=$(python cori_get_cell_full.py $i --e-type)
-    # BBP_NAME=$(python cori_get_cell_full.py $i --bbp-name) 
-    BBP_NAME=$(echo $line | awk -F "," '{print $1}')
-    M_TYPE=$(echo $line | awk -F "," '{print $2}')
-    E_TYPE=$(echo $line | awk -F "," '{print $3}')
-    # NSAMPLES=$(echo $line | awk -F "," '{print $4}')
+echo "Using" $PYTHON
 
-    TOP_RUNDIR=runs/${SLURM_JOBID}
-    RUNDIR=$TOP_RUNDIR/${BBP_NAME}
-    mkdir -p $RUNDIR
-    
-    echo $BBP_NAME $M_TYPE $E_TYPE
-
-    DSET_NAME=${M_TYPE}_${E_TYPE}
-    NSAMPLES=8
-    NRUNS=1
-    NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
-    stimname=chaotic_2
-    stimfile=stims/${stimname}.csv
-
-    THREADS_PER_NODE=128
-
-    echo
-    env | grep SLURM
-    echo
-
-    echo "Using" $PYTHON
-
-    FILENAME=${BBP_NAME}-${stimname}
-    METADATA_FILE=$RUNDIR/${FILENAME}-meta.yaml
-    OUTFILE=$RUNDIR/${FILENAME}-\{NODEID\}.h5
-    echo "M-TYPE" ${M_TYPE}
-    echo "E-TYPE" ${E_TYPE}
-    echo "BBP NAME" ${BBP_NAME}
-    echo "STIM FILE" $stimfile
-    echo "OUTFILE" $OUTFILE
-    echo "SLURM_NODEID" ${SLURM_NODEID}
-    echo "SLURM_PROCID" ${SLURM_PROCID}
-    args="--outfile $OUTFILE --stim-file ${stimfile} \
-      --model BBP --m-type ${M_TYPE} --e-type ${E_TYPE} --cell-i 0 \
-      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 1 \
+FILENAME=\{BBP_NAME\}/\{BBP_NAME\}-${stimname}
+METADATA_FILE=$RUNDIR/${FILENAME}-meta.yaml
+OUTFILE=$RUNDIR/${FILENAME}-\{NODEID\}.h5
+echo "STIM FILE" $stimfile
+echo "OUTFILE" $OUTFILE
+echo "SLURM_NODEID" ${SLURM_NODEID}
+echo "SLURM_PROCID" ${SLURM_PROCID}
+args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \ 
+      --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
+      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
       --metadata-file ${METADATA_FILE}"
 
-    for j in $(seq 1 ${NRUNS});
-    do
-	srun --input none -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
-	     --ntasks-per-node ${THREADS_PER_NODE} \
-	     $PYTHON run.py $args
-    done
+for j in $(seq 1 ${NRUNS});
+do
+    srun --input none -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
+	 --ntasks-per-node ${THREADS_PER_NODE} \
+	 $PYTHON run.py $args
+done
 
-    echo "rawPath: ${IZHI_WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
-    echo "rawDataName: ${FILENAME}_*" >> $METADATA_FILE
-    echo "stimName: $stimname" >> $METADATA_FILE
+echo "rawPath: ${WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
+echo "rawDataName: ${FILENAME}_*" >> $METADATA_FILE
+echo "stimName: $stimname" >> $METADATA_FILE
 
-    chmod a+rx ${TOP_RUNDIR}
-    chmod a+rx $RUNDIR
-    chmod -R a+r $RUNDIR/*
-done < ${CELLS_FILE}
+chmod a+rx $RUNDIR
+chmod a+rx $RUNDIR/*
+chmod a+r $RUNDIR/*/*.h5
+chmod a+r $RUNDIR/*/*.yaml
+
