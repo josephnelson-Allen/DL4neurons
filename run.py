@@ -328,7 +328,7 @@ def main(args):
                     args.e_type = row[2]
                     break
 
-    if '{BBP_NAME}' in args.outfile:
+    if args.outfile and '{BBP_NAME}' in args.outfile:
         args.outfile = args.outfile.replace('{BBP_NAME}', bbp_name)
         args.metadata_file = args.metadata_file.replace('{BBP_NAME}', bbp_name)
     
