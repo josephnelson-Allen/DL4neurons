@@ -322,7 +322,7 @@ def main(args):
         with open(args.cori_csv, 'r') as infile:
             allcells = csv.reader(infile, delimiter=',')
             for i, row in enumerate(allcells):
-                if i == args.cori_i:
+                if i == cori_i:
                     bbp_name = row[0]
                     args.m_type = row[1]
                     args.e_type = row[2]
