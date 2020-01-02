@@ -54,6 +54,8 @@ do
     bbp_name=$(echo $line | awk -F "," '{print $1}')
     mkdir -p $RUNDIR/$bbp_name
 done
+chmod a+rx $RUNDIR
+chmod a+rx $RUNDIR/*
 echo "Done making outdirs at" `date`
 
 stimname=chaotic_2
@@ -84,12 +86,10 @@ do
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
+    chmod a+r $RUNDIR/*/*.h5
+    chmod a+r $RUNDIR/*.yaml
     echo "Done run $j of $NRUNS at" `date`
 
 done
 
-chmod a+rx $RUNDIR
-chmod a+rx $RUNDIR/*
-chmod a+r $RUNDIR/*/*.h5
-chmod a+r $RUNDIR/*/*.yaml
 
