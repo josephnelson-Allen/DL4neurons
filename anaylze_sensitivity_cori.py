@@ -15,7 +15,7 @@ import json
 import itertools
 import pickle as pkl
 import random
-import raumel.yaml as yaml
+import ruamel.yaml as yaml
 import sys
 import csv
 stimfn = './stims/chaotic_2.csv'
