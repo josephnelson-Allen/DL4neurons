@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import json
+import csv
 import itertools
 import logging as log
 from argparse import ArgumentParser
@@ -210,12 +211,16 @@ def write_metadata(args, model):
     params = [('const_' if not present else '') + param
               for param, present
               in zip(model.PARAM_NAMES, model.get_varied_params())]
+    path, fn = os.path.split(args.outfile.replace('0', '*')) # HACK
     metadata = {
         'timeAxis': {'step': args.dt, 'unit': "(ms)"},
         'voltsScale': VOLTS_SCALE,
         'varParL': params,
         'probeName': model.get_probe_names(),
         'bbpName': model.cell_kwargs['model_directory'],
+        'rawPath': path,
+        'rawDataName': fn,
+        'stimName': os.environ.get('stimname'), # HACK
     }
 
     def serialize(val):
@@ -318,20 +323,28 @@ def main(args):
                          + "Pass --force to continue anyways")
 
     if args.cori_csv:
-        cori_i = os.environ.get('SLURM_PROCID') % (args.cori_end - args.cori_start)
+        cori_i = args.cori_start + int(os.environ.get('SLURM_PROCID')) % (args.cori_end - args.cori_start)
+        if cori_i == 9:
+            return
         with open(args.cori_csv, 'r') as infile:
             allcells = csv.reader(infile, delimiter=',')
             for i, row in enumerate(allcells):
                 if i == cori_i:
+                    log.debug(row)
                     bbp_name = row[0]
                     args.m_type = row[1]
                     args.e_type = row[2]
                     break
 
+        # Get param string for holding some params fixed
+        paramuse = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1] \
+                   if args.e_type == 'cADpyr' else [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1]
+        args.params = [('inf' if use else 'def') for use in paramuse]
+
     if args.outfile and '{BBP_NAME}' in args.outfile:
         args.outfile = args.outfile.replace('{BBP_NAME}', bbp_name)
         args.metadata_file = args.metadata_file.replace('{BBP_NAME}', bbp_name)
-    
+
     if args.create:
         if not args.num:
             raise ValueError("Must pass --num when creating h5 file")
@@ -416,7 +429,7 @@ if __name__ == '__main__':
     parser.add_argument('--cell-i', type=int, required=False, default=0)
     parser.add_argument('--cori-start', type=int, required=False, default=None, help='start cell')
     parser.add_argument('--cori-end', type=int, required=False, default=None, help='end cell')
-    parser.add_argument('--cori-csv', action='store_true', required=False, default=False,
+    parser.add_argument('--cori-csv', type=str, required=False, default=None,
                         help='When running BBP on cori, use SLURM_PROCID to compute m-type and e-type from the given cells csv')
     
     parser.add_argument('--celsius', type=float, default=34)

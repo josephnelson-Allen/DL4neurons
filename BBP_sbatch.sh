@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 10
-#SBATCH -t 01:00:00
+#SBATCH -N 2000
+#SBATCH -t 10:00:00
 #SBATCH -J DL4N_shifter_test
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
@@ -24,9 +24,14 @@ CELLS_FILE='allcells.csv'
 START_CELL=85
 NCELLS=48
 END_CELL=$((${START_CELL}+${NCELLS}))
-NSAMPLES=16
-NRUNS=2
+NSAMPLES=120
+NRUNS=3
 NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
+
+echo "CELLS_FILE" ${CELLS_FILE}
+echo "START_CELL" ${START_CELL}
+echo "NCELLS" ${NCELLS}
+echo "END_CELL" ${END_CELL}
 
 export THREADS_PER_NODE=128
 
@@ -37,7 +42,19 @@ if [ -f ./shifter_env.sh ]; then
 else
     PYTHON=python
 fi
+
+# Create all outdirs
+echo "Making outdirs at" `date`
+RUNDIR=runs/${SLURM_JOBID}
 mkdir -p $RUNDIR
+for i in $(seq ${START_CELL} ${END_CELL});
+do
+    i=$(( $i+1 ))
+    line=$(head -$i ${CELLS_FILE} | tail -1)
+    bbp_name=$(echo $line | awk -F "," '{print $1}')
+    mkdir -p $RUNDIR/$bbp_name
+done
+echo "Done making outdirs at" `date`
 
 stimname=chaotic_2
 stimfile=stims/${stimname}.csv
@@ -48,28 +65,28 @@ echo
 
 echo "Using" $PYTHON
 
-FILENAME=\{BBP_NAME\}/\{BBP_NAME\}-${stimname}
+FILENAME=\{BBP_NAME\}-${stimname}
 METADATA_FILE=$RUNDIR/${FILENAME}-meta.yaml
-OUTFILE=$RUNDIR/${FILENAME}-\{NODEID\}.h5
+OUTFILE=$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}.h5
 echo "STIM FILE" $stimfile
 echo "OUTFILE" $OUTFILE
 echo "SLURM_NODEID" ${SLURM_NODEID}
 echo "SLURM_PROCID" ${SLURM_PROCID}
-args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \ 
+args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \
       --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
       --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
       --metadata-file ${METADATA_FILE}"
+echo "args" $args
 
 for j in $(seq 1 ${NRUNS});
 do
-    srun --input none -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
+    echo "Doing run $j of $NRUNS at" `date`
+    srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
-done
+    echo "Done run $j of $NRUNS at" `date`
 
-echo "rawPath: ${WORKING_DIR}/$RUNDIR" >> $METADATA_FILE
-echo "rawDataName: ${FILENAME}_*" >> $METADATA_FILE
-echo "stimName: $stimname" >> $METADATA_FILE
+done
 
 chmod a+rx $RUNDIR
 chmod a+rx $RUNDIR/*
