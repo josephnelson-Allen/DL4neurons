@@ -69,20 +69,19 @@ echo "Using" $PYTHON
 
 FILENAME=\{BBP_NAME\}-${stimname}
 METADATA_FILE=$RUNDIR/${FILENAME}-meta.yaml
-OUTFILE=$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}.h5
 echo "STIM FILE" $stimfile
-echo "OUTFILE" $OUTFILE
 echo "SLURM_NODEID" ${SLURM_NODEID}
 echo "SLURM_PROCID" ${SLURM_PROCID}
-args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \
-      --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
-      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
-      --metadata-file ${METADATA_FILE}"
-echo "args" $args
 
 for j in $(seq 1 ${NRUNS});
 do
     echo "Doing run $j of $NRUNS at" `date`
+    OUTFILE=$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}-$j.h5
+    args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \
+      --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
+      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
+      --metadata-file ${METADATA_FILE}"
+    echo "args" $args
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
