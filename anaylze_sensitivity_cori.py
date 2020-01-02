@@ -126,7 +126,7 @@ def test_sensitivity(files_loc,my_model):
             curr_errs = check_param_sensitivity(all_volts,adjusted_param,files_loc)
             curr_ECDs = [ls[-1] for ls in curr_errs]
             all_ECDS[adjusted_param_new_name]=curr_ECDs
-    pkl_fn=files_loc + my_model.m_type + my_model.e_type + 'sensitivity.pkl'
+    pkl_fn=files_loc + my_model.m_type + my_model.e_type + 'ECDs.pkl'
     with open(pkl_fn, 'wb') as output:
         pkl.dump(all_ECDS,output)
         pkl.dump(param_names,output)
@@ -188,7 +188,7 @@ def analyze_ecds(ECDS,def_vals,files_loc,ml_results):
             STDs_axon.append(curr_std)
             ml_STDs_axon.append(ml_std)
             ml_STDs_raw_axon.append(ml_std_raw)
-    pkl_fn=files_loc + 'mean_std_sensitivity'  + str(nsamples) + '.pkl'
+    pkl_fn=files_loc + sys.argv[1] + sys.argv[2] +'mean_std_sensitivity'  +  '.pkl'
     with open(pkl_fn, 'wb') as output:
         pkl.dump(params_sensitivity_dict,output)
     fig, ((ax_soma,ax_dend),( ax_axon,ax4))= plt.subplots(2,2,figsize=(15,15))
@@ -285,7 +285,7 @@ def main():
     except:
         print('no short name')
         short_name = None    
-    files_loc = './out_put/' + m_type + '_' + e_type + '/'
+    files_loc = './output/' + m_type + '_' + e_type + '/'
     my_model = get_model('BBP',log,m_type=m_type,e_type=e_type,cell_i=0)
     def_vals = my_model.DEFAULT_PARAMS
     
