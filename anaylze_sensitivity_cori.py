@@ -22,7 +22,7 @@ stimfn = './stims/chaotic_2.csv'
 stim =  np.genfromtxt(stimfn, dtype=np.float32) 
 plt.subplots_adjust(hspace=0.3)
 times = [0.025*i for i in range(len(stim))]
-create_pdfs = False
+create_pdfs = True
 def get_ml_results(short_name,pnames):
     #data_loc = '/project/m2043/ML4neuron2b/' +short_name +'/cellSpike.sum_pred.yaml
     data_loc = '/project/m2043/ML4neuron2b/' +short_name +'/cellSpike.sum_pred.yaml'
