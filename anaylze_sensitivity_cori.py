@@ -98,6 +98,7 @@ def check_param_sensitivity(all_volts,adjusted_param,files_loc):
             ax3.plot(times,cum_sum_err[:-1])
     if(create_pdfs):   
         ax1.title.set_text('Volts')
+        ax1.set_ylim(-200,+200)
         ax2.title.set_text('error')
         ax3.title.set_text('cum_sum_error')
         fig_name = adjusted_param +'.pdf'
