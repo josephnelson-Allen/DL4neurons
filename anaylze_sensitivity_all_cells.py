@@ -18,15 +18,16 @@ def get_analysis_results():
     dirs = os.listdir(loc)
     dirs = [x for x in dirs if '_' in x]
     for curr_dir in dirs:
-        m1,m2,etype = curr_dir.split('_')
+        try:
+            m1,m2,etype = curr_dir.split('_')
+        except:
+            print('cant parse ' + curr_dir)
+                
         mtype = m1 + '_' + m2
         if not 'cAD'  in etype:
             fn = loc + curr_dir + '/' + mtype + etype + 'mean_std_sensitivity.pkl'
-            try:
-                with open(fn, 'rb') as f:
-                    sensitivity_res = pkl.load(f)
-            except:
-                print('cant find ' + fn)
+            with open(fn, 'rb') as f:
+                sensitivity_res = pkl.load(f)
             pnames = list(sensitivity_res.keys())
             for pname in pnames:
                 curr_sens = sensitivity_res[pname]
