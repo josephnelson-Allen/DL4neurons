@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 2000
-#SBATCH -t 10:00:00
+#SBATCH -N 1024
+#SBATCH -t 6:00:00
 #SBATCH -J DL4N_shifter_test
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
@@ -22,10 +22,10 @@ cd $WORKING_DIR
 
 CELLS_FILE='allcells.csv'
 START_CELL=85
-NCELLS=48
+NCELLS=24
 END_CELL=$((${START_CELL}+${NCELLS}))
-NSAMPLES=120
-NRUNS=3
+NSAMPLES=40
+NRUNS=1
 NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
 
 echo "CELLS_FILE" ${CELLS_FILE}
@@ -49,7 +49,6 @@ RUNDIR=runs/${SLURM_JOBID}
 mkdir -p $RUNDIR
 for i in $(seq ${START_CELL} ${END_CELL});
 do
-    i=$(( $i+1 ))
     line=$(head -$i ${CELLS_FILE} | tail -1)
     bbp_name=$(echo $line | awk -F "," '{print $1}')
     mkdir -p $RUNDIR/$bbp_name
@@ -58,7 +57,7 @@ chmod a+rx $RUNDIR
 chmod a+rx $RUNDIR/*
 echo "Done making outdirs at" `date`
 
-stimname=chaotic_2
+export stimname=chaotic_2
 stimfile=stims/${stimname}.csv
 
 echo
@@ -76,10 +75,10 @@ echo "SLURM_PROCID" ${SLURM_PROCID}
 for j in $(seq 1 ${NRUNS});
 do
     echo "Doing run $j of $NRUNS at" `date`
-    OUTFILE=$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}-$j.h5
+    OUTFILE=${WORKING_DIR}/$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}-$j.h5
     args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \
       --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
-      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
+      --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 8 \
       --metadata-file ${METADATA_FILE}"
     echo "args" $args
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
