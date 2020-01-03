@@ -76,7 +76,7 @@ echo "SLURM_PROCID" ${SLURM_PROCID}
 for j in $(seq 1 ${NRUNS});
 do
     echo "Doing run $j of $NRUNS at" `date`
-    OUTFILE=$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}-$j.h5
+    OUTFILE=${WORKING_DIR}/$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}-$j.h5
     args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \
       --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
       --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 2 \
