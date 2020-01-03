@@ -22,12 +22,15 @@ def get_analysis_results():
             m1,m2,etype = curr_dir.split('_')
         except:
             print('cant parse ' + curr_dir)
-                
+            continue  
         mtype = m1 + '_' + m2
         if not 'cAD'  in etype:
             fn = loc + curr_dir + '/' + mtype + etype + 'mean_std_sensitivity.pkl'
-            with open(fn, 'rb') as f:
-                sensitivity_res = pkl.load(f)
+            try:
+                with open(fn, 'rb') as f:
+                    sensitivity_res = pkl.load(f)
+            except:
+                print('please analyze' + curr_dir)
             pnames = list(sensitivity_res.keys())
             for pname in pnames:
                 curr_sens = sensitivity_res[pname]
