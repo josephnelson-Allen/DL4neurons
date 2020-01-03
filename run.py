@@ -156,8 +156,10 @@ def create_h5(args, nsamples):
 
         # write param range
         phys_par_range = np.stack(model.PARAM_RANGES)
-        for i, def_par in args.params:
-            if def_par == 'def':
+        for i, (varied, def_par) in enumerate(zip(model.get_varied_params(), args.params)):
+            if not varied:
+                phys_par_range[i, :] = (0, 0)
+            if varied and def_par == 'def':
                 phys_par_range[i, :] = (-1.1, -1.1)
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float32)
 
@@ -223,16 +225,18 @@ def write_metadata(args, model):
             prefix = ''
         params.append(prefix + param)
 
-    path, fn = os.path.split(args.outfile.replace('0', '*')) # HACK, and not working... TODO
+    path, fn = os.path.split(args.outfile)
+    bbp_name = model.cell_kwargs['model_directory']
+    stimname = os.environ.get('stimname')
     metadata = {
         'timeAxis': {'step': args.dt, 'unit': "(ms)"},
         'voltsScale': VOLTS_SCALE,
         'varParL': params,
         'probeName': model.get_probe_names(),
-        'bbpName': model.cell_kwargs['model_directory'],
+        'bbpName': bbp_name,
         'rawPath': path,
-        'rawDataName': fn,
-        'stimName': os.environ.get('stimname'), # HACK
+        'rawDataName': '{}-{}-*.h5'.format(bbp_name, stimname), # HACK
+        'stimName': stimname, # HACK
     }
 
     def serialize(val):
