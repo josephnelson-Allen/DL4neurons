@@ -92,10 +92,12 @@ def get_random_params(args, n=1):
     params = clean_params(args, model)
     rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
-    for i, (_range, param, varied) in enumerate(zip(ranges, params, model.get_varied_params())):
+    for i, (_range, param, varied, orig_param) in enumerate(zip(ranges, params, model.get_varied_params(), args.params)):
         # Default params swapped in by clean_params()
         if not varied:
             rand[:, i] = 0.5 # so it gets set to 0 when writen to disk (see upar in save_h5())
+        if varied and orig_param == 'def':
+            rand[:, i] = (-1.1 + 1) / 2.0 # so it gets set to -1.1
         if param == float('inf'):
             phys_rand[:, i] = rangeify(rand[:, i], _range)
         else:
@@ -154,6 +156,9 @@ def create_h5(args, nsamples):
 
         # write param range
         phys_par_range = np.stack(model.PARAM_RANGES)
+        for i, def_par in args.params:
+            if def_par == 'def':
+                phys_par_range[i, :] = (-1.1, -1.1)
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float32)
 
         # create stim, qa, and voltage datasets
@@ -207,11 +212,18 @@ def write_metadata(args, model):
     log.info("writing metadata")
     if args.model != 'BBP' or not args.metadata_file:
         return
-    
-    params = [('const_' if not present else '') + param
-              for param, present
-              in zip(model.PARAM_NAMES, model.get_varied_params())]
-    path, fn = os.path.split(args.outfile.replace('0', '*')) # HACK
+
+    params = []
+    for param, varied, def_par in zip(model.PARAM_NAMES, model.get_varied_params(), args.params):
+        if def_par == 'def':
+            prefix = 'fixed_'
+        elif not varied:
+            prefix = 'const_'
+        else:
+            prefix = ''
+        params.append(prefix + param)
+
+    path, fn = os.path.split(args.outfile.replace('0', '*')) # HACK, and not working... TODO
     metadata = {
         'timeAxis': {'step': args.dt, 'unit': "(ms)"},
         'voltsScale': VOLTS_SCALE,
@@ -410,8 +422,7 @@ def main(args):
     # Save to disk
     if args.outfile:
         save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel, upar=upar)
-        if rank == 0:
-            write_metadata(args, model)
+        write_metadata(args, model)
 
 
 if __name__ == '__main__':
