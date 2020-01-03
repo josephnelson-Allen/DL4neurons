@@ -217,10 +217,10 @@ def write_metadata(args, model):
 
     params = []
     for param, varied, def_par in zip(model.PARAM_NAMES, model.get_varied_params(), args.params):
-        if def_par == 'def':
-            prefix = 'fixed_'
-        elif not varied:
+        if not varied:
             prefix = 'const_'
+        elif def_par == 'def':
+            prefix = 'fixed_'
         else:
             prefix = ''
         params.append(prefix + param)
