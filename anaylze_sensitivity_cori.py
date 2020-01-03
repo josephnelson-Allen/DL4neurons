@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Dec 11 21:59:43 2019
+Creaed on Wed Dec 11 21:59:43 2019
 
 @author: bensr
 """
