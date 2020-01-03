@@ -58,7 +58,7 @@ chmod a+rx $RUNDIR
 chmod a+rx $RUNDIR/*
 echo "Done making outdirs at" `date`
 
-stimname=chaotic_2
+export stimname=chaotic_2
 stimfile=stims/${stimname}.csv
 
 echo
