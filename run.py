@@ -350,11 +350,12 @@ def main(args):
                     bbp_name = row[0]
                     args.m_type = row[1]
                     args.e_type = row[2]
+                    log.info("from rank {} running cell {}".format(rank, bbp_name))
                     break
 
         # Get param string for holding some params fixed
         paramuse = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1] \
-                   if args.e_type == 'cADpyr' else [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1]
+                   if args.e_type == 'cADpyr' else [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1]
         args.params = [('inf' if use else 'def') for use in paramuse]
 
     if args.outfile and '{BBP_NAME}' in args.outfile:
