@@ -84,8 +84,7 @@ do
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
-    chmod a+r $RUNDIR/*/*.h5
-    chmod a+r $RUNDIR/*.yaml
+    chmod -R a+r $RUNDIR/
     echo "Done run $j of $NRUNS at" `date`
 
 done
