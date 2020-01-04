@@ -47,7 +47,7 @@ fi
 echo "Making outdirs at" `date`
 RUNDIR=runs/${SLURM_JOBID}
 mkdir -p $RUNDIR
-for i in $(seq ${START_CELL} ${END_CELL});
+for i in $(seq $((${START_CELL}+1)) ${END_CELL});
 do
     line=$(head -$i ${CELLS_FILE} | tail -1)
     bbp_name=$(echo $line | awk -F "," '{print $1}')
@@ -84,8 +84,6 @@ do
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
-    chmod a+r $RUNDIR/*/*.h5
-    chmod a+r $RUNDIR/*.yaml
     echo "Done run $j of $NRUNS at" `date`
 
 done
