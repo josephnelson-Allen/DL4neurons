@@ -1,4 +1,4 @@
-param_name_excitatory,Params_tovary,pname_Inhibitory,roys executie decision
+param_name_excitatory,Params_tovary,pname_Inhibitory,roys  NEW executie decision
 gNaTa.tbar.NaTa.t.axn,1,gNaTa.tbar.NaTa.t.axn,1
 gK.Tstbar.K.Tst.axn,1,gK.Tstbar.K.Tst.axn,1
 gNap.Et2bar.Nap.Et2.axn,1,gNap.Et2bar.Nap.Et2.axn,0
@@ -18,15 +18,15 @@ gSKv3.1bar.SKv3.1.api,1,gSKv3.1bar.SKv3.1.som,1
 gImbar.Im.api,1,g.pas.som,1
 gIhbar.Ih.den,1,gImbar.Im.som,0
 ,,gNaTs2.tbar.NaTs2.t.som,1
-,,gCabar.Ca.som,0
+,,gCabar.Ca.som,1
 ,,gK.Tstbar.K.Tst.den,1
 ,,gSKv3.1bar.SKv3.1.den,1
-,,gNap.Et2bar.Nap.Et2.den,0
+,,gNap.Et2bar.Nap.Et2.den,1
 ,,gNaTs2.tbar.NaTs2.t.den,1
 ,,gIhbar.Ih.den,1
 ,,g.pas.den,0
 ,,gImbar.Im.den,0
-,,gkbar.StochKv.som,1
+,,gkbar.StochKv.som,0
 ,,gkbar.KdShu2007.som,0
 ,,gkbar.StochKv.den,1
 ,,gkbar.KdShu2007.den,1
