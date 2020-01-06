@@ -1,6 +1,7 @@
 modfiles/*.c
 modfiles/*.o
 hoc_templates/*
+runs/*
 
 *.yaml
 *.png
