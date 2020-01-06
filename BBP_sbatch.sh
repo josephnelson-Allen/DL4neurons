@@ -1,14 +1,13 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 1024
-#SBATCH -t 6:00:00
-#SBATCH -J DL4N_shifter_test
+#SBATCH -N 2048
+#SBATCH -t 10:00:00
+#SBATCH -J DL4N_full_prod
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
 #SBATCH --mail-user vbaratham@berkeley.edu
 #SBATCH --mail-type BEGIN,END,FAIL
-#SBATCH --output "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.out"
-#SBATCH --error "/global/cscratch1/sd/vbaratha/DL4neurons/runs/slurm/%A.err"
+#SBATCH --output /dev/null
 #SBATCH --image=balewski/ubu18-py3-mpich:v2
 
 
@@ -21,11 +20,11 @@ WORKING_DIR=/global/cscratch1/sd/vbaratha/DL4neurons
 cd $WORKING_DIR
 
 CELLS_FILE='allcells.csv'
-START_CELL=85
-NCELLS=24
+START_CELL=121
+NCELLS=48
 END_CELL=$((${START_CELL}+${NCELLS}))
 NSAMPLES=40
-NRUNS=1
+NRUNS=2
 NSAMPLES_PER_RUN=$(($NSAMPLES/$NRUNS))
 
 echo "CELLS_FILE" ${CELLS_FILE}
@@ -72,18 +71,22 @@ echo "STIM FILE" $stimfile
 echo "SLURM_NODEID" ${SLURM_NODEID}
 echo "SLURM_PROCID" ${SLURM_PROCID}
 
+REMOTE_CELLS_FILE='/tmp/allcells.csv'
+sbcast ${CELLS_FILE} ${REMOTE_CELLS_FILE}
+
 for j in $(seq 1 ${NRUNS});
 do
     echo "Doing run $j of $NRUNS at" `date`
     OUTFILE=${WORKING_DIR}/$RUNDIR/\{BBP_NAME\}/${FILENAME}-\{NODEID\}-$j.h5
     args="--outfile $OUTFILE --stim-file ${stimfile} --model BBP \
-      --cori-csv ${CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
+      --cori-csv ${REMOTE_CELLS_FILE} --cori-start ${START_CELL} --cori-end ${END_CELL} \
       --num ${NSAMPLES_PER_RUN} --trivial-parallel --print-every 8 \
       --metadata-file ${METADATA_FILE}"
     echo "args" $args
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
+    chmod -R a+r $RUNDIR/*.yaml
     echo "Done run $j of $NRUNS at" `date`
 
 done
