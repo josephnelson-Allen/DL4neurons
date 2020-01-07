@@ -377,12 +377,16 @@ def main(args):
     if args.add_qa:
         add_qa(args)
         exit()
-    
+
     if args.blind and not args.param_file:
         raise ValueError("Must pass --param-file with --blind")
 
     model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i)
 
+    if args.metadata_only:
+        write_metadata(args, model)
+        exit()
+    
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
         upar = None # TODO: save or generate unnormalized params when using --param-file
@@ -429,7 +433,8 @@ def main(args):
     # Save to disk
     if args.outfile:
         save_h5(args, buf, qa, paramsets, start, stop, force_serial=args.trivial_parallel, upar=upar)
-        write_metadata(args, model)
+        # We will write metadata as a separate step for now
+        # write_metadata(args, model)
 
 
 if __name__ == '__main__':
@@ -457,6 +462,8 @@ if __name__ == '__main__':
                         help='nwb file to save to')
     parser.add_argument('--metadata-file', type=str, required=False, default=None,
                         help='for BBP only')
+    parser.add_argument('--metadata-only', action='store_true', default=False,
+                        help='create metadata file then exit')
     parser.add_argument('--create', action='store_true', default=False,
                         help="create the file, store all stimuli, and then exit " \
                         + "(useful for writing to the file from multiple ranks)"

@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -q premium
-#SBATCH -N 2048
-#SBATCH -t 10:00:00
+#SBATCH -N 2
+#SBATCH -t 1:00:00
 #SBATCH -J DL4N_full_prod
 #SBATCH -L SCRATCH,project
 #SBATCH -C knl
@@ -86,6 +86,10 @@ do
     srun --input none -k -n $((${SLURM_NNODES}*${THREADS_PER_NODE})) \
 	 --ntasks-per-node ${THREADS_PER_NODE} \
 	 $PYTHON run.py $args
+
+    # Write one metadata yaml per cell
+    srun -n ${NCELLS} $PYTHON $args --metadata-only
+    
     chmod -R a+r $RUNDIR/*.yaml
     echo "Done run $j of $NRUNS at" `date`
 
