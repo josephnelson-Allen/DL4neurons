@@ -209,7 +209,7 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False, upar=None):
             f['norm_par'][start:stop, :] = (upar*2 - 1) if upar is not None else _normalize(args, params)
         log.info("saved h5")
     log.info("closed h5")
-    os.chmod(args.outfile, stat.S_IROTH)
+    os.chmod(args.outfile, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
 
 
 def write_metadata(args, model):
