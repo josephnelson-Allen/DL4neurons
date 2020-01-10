@@ -360,6 +360,10 @@ def main(args):
                    if args.e_type == 'cADpyr' else [1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1]
         args.params = [('inf' if use else 'def') for use in paramuse]
 
+        if args.e_type in ('bIR', 'bAC'):
+            paramuse[20] = 0
+            log.info('Not varying negative parameters for e-type {}'.format(args.e_type))
+
     if args.outfile and '{BBP_NAME}' in args.outfile:
         args.outfile = args.outfile.replace('{BBP_NAME}', bbp_name)
         args.metadata_file = args.metadata_file.replace('{BBP_NAME}', bbp_name)
