@@ -1,4 +1,5 @@
 import logging as log
+from neuron import h
 
 from run import get_model
 from get_rec_points import get_rec_points
@@ -16,4 +17,7 @@ print("Second time: {}".format(y))
 
 print("First time: {} rec points".format(len(x)))
 print("Second time: {} rec points".format(len(y)))
-
+h("segcount=0")
+h('forall {segcount+=1}')
+print("total number of segments")
+h("print segcount")
