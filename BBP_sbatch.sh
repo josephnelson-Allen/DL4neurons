@@ -91,6 +91,8 @@ do
     srun -n ${NCELLS} $PYTHON $args --metadata-only
     
     chmod -R a+r $RUNDIR/*.yaml
+    # run.py sets permissions on the data files themselves (doing them here simultaneously takes forever)
+    
     echo "Done run $j of $NRUNS at" `date`
 
 done
