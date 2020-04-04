@@ -98,15 +98,12 @@ Note that you may need to recompile the modfiles from within the shifter image (
 
 You will run by submitting BBP_sbatch.sh to Slurm - **please change the [email address on line 8](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L8) and [the working directory on line 19](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L19)**
 
-Choose cells by index in allcells.csv (or generate your own csv listing cell names, m type, e type) by setting the variables in [lines 22-24 of BBP_sbatch.sh](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L22)
+Choose cells by index in allcells.csv (or generate your own csv listing cell names, m type, e type) by setting the variables in [lines 22-24 of BBP_sbatch.sh](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L22). When `--cori-csv` is passed to run.py (as is done in BBP_sbatch.sh), the cell that each thread will run is [chosen](https://github.com/VBaratham/DL4neurons/blob/master/run.py#L344) based on the value of `$SLURM_PROCID`.
 
 `NSAMPLES` on line 26 gives the number of samples to be produced per thread **(the number of threads is the [number of nodes](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L3) times the [number of threads per node](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L35))**
-`NRUNS` on line 26 gives the number of files *per thread* to break up the data into. If too large, you will produce too many files. If too small, you run the risk of losing data if the run crashes halfway through, and you lose the option to kill+restart a run that's hanging without waiting for a new compute reservation (see "NB" below)
-For example, `NSAMPLES=100` and `NRUNS=20` will produce 20 files per thread, each containing 5 samples.
+`NRUNS` on line 26 gives the number of files *per thread* to break up the data into. For example, `NSAMPLES=100` and `NRUNS=20` will produce 20 files per thread, each containing 5 samples. If `NRUNS` is too large, you will produce too many files. If too small, you run the risk of losing data if the run crashes halfway through, and you lose the option to kill+restart a run that's hanging without waiting for a new compute reservation (see "NB" below)
 
 NB: When Cori is under heavy load, I have noticed that one or more threads occasionally hangs, eating up reservation time without producing any results. Because logs are too expensive to write for jobs consisting of thousands of nodes, 1.) it is exceedingly difficult to figure out the cause of this bug, as it only appears at scale, and 2.) the only way I've been able to detect it is to look at the elapsed time of each job step (each run is executed as a separate job step): `sacct -j <jobid> --format JobID,Elapsed` and kill them when they're taking way too long - the next run will begin immediately after the current one is killed. For this reason, I usually configure the job to write at least 2x as many files as I think I'll need, since I may have to kill some steps that hang.
-
-Now you should be able to submit BBP_sbatch.sh to Slurm - **please don't forget to change the [email address on line 8](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L8) and [the working directory on line 19](https://github.com/VBaratham/DL4neurons/blob/2019_12_full_production/BBP_sbatch.sh#L19)**
 
 
 ## Some use cases
