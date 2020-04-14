@@ -65,16 +65,22 @@ def get_model(model, log, m_type=None, e_type=None, cell_i=0, *params):
         return model
 
 def clean_params(args, model):
-    """
-    convert to float, use defaults where requested
+    """convert to float, use defaults where requested
+
+    Return: args.params, but with 'rand' replaced by float('inf') and
+    'def' replaced by the default value of that param (from the
+    model). Also return a list of booleans indicating whether 'def'
+    was passed (this is needed to special case its value in the output
+    to 1.1
     """
     defaults = model.DEFAULT_PARAMS
     if args.params:
         assert len(args.params) == len(defaults)
+        defs = [param == 'def' for param in args.params]
         return [float(x if x != 'rand' else 'inf') if x != 'def' else default
                 for (x, default) in zip(args.params, defaults)]
     else:
-        return [float('inf')] * len(defaults)
+        return [float('inf')] * len(defaults), [False] * len(defaults)
 
 
 def report_random_params(args, params, model):
@@ -90,15 +96,23 @@ def get_random_params(args, n=1):
     ndim = len(ranges)
     rand = np.random.rand(n, ndim)
     phys_rand = np.zeros(shape=rand.shape)
-    params = clean_params(args, model)
+    params, defaulteds = clean_params(args, model)
     rangeify = _rangeify_linear if args.linear else _rangeify_exponential
     report_random_params(args, params, model)
-    for i, (_range, param, varied, orig_param) in enumerate(zip(ranges, params, model.get_varied_params(), args.params)):
+    for i, (_range, param, varied, defaulted) in enumerate(zip(ranges, params, model.get_varied_params(), defaulteds)):
         # Default params swapped in by clean_params()
+
+        # If that parameter is not variable (either not present, or equals zero)
         if not varied:
             rand[:, i] = 0.5 # so it gets set to 0 when writen to disk (see upar in save_h5())
-        if varied and orig_param == 'def':
+
+        # If that parameter is in general allowed to vary (is present
+        # and nonzero in the BBP model), but we asked for it to be
+        # fixed by passing 'def' on the command line:
+        if varied and defaulted:
             rand[:, i] = (-1.1 + 1) / 2.0 # so it gets set to -1.1
+
+        # Put either the fixed or random params into phys_rand
         if param == float('inf'):
             phys_rand[:, i] = rangeify(rand[:, i], _range)
         else:
@@ -157,10 +171,11 @@ def create_h5(args, nsamples):
 
         # write param range
         phys_par_range = np.stack(model.PARAM_RANGES)
-        for i, (varied, def_par) in enumerate(zip(model.get_varied_params(), args.params)):
+        params, defaulteds = clean_params(args, model)
+        for i, (varied, defaulted) in enumerate(zip(model.get_varied_params(), defaulteds)):
             if not varied:
                 phys_par_range[i, :] = (0, 0)
-            if varied and def_par == 'def':
+            if varied and defaulted:
                 phys_par_range[i, :] = (-1.1, -1.1)
         f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float32)
 
