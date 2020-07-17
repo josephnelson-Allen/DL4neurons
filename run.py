@@ -192,6 +192,7 @@ def create_h5(args, nsamples):
         f.create_dataset('binQA', shape=(nsamples,), dtype=np.int32)
         f.create_dataset('stim', data=stim)
         f.create_dataset('time', data=t)     # JN 7/15/2020
+        f.close() # JN 7/17/2020
     log.info("Done.")
 
 
@@ -214,8 +215,8 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False, upar=None):
     else:
         log.debug("using serial")
         kwargs = {}
-
-    if not os.path.exists(args.outfile):
+    path = args.outfile
+    if not os.path.exists(path):
         create_h5(args, stop-start)
     
     with h5py.File(args.outfile, 'a', **kwargs) as f:
@@ -227,8 +228,9 @@ def save_h5(args, buf, qa, params, start, stop, force_serial=False, upar=None):
             f['phys_par'][start:stop, :] = params
             f['norm_par'][start:stop, :] = (upar*2 - 1) if upar is not None else _normalize(args, params)
         log.info("saved h5")
+        f.close()
     log.info("closed h5")
-    os.chmod(args.outfile, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+    #os.chmod(args.outfile, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH) # changed the permissions, so I couldn't open the h5 file 7/17/2020 (JN)
 
 
 def write_metadata(args, model):
