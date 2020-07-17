@@ -132,6 +132,7 @@ def get_mpi_idx(args, nsamples):
         task_i = rank
     start = params_per_task * task_i
     stop = min(params_per_task * (task_i + 1), nsamples)
+
     if args.num:
         stop = min(stop, args.num)
     log.debug("There are {} ranks, so each rank gets {} param sets".format(n_tasks, params_per_task))
@@ -169,25 +170,28 @@ def create_h5(args, nsamples):
         if args.model == 'BBP':
             f.create_dataset('probeName', data=np.string_(model.get_probe_names()))
 
-        # write param range
-        phys_par_range = np.stack(model.PARAM_RANGES)
-        params, defaulteds = clean_params(args, model)
-        for i, (varied, defaulted) in enumerate(zip(model.get_varied_params(), defaulteds)):
-            if not varied:
-                phys_par_range[i, :] = (0, 0)
-            if varied and defaulted:
-                phys_par_range[i, :] = (-1.1, -1.1)
-        f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float32)
+        # write param range, edited by Joseph Nelson: 7/15/2020
+        if args.model == 'BBP':
+            phys_par_range = np.stack(model.PARAM_RANGES)
+            params, defaulteds = clean_params(args, model)
+            for i, (varied, defaulted) in enumerate(zip(model.get_varied_params(), defaulteds)):
+                if not varied:
+                    phys_par_range[i, :] = (0, 0)
+                if varied and defaulted:
+                    phys_par_range[i, :] = (-1.1, -1.1)
+            f.create_dataset('phys_par_range', data=phys_par_range, dtype=np.float32)
 
         # create stim, qa, and voltage datasets
         stim = get_stim(args)
         ntimepts = len(stim)
+        t = np.linspace(0, ntimepts*h.dt, ntimepts)
         if args.model == 'BBP':
             f.create_dataset('voltages', shape=(nsamples, ntimepts, model._n_rec_pts()), dtype=np.int16)
         else:
             f.create_dataset('voltages', shape=(nsamples, ntimepts), dtype=np.int16)
         f.create_dataset('binQA', shape=(nsamples,), dtype=np.int32)
         f.create_dataset('stim', data=stim)
+        f.create_dataset('time', data=t)     # JN 7/15/2020
     log.info("Done.")
 
 
@@ -313,10 +317,9 @@ def t_v_stim_output(args, data, stim):
 
     array = np.array([t/1000, v, stim_out])
     array2 = np.transpose(array)
-    #print(array2.shape)
     columns = ['time (s)', 'voltage (mV)', 'stimulus (pA)']
     df = pd.DataFrame(array2, columns=columns)
-    df.to_csv(r'../ateam-tools/output_from_dl4.csv')
+    df.to_csv(r'../ateam-tools/output_from_dl4_2.csv')
 
 def add_qa(args):
     log.debug("adding qa")

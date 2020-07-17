@@ -125,3 +125,18 @@ Then pass this params file along with the stimulus file to run.py:
 python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --outfile results_stim1.h5 --param-file params.csv --stim-file stims/chaotic_1.csv
 python run.py --model BBP --m-type L5_TTPC1 --e-type cADpyr --outfile results_stim2.h5 --param-file params.csv --stim-file stims/some_other_stim.csv
 ```
+## additons from Joseph Nelson @ Allen
+
+The voltage trace and stimulus are in the same subplot. Parameters can be inputted through the terminal (by specifiying a numeric type rather than string type).
+
+## using DL4neuron with sbi_celltypes (work in progress)
+
+w/ izhikevich model (for testing)
+
+First, download or generate the param csv file with the jupyter notebook file feature_extract_izhi.ipynb (make sure param file is in the code directory)
+
+to test, run (for example)
+
+```
+python run.py --model izhi --stim-file stims/Step_0p2.csv --plot v stim --stim-multiplier 30 --param-file ../sbi_celltypes/code/izhi_param.csv
+```
