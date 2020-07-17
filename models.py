@@ -407,12 +407,14 @@ class HHPoint5Param(BaseModel):
         cell = h.Section()
         cell.insert('na')
         cell.insert('kv')
-        cell.insert('ca')
+        #cell.insert('ca')
+        cell.insert('Ca')
         cell.insert('pas')
 
         cell(0.5).na.gbar = self.gnabar
         cell(0.5).kv.gbar = self.gkbar
-        cell(0.5).ca.gbar = self.gcabar
+        #cell(0.5).ca.gbar = self.gcabar
+        cell(0.5).Ca.gCabar = self.gcabar
         cell(0.5).pas.g = self.gl
         cell.cm = self.cm
 

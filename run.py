@@ -16,7 +16,7 @@ import ruamel.yaml as yaml
 
 from stimulus import stims, add_stims
 import models
-
+import pandas as pd # Joseph Nelson 7/14/2020
 
 try:
     from mpi4py import MPI
@@ -276,15 +276,18 @@ def plot(args, data, stim):
         ntimepts = len(stim)
         t_axis = np.linspace(0, ntimepts*h.dt, ntimepts)
 
-        plt.figure(figsize=(10, 5))
-        plt.xlabel('Time (ms)')
+        #plt.figure(figsize=(12, 6))
+        #plt.xlabel('Time (ms)')
+        fig, axs = plt.subplots(2)
 
         if args.plot == [] or 'v' in args.plot:
-            plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
+            #plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
+            axs[0].plot(t_axis, data['v'][:ntimepts])
         if args.plot == [] or 'v_dend' in args.plot:
             plt.plot(t_axis, data['v_dend'][:ntimepts], label='v_dend')
         if args.plot == [] or 'stim' in args.plot:
-            plt.plot(t_axis, stim[:ntimepts], label='stim')
+            #plt.plot(t_axis, stim[:ntimepts], label='stim')
+            axs[1].plot(t_axis, stim[:ntimepts])
         if args.plot == [] or 'ina' in args.plot:
             plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
         if args.plot == [] or 'ik' in args.plot:
@@ -301,6 +304,19 @@ def plot(args, data, stim):
 
         plt.show()
 
+# added by Joseph Nelson (7/14/2020)
+def t_v_stim_output(args, data, stim):
+    ntimepts = len(stim)
+    t = np.linspace(0, ntimepts*h.dt, ntimepts)
+    v = data['v'][:ntimepts]
+    stim_out = stim
+
+    array = np.array([t/1000, v, stim_out])
+    array2 = np.transpose(array)
+    #print(array2.shape)
+    columns = ['time (s)', 'voltage (mV)', 'stimulus (pA)']
+    df = pd.DataFrame(array2, columns=columns)
+    df.to_csv(r'../ateam-tools/output_from_dl4.csv')
 
 def add_qa(args):
     log.debug("adding qa")
@@ -448,6 +464,7 @@ def main(args):
         qa[i] = _qa(args, data['v'])
 
         plot(args, data, stim)
+        t_v_stim_output(args, data, stim) # added by Joseph Nelson 7/14/2020
         
     # Save to disk
     if args.outfile:
@@ -523,8 +540,9 @@ if __name__ == '__main__':
         '--node-parallel', action='store_true', default=False, required=False,
         help='each node runs --num samples over 64 processes. One output file per node'
     )
+    #type=str
     parser.add_argument(
-        '--params', type=str, nargs='+', default=None,
+        '--params', type=float, nargs='+', default=None,
         help='When used with --num, fixes the value of some params. To indicate ' + \
         'that a param should not be held fixed, set it to "rand". ' + \
         'to use the default value, use "def"' + \
