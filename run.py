@@ -463,6 +463,7 @@ def main(args):
 
         model = get_model(args.model, log, args.m_type, args.e_type, args.cell_i, *params)
         data = model.simulate(stim, args.dt)
+        print('data length = ', len(data['v']))
         if args.model == 'BBP':
             data['v'] = np.stack(list(data.values()), axis=-1)
         buf[i, ...] = data['v'][:-1]

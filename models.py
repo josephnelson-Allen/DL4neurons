@@ -38,7 +38,8 @@ class BaseModel(object):
 
     def init_hoc(self, dt, tstop):
         h.tstop = tstop
-        h.steps_per_ms = 1./dt
+        h.dt = dt # edited JN 7/21/2020
+        h.steps_per_ms = 1./h.dt # edited JN 7/21/2020
         h.stdinit()
 
     def attach_clamp(self):
@@ -84,6 +85,9 @@ class BaseModel(object):
         self.attach_clamp()
         self.attach_stim(stim)
         hoc_vectors = self.attach_recordings(ntimepts)
+
+        print('dt = ', dt)
+        print('tstop =', tstop)
 
         self.init_hoc(dt, tstop)
 
@@ -420,6 +424,42 @@ class HHPoint5Param(BaseModel):
 
         return cell
 
+class HHPoint12Param(BaseModel):
+    PARAM_NAMES = ('gnavbar', 'gkdbar', 'gkv2bar', 'gkv3_1bar', 'gktbar', 'gskbar', 'gcahvabar', 'gcalvabar', 'gihbar', 'gimv2bar', 'gl', 'cm')
+    #DEFAULT_PARAMS = (0.015, 0.00001, 0.00001, 0.00001, 0.00001, 0.000001, 0.00001, 0.00001, 0.00001, 0.00001, 0.0005, 1)
+    DEFAULT_PARAMS = (0.07939, 2.73885e-6, 0.008154, 0.281347, 2.4755e-6, 0.0080563, 0.00087886, 0.00852244, 0.0088609, 3.93687e-5, 0.00098268, 1.153329)
+    PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
+    STIM_MULTIPLIER = 1.0
+
+    def create_cell(self):
+        cell = h.Section()
+        cell.insert('NaV')
+        cell.insert('Kd')
+        cell.insert('Kv2like')
+        cell.insert('Kv3_1')
+        cell.insert('K_T')
+        cell.insert('SK_E2')
+        cell.insert('Ca_HVA')
+        cell.insert('Ca_LVAst')
+        cell.insert('Ih')
+        cell.insert('Im_v2')
+        cell.insert('pas')
+
+        cell(0.5).NaV.gbar = self.gnavbar
+        cell(0.5).Kd.gbar = self.gkdbar
+        cell(0.5).Kv2like.gbar = self.gkv2bar
+        cell(0.5).Kv3_1.gbar = self.gkv3_1bar
+        cell(0.5).K_T.gbar = self.gktbar
+        cell(0.5).SK_E2.gSK_E2bar = self.gskbar
+        cell(0.5).Ca_HVA.gCa_HVAbar = self.gcahvabar
+        cell(0.5).Ca_LVAst.gCa_LVAstbar = self.gcalvabar
+        cell(0.5).Ih.gIhbar = self.gihbar
+        cell(0.5).Im_v2.gbar = self.gimv2bar
+        cell(0.5).pas.g = self.gl
+        cell.cm = self.cm
+
+        return cell
+
 class HHBallStick7Param(BaseModel):
     PARAM_NAMES = (
         'gnabar_soma',
@@ -641,6 +681,7 @@ class HHTwoDend10ParamLatched(HHTwoDend13Param):
 MODELS_BY_NAME = {
     'izhi': Izhi,
     'hh_point_5param': HHPoint5Param,
+    'hh_point_12param': HHPoint12Param,
     'hh_ball_stick_7param': HHBallStick7Param,
     'hh_ball_stick_7param_latched': HHBallStick7ParamLatched,
     'hh_ball_stick_4param_easy': HHBallStick4ParamEasy,
