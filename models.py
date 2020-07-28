@@ -460,6 +460,87 @@ class HHPoint12Param(BaseModel):
 
         return cell
 
+class HH12_2compartment(BaseModel):
+    PARAM_NAMES = (
+        'gnavbar',
+        'gkdbar',
+        'gkv2bar',
+        'gkv3_1bar',
+        'gktbar', 
+        'gskbar', 
+        'gcahvabar', 
+        'gcalvabar', 
+        'gihbar', 
+        'gimv2bar', 
+        'gl_soma',
+        'gl_dend' 
+        'cm'
+    )
+    DEFAULT_PARAMS = (500, 500, 10, 10, 1.5, .0005, 0.5)
+    PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
+    STIM_MULTIPLIER = 1.0
+
+    DEFAULT_SOMA_DIAM = 33
+
+    def __init__(self, *args, **kwargs):
+        self.soma_diam = kwargs.pop('soma_diam', self.DEFAULT_SOMA_DIAM)
+        self.dend_diam = kwargs.pop('dend_diam', self.DEFAULT_SOMA_DIAM / 10)
+        self.dend_length = kwargs.pop('dend_length', self.DEFAULT_SOMA_DIAM * 10)
+
+        super(HHPoint12Param, self).__init__(*args, **kwargs)
+
+    def create_cell(self):
+        soma = h.Section()
+        soma.L = soma.diam = self.soma_diam
+        soma.insert('NaV')
+        soma.insert('Kd')
+        soma.insert('Kv2like')
+        soma.insert('Kv3_1')
+        soma.insert('K_T')
+        soma.insert('SK_E2')
+        soma.insert('Ca_HVA')
+        soma.insert('Ca_LVAst')
+        soma.insert('Ih')
+        soma.insert('Im_v2')
+        soma.insert('pas')
+
+        dend = h.Section()
+        dend.L = self.dend_length
+        dend.diam = self.dend_diam
+        dend.insert('pas')
+
+        dend.connect(soma(1))
+
+        # Persist them
+        self.soma = soma
+        self.dend = dend
+        
+        for seg in soma:
+            seg.NaV.gbar = self.gnavbar
+            seg.Kd.gbar = self.gkdbar
+            seg.Kv2like.gbar = self.gkv2bar
+            seg.Kv3_1.gbar = self.gkv3_1bar
+            seg.K_T.gbar = self.gktbar
+            seg.SK_E2.gSK_E2bar = self.gskbar
+            seg.Ca_HVA.gCa_HVAbar = self.gcahvabar
+            seg.Ca_LVAst.gCa_LVAstbar = self.gcalvabar
+            seg.Ih.gIhbar = self.gihbar
+            seg.Im_v2.gbar = self.gimv2bar
+            seg.pas.g = self.gl_soma
+            seg.cm = self.cm
+        for seg in dend:
+            seg.pas.g = self.gl_dend
+            seg.cm = self.cm
+
+        return soma
+
+    def attach_recordings(self, ntimepts):
+        hoc_vectors = super(HH12_2compartment, self).attach_recordings(ntimepts)
+
+        hoc_vectors['v_dend'] = h.Vector(ntimepts)
+        hoc_vectors['v_dend'].record(self.dend(1)._ref_v) # record from distal end of stick
+        
+        return hoc_vectors
 class HHBallStick7Param(BaseModel):
     PARAM_NAMES = (
         'gnabar_soma',
