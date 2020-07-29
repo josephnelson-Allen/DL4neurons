@@ -1,0 +1,38 @@
+----------------------------------------
+Begin PBS Prologue Wed Jul 29 12:04:39 PDT 2020 1596049479
+Job ID:		23904553.qmaster2.corp.alleninstitute.org
+Username:	joseph.nelson
+Group:		domain_users
+Nodes:		n69
+End PBS Prologue Wed Jul 29 12:04:39 PDT 2020 1596049479
+----------------------------------------
+NEURON -- VERSION 7.5 master (6b4c19f) 2017-09-25
+Duke, Yale, and the BlueBrain Project -- Copyright 1984-2016
+See http://neuron.yale.edu/neuron/credits
+
+Additional mechanisms from files
+ modfiles/cad.mod modfiles/CaDynamics_E2.mod modfiles/Ca_HVA.mod modfiles/Ca_LVAst.mod modfiles/Ca.mod modfiles/Ih.mod modfiles/Im.mod modfiles/Im_v2.mod modfiles/izhi2003a.mod modfiles/kca.mod modfiles/Kd.mod modfiles/KdShu2007.mod modfiles/km.mod modfiles/K_Pst.mod modfiles/K_T.mod modfiles/K_Tst.mod modfiles/Kv2like.mod modfiles/Kv3_1.mod modfiles/kv.mod modfiles/na.mod modfiles/Nap_Et2.mod modfiles/NaTa_t.mod modfiles/NaTs2_t.mod modfiles/NaV.mod modfiles/ProbAMPANMDA_EMS.mod modfiles/ProbGABAAB_EMS.mod modfiles/SK_E2.mod modfiles/SKv3_1.mod modfiles/StochKv.mod
+2020-07-29 12:04:48,072 Processed 0 samples
+2020-07-29 12:04:48,501 saving into h5 file /home/joseph.nelson/DL4neurons/hpc_2comp.h5
+2020-07-29 12:04:48,510 saved h5
+2020-07-29 12:04:48,514 closed h5
+dt =  0.04
+tstop = 1200.0
+data length =  30001
+----------------------------------------
+Begin PBS Epilogue Wed Jul 29 12:04:53 PDT 2020 1596049493
+Job ID:		23904553.qmaster2.corp.alleninstitute.org
+Username:	joseph.nelson
+Group:		domain_users
+Job Name:	test_izhi_1
+Session:	24381
+Limits:		ncpus=1,mem=1gb,walltime=00:05:00,neednodes=centos
+Resources:	cput=00:00:02,vmem=0kb,walltime=00:00:09,mem=406824kb,energy_used=0
+Queue:		celltypes
+Account:		
+Exit status:      0
+Nodes:	n69
+Killing leftovers...
+
+End PBS Epilogue Wed Jul 29 12:05:04 PDT 2020 1596049504
+----------------------------------------

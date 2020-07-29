@@ -429,6 +429,8 @@ def main(args):
     
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
+        if(isinstance(all_paramsets[0], np.ndarray) == False): # JNN 7/29/2020
+            all_paramsets = np.array([all_paramsets])
         upar = None # TODO: save or generate unnormalized params when using --param-file
         start, stop = get_mpi_idx(args, len(all_paramsets))
         if args.num and start > args.num:

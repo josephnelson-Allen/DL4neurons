@@ -473,10 +473,10 @@ class HH12_2compartment(BaseModel):
         'gihbar', 
         'gimv2bar', 
         'gl_soma',
-        'gl_dend' 
+        'gl_dend', 
         'cm'
     )
-    DEFAULT_PARAMS = (500, 500, 10, 10, 1.5, .0005, 0.5)
+    DEFAULT_PARAMS = (0.07939, 2.73885e-6, 0.008154, 0.281347, 2.4755e-6, 0.0080563, 0.00087886, 0.00852244, 0.0088609, 3.93687e-5, 0.00098268, 0.00098268, 1.153329)
     PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
     STIM_MULTIPLIER = 1.0
 
@@ -487,7 +487,7 @@ class HH12_2compartment(BaseModel):
         self.dend_diam = kwargs.pop('dend_diam', self.DEFAULT_SOMA_DIAM / 10)
         self.dend_length = kwargs.pop('dend_length', self.DEFAULT_SOMA_DIAM * 10)
 
-        super(HHPoint12Param, self).__init__(*args, **kwargs)
+        super(HH12_2compartment, self).__init__(*args, **kwargs)
 
     def create_cell(self):
         soma = h.Section()
@@ -763,6 +763,7 @@ MODELS_BY_NAME = {
     'izhi': Izhi,
     'hh_point_5param': HHPoint5Param,
     'hh_point_12param': HHPoint12Param,
+    'hh_2compartment': HH12_2compartment,
     'hh_ball_stick_7param': HHBallStick7Param,
     'hh_ball_stick_7param_latched': HHBallStick7ParamLatched,
     'hh_ball_stick_4param_easy': HHBallStick4ParamEasy,
