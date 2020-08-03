@@ -425,9 +425,9 @@ class HHPoint5Param(BaseModel):
         return cell
 
 class HHPoint12Param(BaseModel):
-    PARAM_NAMES = ('gnavbar', 'gkdbar', 'gkv2bar', 'gkv3_1bar', 'gktbar', 'gskbar', 'gcahvabar', 'gcalvabar', 'gihbar', 'gimv2bar', 'gl', 'cm')
+    PARAM_NAMES = ('gnavbar', 'gkdbar', 'gkv2bar', 'gkv3_1bar', 'gktbar', 'gskbar', 'gcahvabar', 'gcalvabar', 'gihbar', 'gimv2bar', 'gl', 'cm', 'ra', 'e_pas')
     #DEFAULT_PARAMS = (0.015, 0.00001, 0.00001, 0.00001, 0.00001, 0.000001, 0.00001, 0.00001, 0.00001, 0.00001, 0.0005, 1)
-    DEFAULT_PARAMS = (0.07939, 2.73885e-6, 0.008154, 0.281347, 2.4755e-6, 0.0080563, 0.00087886, 0.00852244, 0.0088609, 3.93687e-5, 0.00098268, 1.153329)
+    DEFAULT_PARAMS = (0.07939, 2.73885e-6, 0.008154, 0.281347, 2.4755e-6, 0.0080563, 0.00087886, 0.00852244, 0.0088609, 3.93687e-5, 0.00098268, 1.153329, 183.85909, -77.501)
     PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
     STIM_MULTIPLIER = 1.0
 
@@ -457,7 +457,8 @@ class HHPoint12Param(BaseModel):
         cell(0.5).Im_v2.gbar = self.gimv2bar
         cell(0.5).pas.g = self.gl
         cell.cm = self.cm
-
+        cell.Ra = self.ra
+        cell(0.5).pas.e = self.e_pas
         return cell
 
 class HH12_2compartment(BaseModel):
@@ -474,13 +475,16 @@ class HH12_2compartment(BaseModel):
         'gimv2bar', 
         'gl_soma',
         'gl_dend', 
-        'cm'
+        'cm',
+        'ra',
+        'e_pas_soma',
+        'e_pas_dend'
     )
-    DEFAULT_PARAMS = (0.07939, 2.73885e-6, 0.008154, 0.281347, 2.4755e-6, 0.0080563, 0.00087886, 0.00852244, 0.0088609, 3.93687e-5, 0.00098268, 0.00098268, 1.153329)
+    DEFAULT_PARAMS = (0.07939, 2.73885e-6, 0.008154, 0.281347, 2.4755e-6, 0.0080563, 0.00087886, 0.00852244, 0.0088609, 3.93687e-5, 0.00098268, 0.00098268, 1.153329, 183.85909, -77.501, -77.501)
     PARAM_RANGES = tuple((0.5*default, 2.*default) for default in DEFAULT_PARAMS)
     STIM_MULTIPLIER = 1.0
 
-    DEFAULT_SOMA_DIAM = 33
+    DEFAULT_SOMA_DIAM = 33    #21
 
     def __init__(self, *args, **kwargs):
         self.soma_diam = kwargs.pop('soma_diam', self.DEFAULT_SOMA_DIAM)
@@ -515,6 +519,9 @@ class HH12_2compartment(BaseModel):
         self.soma = soma
         self.dend = dend
         
+        for sec in h.allsec():
+            sec.cm = self.cm
+            sec.Ra = self.ra
         for seg in soma:
             seg.NaV.gbar = self.gnavbar
             seg.Kd.gbar = self.gkdbar
@@ -527,10 +534,10 @@ class HH12_2compartment(BaseModel):
             seg.Ih.gIhbar = self.gihbar
             seg.Im_v2.gbar = self.gimv2bar
             seg.pas.g = self.gl_soma
-            seg.cm = self.cm
+            seg.pas.e = self.e_pas_soma
         for seg in dend:
             seg.pas.g = self.gl_dend
-            seg.cm = self.cm
+            seg.pas.e = self.e_pas_dend
 
         return soma
 

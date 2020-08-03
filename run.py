@@ -284,20 +284,23 @@ def plot(args, data, stim):
 
         #plt.figure(figsize=(12, 6))
         #plt.xlabel('Time (ms)')
-        fig, axs = plt.subplots(2)
+        fig, axs = plt.subplots(5, figsize=(20,15))
 
         if args.plot == [] or 'v' in args.plot:
             #plt.plot(t_axis, data['v'][:ntimepts], label='V_m')
             axs[0].plot(t_axis, data['v'][:ntimepts])
         if args.plot == [] or 'v_dend' in args.plot:
-            plt.plot(t_axis, data['v_dend'][:ntimepts], label='v_dend')
+            #plt.plot(t_axis, data['v_dend'][:ntimepts], label='v_dend')
+            axs[1].plot(t_axis, data['v_dend'][:ntimepts])
         if args.plot == [] or 'stim' in args.plot:
             #plt.plot(t_axis, stim[:ntimepts], label='stim')
-            axs[1].plot(t_axis, stim[:ntimepts])
+            axs[2].plot(t_axis, stim[:ntimepts])
         if args.plot == [] or 'ina' in args.plot:
-            plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
+            #plt.plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
+            axs[3].plot(t_axis, data['ina'][:ntimepts] * 100, label='i_na*100')
         if args.plot == [] or 'ik' in args.plot:
-            plt.plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
+            #plt.plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
+            axs[4].plot(t_axis, data['ik'][:ntimepts] * 100, label='i_k*100')
         if args.plot == [] or 'ica' in args.plot:
             plt.plot(t_axis, data['ica'][:ntimepts] * 100, label='i_ca*100')
         if args.plot == [] or 'i_cap' in args.plot:
@@ -429,7 +432,7 @@ def main(args):
     
     if args.param_file:
         all_paramsets = np.genfromtxt(args.param_file, dtype=np.float32)
-        if(isinstance(all_paramsets[0], np.ndarray) == False): # JNN 7/29/2020
+        if(isinstance(all_paramsets[0], np.ndarray) == False): # JNN 7/29/2020; so the param file can have a single set
             all_paramsets = np.array([all_paramsets])
         upar = None # TODO: save or generate unnormalized params when using --param-file
         start, stop = get_mpi_idx(args, len(all_paramsets))
